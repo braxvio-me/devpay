@@ -14,9 +14,11 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function PaymentScreen() {
   const router = useRouter();
+  const { isDark, colors } = useTheme();
 
   const [selectedContract, setSelectedContract] = useState('c_1');
   const [amount, setAmount] = useState('2000');
@@ -67,17 +69,24 @@ export default function PaymentScreen() {
   };
 
   return (
-    <View style={styles.screen}>
+    <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
         {/* Header */}
-        <View style={styles.header}>
+        <View
+          style={[
+            styles.header,
+            { backgroundColor: colors.surface, borderBottomColor: colors.border },
+          ]}>
           <TouchableOpacity
-            style={styles.backButton}
+            style={[
+              styles.backButton,
+              { backgroundColor: colors.backgroundElement, borderColor: colors.border },
+            ]}
             onPress={() => router.back()}
             activeOpacity={0.8}>
-            <Ionicons name="chevron-back" size={20} color={Colors.light.text} />
+            <Ionicons name="chevron-back" size={20} color={colors.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Fund Milestone Escrow</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Fund Milestone Escrow</Text>
           <View style={styles.secureBadge}>
             <Ionicons name="shield-checkmark" size={14} color="#10B981" />
             <Text style={styles.secureText}>Escrow</Text>

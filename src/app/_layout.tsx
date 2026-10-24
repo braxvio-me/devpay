@@ -4,6 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
+import { RoleProvider } from '@/contexts/RoleContext';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -39,14 +40,17 @@ function AppStack() {
         <Stack.Screen name="index" />
         <Stack.Screen name="explore" />
         <Stack.Screen name="job/[id]" />
+        <Stack.Screen name="job/apply" />
+        <Stack.Screen name="job/create" />
+        <Stack.Screen name="job/applicants" />
         <Stack.Screen name="earnings" />
         <Stack.Screen name="payment" />
         <Stack.Screen name="withdraw" />
         <Stack.Screen name="contracts" />
+        <Stack.Screen name="contracts/review" />
         <Stack.Screen name="messages" />
         <Stack.Screen name="chat/[id]" />
         <Stack.Screen name="chat/new" />
-        <Stack.Screen name="job/apply" />
         <Stack.Screen name="notifications" />
         <Stack.Screen name="profile" />
         <Stack.Screen name="edit-profile" />
@@ -64,7 +68,9 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider>
-        <AppStack />
+        <RoleProvider>
+          <AppStack />
+        </RoleProvider>
       </ThemeProvider>
     </GestureHandlerRootView>
   );

@@ -11,8 +11,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useRole } from '@/contexts/RoleContext';
 import { FloatingTabBar } from '@/components/floating-tab-bar';
+import * as Haptics from 'expo-haptics';
 
 interface ChatThread {
   id: string;
@@ -27,6 +29,9 @@ interface ChatThread {
 
 export default function MessagesScreen() {
   const router = useRouter();
+  const { isDark, colors } = useTheme();
+  const { isClient } = useRole();
+
   const [selectedThread, setSelectedThread] = useState<ChatThread | null>(null);
   const [inputText, setInputText] = useState('');
   const [messages, setMessages] = useState([
@@ -53,189 +58,274 @@ export default function MessagesScreen() {
   const threads: ChatThread[] = [
     {
       id: 't_1',
-      name: 'Google Africa (Hiring Lead)',
-      avatar: 'https://images.unsplash.com/photo-1572021335469-31706a17aaef?w=120',
+      name: isClient ? 'Kwame Mensah (Lead Dev)' : 'Google Africa (Hiring Lead)',
+      avatar: isClient
+        ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120'
+        : 'https://images.unsplash.com/photo-1572021335469-31706a17aaef?w=120',
       lastMessage: 'Awesome. Once submitted I will review and release...',
       time: '10:35 AM',
       unreadCount: 1,
       isOnline: true,
-      project: 'UI/UX Redesign',
+      project: 'Mobile App UI/UX Redesign',
     },
     {
       id: 't_2',
-      name: 'Telecel Digital Labs',
+      name: isClient ? 'Akosua Serwaa (UI Designer)' : 'Telecel Digital Labs',
       avatar: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=120',
-      lastMessage: 'Can you adjust the MoMo fee breakdown on the review screen?',
+      lastMessage: 'Milestone 1 Figma prototype is ready for review.',
       time: 'Yesterday',
       unreadCount: 0,
       isOnline: false,
-      project: 'Checkout Prototype',
+      project: 'MoMo Payment Checkout',
     },
     {
       id: 't_3',
-      name: 'Paystack Partner Team',
-      avatar: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=120',
-      lastMessage: 'Contract proposal accepted! Milestone 1 pre-funded.',
-      time: '20 Oct',
+      name: 'Hubtel Escrow Arbitration',
+      avatar: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=120',
+      lastMessage: 'Contract milestone dispute resolution team.',
+      time: 'Oct 19',
       unreadCount: 0,
       isOnline: true,
-      project: 'Payment Webhook Architecture',
+      project: 'DevPay Escrow Support',
     },
   ];
 
   const handleSendMessage = () => {
     if (!inputText.trim()) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setMessages((prev) => [
       ...prev,
       {
         id: String(Date.now()),
         sender: 'me',
-        text: inputText,
+        text: inputText.trim(),
         time: 'Just now',
       },
     ]);
     setInputText('');
   };
 
-  return (
-    <View style={styles.screen}>
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
-        {/* If inside thread */}
-        {selectedThread ? (
-          <View style={styles.chatContainer}>
-            {/* Thread Header */}
-            <View style={styles.chatHeader}>
-              <TouchableOpacity
-                style={styles.chatBackBtn}
-                onPress={() => setSelectedThread(null)}>
-                <Ionicons name="chevron-back" size={20} color={Colors.light.text} />
-              </TouchableOpacity>
+  // Detailed Conversation View
+  if (selectedThread) {
+    return (
+      <View style={[styles.screen, { backgroundColor: colors.background }]}>
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
+          {/* Conversation Header */}
+          <View
+            style={[
+              styles.chatHeader,
+              { backgroundColor: colors.surface, borderBottomColor: colors.border },
+            ]}>
+            <TouchableOpacity
+              style={[
+                styles.backButton,
+                { backgroundColor: colors.backgroundElement, borderColor: colors.border },
+              ]}
+              onPress={() => setSelectedThread(null)}
+              activeOpacity={0.8}>
+              <Ionicons name="chevron-back" size={20} color={colors.text} />
+            </TouchableOpacity>
 
-              <View style={styles.chatRecipient}>
-                <Image source={{ uri: selectedThread.avatar }} style={styles.chatAvatar} />
-                <View>
-                  <Text style={styles.chatName}>{selectedThread.name}</Text>
-                  <Text style={styles.chatProject}>{selectedThread.project}</Text>
-                </View>
+            <View style={styles.chatHeaderInfo}>
+              <View style={styles.chatTitleRow}>
+                <Text style={[styles.chatHeaderName, { color: colors.text }]}>
+                  {selectedThread.name}
+                </Text>
+                {selectedThread.isOnline && <View style={styles.onlineDot} />}
               </View>
-
-              <TouchableOpacity style={styles.chatOptionBtn}>
-                <Ionicons name="ellipsis-vertical" size={18} color={Colors.light.text} />
-              </TouchableOpacity>
-            </View>
-
-            {/* Escrow Milestone Alert Banner in Chat */}
-            <View style={styles.escrowBanner}>
-              <Ionicons name="shield-checkmark" size={14} color="#0F73F7" />
-              <Text style={styles.escrowBannerText}>
-                Milestone 2 is pre-funded in escrow. Never share bank/MoMo details in chat.
+              <Text style={[styles.chatHeaderSub, { color: colors.textSecondary }]}>
+                {selectedThread.project}
               </Text>
             </View>
 
-            {/* Messages Scroll */}
-            <ScrollView
-              contentContainerStyle={styles.messagesList}
-              showsVerticalScrollIndicator={false}>
-              {messages.map((m) => {
-                const isMe = m.sender === 'me';
-                return (
+            <TouchableOpacity
+              style={[
+                styles.backButton,
+                { backgroundColor: colors.backgroundElement, borderColor: colors.border },
+              ]}
+              onPress={() => router.push('/contracts')}
+              activeOpacity={0.8}>
+              <Ionicons name="shield-checkmark-outline" size={18} color="#10B981" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Messages Scroll Area */}
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.messageScroll}>
+            {messages.map((m) => {
+              const isMe = m.sender === 'me';
+              return (
+                <View
+                  key={m.id}
+                  style={[
+                    styles.messageRow,
+                    isMe ? styles.messageRowMe : styles.messageRowThem,
+                  ]}>
                   <View
-                    key={m.id}
-                    style={[styles.messageBubble, isMe ? styles.myBubble : styles.theirBubble]}>
-                    <Text style={[styles.messageText, isMe && styles.myMessageText]}>
+                    style={[
+                      styles.bubble,
+                      isMe
+                        ? styles.bubbleMe
+                        : [
+                            styles.bubbleThem,
+                            {
+                              backgroundColor: colors.surface,
+                              borderColor: colors.border,
+                            },
+                          ],
+                    ]}>
+                    <Text
+                      style={[
+                        styles.bubbleText,
+                        { color: isMe ? '#FFFFFF' : colors.text },
+                      ]}>
                       {m.text}
                     </Text>
-                    <Text style={[styles.messageTime, isMe && styles.myMessageTime]}>
+                    <Text
+                      style={[
+                        styles.bubbleTime,
+                        {
+                          color: isMe
+                            ? 'rgba(255, 255, 255, 0.7)'
+                            : colors.textMuted,
+                        },
+                      ]}>
                       {m.time}
                     </Text>
                   </View>
-                );
-              })}
-            </ScrollView>
+                </View>
+              );
+            })}
+          </ScrollView>
 
-            {/* Input Bar */}
-            <View style={styles.inputBar}>
-              <TouchableOpacity style={styles.attachBtn}>
-                <Ionicons name="attach-outline" size={22} color={Colors.light.textSecondary} />
-              </TouchableOpacity>
-              <TextInput
-                style={styles.chatInput}
-                placeholder="Type your message..."
-                placeholderTextColor={Colors.light.textMuted}
-                value={inputText}
-                onChangeText={setInputText}
-              />
-              <TouchableOpacity
-                style={styles.sendBtn}
-                onPress={handleSendMessage}
-                activeOpacity={0.85}>
-                <Ionicons name="send" size={16} color="#FFFFFF" />
-              </TouchableOpacity>
-            </View>
-          </View>
-        ) : (
-          /* Threads List View */
-          <View style={{ flex: 1 }}>
-            <View style={styles.listHeader}>
-              <TouchableOpacity
-                style={styles.backButton}
-                onPress={() => router.back()}
-                activeOpacity={0.8}>
-                <Ionicons name="chevron-back" size={20} color={Colors.light.text} />
-              </TouchableOpacity>
-              <Text style={styles.listTitle}>Messages</Text>
-              <TouchableOpacity
-                style={styles.backButton}
-                onPress={() => router.push('/chat/new')}
-                activeOpacity={0.8}>
-                <Ionicons name="create-outline" size={20} color="#0F73F7" />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView
-              contentContainerStyle={styles.threadsScroll}
-              showsVerticalScrollIndicator={false}>
-              {threads.map((t) => (
-                <TouchableOpacity
-                  key={t.id}
-                  style={styles.threadCard}
-                  onPress={() => router.push(`/chat/${t.id}` as any)}
-                  activeOpacity={0.88}>
-                  <View style={styles.avatarWrapper}>
-                    <Image source={{ uri: t.avatar }} style={styles.threadAvatar} />
-                    {t.isOnline && <View style={styles.onlineDot} />}
-                  </View>
-
-                  <View style={styles.threadDetails}>
-                    <View style={styles.threadTopRow}>
-                      <Text style={styles.threadName}>{t.name}</Text>
-                      <Text style={styles.threadTime}>{t.time}</Text>
-                    </View>
-                    <Text style={styles.threadProjectTag}>{t.project}</Text>
-                    <Text style={styles.threadSnippet} numberOfLines={1}>
-                      {t.lastMessage}
-                    </Text>
-                  </View>
-
-                  {t.unreadCount > 0 && (
-                    <View style={styles.unreadBadge}>
-                      <Text style={styles.unreadCountText}>{t.unreadCount}</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-
-            <FloatingTabBar
-              activeTab="chats"
-              onSelectTab={(tab) => {
-                if (tab === 'home') router.push('/');
-                if (tab === 'jobs') router.push('/contracts');
-                if (tab === 'profile') router.push('/profile');
-              }}
+          {/* Input Bar */}
+          <View
+            style={[
+              styles.inputBar,
+              { backgroundColor: colors.surface, borderTopColor: colors.border },
+            ]}>
+            <TextInput
+              style={[
+                styles.chatInput,
+                {
+                  backgroundColor: colors.backgroundElement,
+                  color: colors.text,
+                  borderColor: colors.border,
+                },
+              ]}
+              value={inputText}
+              placeholder="Type message or paste GitHub PR..."
+              placeholderTextColor={colors.textMuted}
+              onChangeText={setInputText}
             />
+            <TouchableOpacity
+              style={styles.sendButton}
+              onPress={handleSendMessage}
+              activeOpacity={0.85}>
+              <Ionicons name="send" size={16} color="#FFFFFF" />
+            </TouchableOpacity>
           </View>
-        )}
+        </SafeAreaView>
+      </View>
+    );
+  }
+
+  // Threads List View
+  return (
+    <View style={[styles.screen, { backgroundColor: colors.background }]}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        {/* Top Header */}
+        <View
+          style={[
+            styles.topHeader,
+            { backgroundColor: colors.surface, borderBottomColor: colors.border },
+          ]}>
+          <TouchableOpacity
+            style={[
+              styles.backButton,
+              { backgroundColor: colors.backgroundElement, borderColor: colors.border },
+            ]}
+            onPress={() => router.back()}
+            activeOpacity={0.8}>
+            <Ionicons name="chevron-back" size={20} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Messages</Text>
+          <TouchableOpacity
+            style={[
+              styles.backButton,
+              { backgroundColor: colors.backgroundElement, borderColor: colors.border },
+            ]}
+            onPress={() => router.push('/chat/new')}
+            activeOpacity={0.8}>
+            <Ionicons name="create-outline" size={20} color={colors.primary} />
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.threadsScroll}>
+          {threads.map((thread) => (
+            <TouchableOpacity
+              key={thread.id}
+              style={[
+                styles.threadCard,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}
+              onPress={() => setSelectedThread(thread)}
+              activeOpacity={0.75}>
+              <View style={styles.avatarWrap}>
+                <Image source={{ uri: thread.avatar }} style={styles.avatarImg} />
+                {thread.isOnline && <View style={styles.threadOnlineDot} />}
+              </View>
+
+              <View style={styles.threadBody}>
+                <View style={styles.threadTopRow}>
+                  <Text style={[styles.threadName, { color: colors.text }]}>
+                    {thread.name}
+                  </Text>
+                  <Text style={[styles.threadTime, { color: colors.textMuted }]}>
+                    {thread.time}
+                  </Text>
+                </View>
+
+                <Text
+                  style={[styles.threadProject, { color: colors.primary }]}
+                  numberOfLines={1}>
+                  {thread.project}
+                </Text>
+
+                <Text
+                  style={[styles.threadLastMsg, { color: colors.textSecondary }]}
+                  numberOfLines={1}>
+                  {thread.lastMessage}
+                </Text>
+              </View>
+
+              {thread.unreadCount > 0 && (
+                <View style={styles.unreadBadge}>
+                  <Text style={styles.unreadBadgeText}>{thread.unreadCount}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        <FloatingTabBar
+          activeTab="chats"
+          onSelectTab={(tab) => {
+            if (tab === 'home') router.push('/');
+            if (tab === 'jobs') router.push('/contracts');
+            if (tab === 'profile') router.push('/profile');
+          }}
+          onCenterActionPress={() => {
+            if (isClient) {
+              router.push('/job/create');
+            } else {
+              router.push('/explore');
+            }
+          }}
+        />
       </SafeAreaView>
     </View>
   );
@@ -244,95 +334,87 @@ export default function MessagesScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
   },
   safeArea: {
     flex: 1,
   },
-  listHeader: {
+  topHeader: {
     height: 56,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
+    borderBottomWidth: 1,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#EEF3FA',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  listTitle: {
+  headerTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: Colors.light.text,
   },
   threadsScroll: {
     paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingTop: 16,
     paddingBottom: 110,
+    gap: 12,
   },
   threadCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
     padding: 14,
-    marginBottom: 10,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#EEF3FA',
+    gap: 12,
   },
-  avatarWrapper: {
+  avatarWrap: {
     position: 'relative',
-    marginRight: 12,
   },
-  threadAvatar: {
+  avatarImg: {
     width: 48,
     height: 48,
     borderRadius: 24,
     backgroundColor: '#E2E8F0',
   },
-  onlineDot: {
+  threadOnlineDot: {
     position: 'absolute',
-    bottom: 2,
-    right: 2,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    bottom: 1,
+    right: 1,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
     backgroundColor: '#10B981',
     borderWidth: 2,
     borderColor: '#FFFFFF',
   },
-  threadDetails: {
+  threadBody: {
     flex: 1,
+    gap: 2,
   },
   threadTopRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
   },
   threadName: {
     fontSize: 14,
     fontWeight: '700',
-    color: Colors.light.text,
   },
   threadTime: {
     fontSize: 11,
-    color: Colors.light.textMuted,
   },
-  threadProjectTag: {
+  threadProject: {
     fontSize: 11,
-    fontWeight: '600',
-    color: '#0F73F7',
-    marginTop: 2,
+    fontWeight: '700',
   },
-  threadSnippet: {
+  threadLastMsg: {
     fontSize: 12,
-    color: Colors.light.textSecondary,
-    marginTop: 4,
+    marginTop: 1,
   },
   unreadBadge: {
     width: 20,
@@ -341,134 +423,102 @@ const styles = StyleSheet.create({
     backgroundColor: '#0F73F7',
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 8,
   },
-  unreadCountText: {
+  unreadBadgeText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#FFFFFF',
   },
-  chatContainer: {
+  // Detailed chat styles
+  chatHeader: {
+    height: 60,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    gap: 12,
+    borderBottomWidth: 1,
+  },
+  chatHeaderInfo: {
     flex: 1,
   },
-  chatHeader: {
-    height: 56,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEF3FA',
-  },
-  chatBackBtn: {
-    padding: 6,
-  },
-  chatRecipient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  chatAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-  },
-  chatName: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.light.text,
-  },
-  chatProject: {
-    fontSize: 11,
-    color: Colors.light.textSecondary,
-  },
-  chatOptionBtn: {
-    padding: 6,
-  },
-  escrowBanner: {
+  chatTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#EBF4FE',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
   },
-  escrowBannerText: {
+  chatHeaderName: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  onlineDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#10B981',
+  },
+  chatHeaderSub: {
     fontSize: 11,
-    color: '#0F73F7',
-    fontWeight: '600',
-    flex: 1,
+    marginTop: 1,
   },
-  messagesList: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+  messageScroll: {
+    padding: 16,
+    gap: 12,
+    paddingBottom: 20,
   },
-  messageBubble: {
-    maxWidth: '80%',
-    padding: 12,
+  messageRow: {
+    flexDirection: 'row',
+  },
+  messageRowMe: {
+    justifyContent: 'flex-end',
+  },
+  messageRowThem: {
+    justifyContent: 'flex-start',
+  },
+  bubble: {
+    maxWidth: '78%',
     borderRadius: 18,
-    marginBottom: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 4,
   },
-  myBubble: {
-    alignSelf: 'flex-end',
+  bubbleMe: {
     backgroundColor: '#0F73F7',
     borderBottomRightRadius: 4,
   },
-  theirBubble: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#EEF3FA',
+  bubbleThem: {
     borderBottomLeftRadius: 4,
+    borderWidth: 1,
   },
-  messageText: {
+  bubbleText: {
     fontSize: 13,
-    lineHeight: 18,
-    color: Colors.light.text,
+    lineHeight: 19,
   },
-  myMessageText: {
-    color: '#FFFFFF',
-  },
-  messageTime: {
+  bubbleTime: {
     fontSize: 10,
-    color: Colors.light.textMuted,
     alignSelf: 'flex-end',
-    marginTop: 4,
-  },
-  myMessageTime: {
-    color: 'rgba(255, 255, 255, 0.8)',
   },
   inputBar: {
+    height: 68,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+    gap: 10,
     borderTopWidth: 1,
-    borderTopColor: '#EEF3FA',
-  },
-  attachBtn: {
-    padding: 6,
-    marginRight: 6,
   },
   chatInput: {
     flex: 1,
     height: 44,
-    backgroundColor: '#F8FAFC',
     borderRadius: 22,
     paddingHorizontal: 16,
-    fontSize: 14,
-    color: Colors.light.text,
+    fontSize: 13,
     borderWidth: 1,
-    borderColor: '#EEF3FA',
   },
-  sendBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  sendButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: '#0F73F7',
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 8,
   },
 });

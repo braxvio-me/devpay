@@ -1,9 +1,4 @@
-import { FloatingTabBar } from '@/components/floating-tab-bar';
-import { Colors } from '@/constants/theme';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import {
   Modal,
   ScrollView,
@@ -12,8 +7,17 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useRole } from '@/contexts/RoleContext';
+import { FloatingTabBar } from '@/components/floating-tab-bar';
+import { SuccessOverlay } from '@/components/success-overlay';
+import * as Haptics from 'expo-haptics';
 
 interface Transaction {
   id: string;
@@ -27,82 +31,126 @@ interface Transaction {
 
 export default function EarningsScreen() {
   const router = useRouter();
+  const { isDark, colors } = useTheme();
+  const { isClient } = useRole();
+
   const [modalVisible, setModalVisible] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [payoutMethod, setPayoutMethod] = useState<'momo' | 'telecel' | 'bank'>('momo');
-  const [momoPhone] = useState('024 123 4567');
+  const [showWithdrawSuccess, setShowWithdrawSuccess] = useState(false);
 
-  const availableBalance = 2450.0;
-  const pendingMilestones = 1800.0;
+  const availableBalance = isClient ? 28500.0 : 2450.0;
+  const pendingMilestones = isClient ? 14200.0 : 1800.0;
+  const momoPhone = '024 123 4567';
 
-  const transactions: Transaction[] = [
-    {
-      id: 'tx_1',
-      title: 'Milestone 2 Approval — React Native App',
-      date: 'Today, 2:30 PM',
-      amount: '+GH₵ 1,200.00',
-      type: 'credit',
-      status: 'Completed',
-      reference: 'DEV-MS-8831',
-    },
-    {
-      id: 'tx_2',
-      title: 'MTN MoMo Payout',
-      date: 'Yesterday, 10:15 AM',
-      amount: '-GH₵ 850.00',
-      type: 'debit',
-      status: 'Completed',
-      reference: 'MOMO-PAY-4412',
-    },
-    {
-      id: 'tx_3',
-      title: 'Milestone 1 Funded (In Escrow) — UI Redesign',
-      date: '21 Oct, 4:00 PM',
-      amount: 'GH₵ 1,800.00',
-      type: 'credit',
-      status: 'Pending Escrow',
-      reference: 'ESCROW-9901',
-    },
-    {
-      id: 'tx_4',
-      title: 'Platform Commission (10%)',
-      date: '19 Oct, 11:00 AM',
-      amount: '-GH₵ 120.00',
-      type: 'debit',
-      status: 'Completed',
-      reference: 'DEV-FEE-1102',
-    },
-  ];
+  const transactions: Transaction[] = isClient
+    ? [
+        {
+          id: 'tx_c1',
+          title: 'Escrow Released — Milestone 2 Approved',
+          date: 'Today, 2:30 PM',
+          amount: '-GH₵ 2,000.00',
+          type: 'debit',
+          status: 'Completed',
+          reference: 'ESC-REL-8831',
+        },
+        {
+          id: 'tx_c2',
+          title: 'MTN MoMo Escrow Deposit',
+          date: 'Yesterday, 10:15 AM',
+          amount: '+GH₵ 5,000.00',
+          type: 'credit',
+          status: 'Completed',
+          reference: 'MOMO-DEP-1029',
+        },
+        {
+          id: 'tx_c3',
+          title: 'Contract Pre-funding: Lead Dev',
+          date: 'Oct 20, 2026',
+          amount: '-GH₵ 1,500.00',
+          type: 'debit',
+          status: 'Pending Escrow',
+          reference: 'ESC-LOCK-4819',
+        },
+      ]
+    : [
+        {
+          id: 'tx_1',
+          title: 'Milestone 2 Approval — React Native App',
+          date: 'Today, 2:30 PM',
+          amount: '+GH₵ 1,200.00',
+          type: 'credit',
+          status: 'Completed',
+          reference: 'DEV-MS-8831',
+        },
+        {
+          id: 'tx_2',
+          title: 'MTN MoMo Payout',
+          date: 'Yesterday, 10:15 AM',
+          amount: '-GH₵ 850.00',
+          type: 'debit',
+          status: 'Completed',
+          reference: 'MOMO-WD-1029',
+        },
+        {
+          id: 'tx_3',
+          title: 'Milestone 1 Escrow Funded — Telecel App',
+          date: 'Oct 20, 2026',
+          amount: '+GH₵ 1,600.00',
+          type: 'credit',
+          status: 'Pending Escrow',
+          reference: 'ESC-LOCK-4819',
+        },
+      ];
 
-  const handleWithdrawConfirm = () => {
+  const handleWithdraw = () => {
     const num = parseFloat(withdrawAmount);
-    if (isNaN(num) || num < 50) {
-      alert('Minimum withdrawal amount is GH₵ 50.00');
+    if (isNaN(num) || num <= 0) {
+      Alert.alert('Invalid Amount', 'Please enter a valid withdrawal amount.');
+      return;
+    }
+    if (num < 50) {
+      Alert.alert('Minimum Limit', 'Minimum withdrawal amount is GH₵ 50.00.');
       return;
     }
     if (num > availableBalance) {
-      alert('Withdrawal amount cannot exceed available balance.');
+      Alert.alert('Insufficient Balance', 'Amount exceeds available balance.');
       return;
     }
     setModalVisible(false);
-    alert(`Withdrawal of GH₵ ${num.toFixed(2)} initiated to MTN MoMo (${momoPhone}). Net payout after GH₵ 1.50 network fee: GH₵ ${(num - 1.5).toFixed(2)}.`);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setShowWithdrawSuccess(true);
     setWithdrawAmount('');
   };
 
   return (
-    <View style={styles.screen}>
+    <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        {/* Top Header */}
-        <View style={styles.topHeader}>
+        {/* Header */}
+        <View
+          style={[
+            styles.topHeader,
+            { backgroundColor: colors.surface, borderBottomColor: colors.border },
+          ]}>
           <TouchableOpacity
-            style={styles.backButton}
+            style={[
+              styles.backButton,
+              { backgroundColor: colors.backgroundElement, borderColor: colors.border },
+            ]}
             onPress={() => router.back()}
             activeOpacity={0.8}>
-            <Ionicons name="chevron-back" size={20} color={Colors.light.text} />
+            <Ionicons name="chevron-back" size={20} color={colors.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Earnings &amp; Wallet</Text>
-          <TouchableOpacity style={styles.receiptButton}>
-            <Ionicons name="download-outline" size={20} color={Colors.light.text} />
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+            {isClient ? 'Escrow Treasury & Deposits' : 'Earnings & Wallet'}
+          </Text>
+          <TouchableOpacity
+            style={[
+              styles.backButton,
+              { backgroundColor: colors.backgroundElement, borderColor: colors.border },
+            ]}
+            onPress={() => Alert.alert('Export Statement', 'A monthly PDF statement will be sent to your registered email.')}>
+            <Ionicons name="download-outline" size={20} color={colors.text} />
           </TouchableOpacity>
         </View>
 
@@ -111,12 +159,14 @@ export default function EarningsScreen() {
           contentContainerStyle={styles.scrollContent}>
           {/* Main Hero Wallet Card */}
           <LinearGradient
-            colors={['#0F73F7', '#38BDF8']}
+            colors={isDark ? ['#1E1B4B', '#0F172A'] : ['#0F73F7', '#38BDF8']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.balanceCard}>
             <View style={styles.balanceHeader}>
-              <Text style={styles.balanceLabel}>Available for Withdrawal</Text>
+              <Text style={styles.balanceLabel}>
+                {isClient ? 'Total Escrow Capital' : 'Available for MoMo Withdrawal'}
+              </Text>
               <View style={styles.currencyBadge}>
                 <Text style={styles.currencyBadgeText}>GHS (GH₵)</Text>
               </View>
@@ -128,77 +178,133 @@ export default function EarningsScreen() {
 
             {/* Pending Escrow Sub-Row */}
             <View style={styles.pendingRow}>
-              <Ionicons name="lock-closed" size={14} color="rgba(255, 255, 255, 0.85)" />
+              <Ionicons name="lock-closed" size={13} color="rgba(255, 255, 255, 0.85)" />
               <Text style={styles.pendingText}>
-                Committed in Active Milestones: GH₵ {pendingMilestones.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                {isClient
+                  ? `Released to Developers: GH₵ ${pendingMilestones.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+                  : `Committed in Active Milestones: GH₵ ${pendingMilestones.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
               </Text>
             </View>
 
-            {/* Withdraw & Deposit CTA Buttons */}
+            {/* CTA Buttons */}
             <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
-              <TouchableOpacity
-                style={[styles.withdrawCta, { flex: 1.2 }]}
-                onPress={() => router.push('/withdraw')}
-                activeOpacity={0.88}>
-                <Text style={styles.withdrawCtaText}>Withdraw MoMo</Text>
-                <Ionicons name="arrow-forward" size={15} color="#0F73F7" />
-              </TouchableOpacity>
+              {isClient ? (
+                <TouchableOpacity
+                  style={[styles.withdrawCta, { flex: 1 }]}
+                  onPress={() => router.push('/payment')}
+                  activeOpacity={0.88}>
+                  <Ionicons name="card" size={17} color="#0F73F7" />
+                  <Text style={styles.withdrawCtaText}>Deposit MoMo Escrow</Text>
+                </TouchableOpacity>
+              ) : (
+                <>
+                  <TouchableOpacity
+                    style={[styles.withdrawCta, { flex: 1.2 }]}
+                    onPress={() => setModalVisible(true)}
+                    activeOpacity={0.88}>
+                    <Ionicons name="cash-outline" size={17} color="#0F73F7" />
+                    <Text style={styles.withdrawCtaText}>Withdraw to MoMo</Text>
+                  </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[
-                  styles.withdrawCta,
-                  {
-                    flex: 1,
-                    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                    borderWidth: 1,
-                    borderColor: 'rgba(255, 255, 255, 0.5)',
-                  },
-                ]}
-                onPress={() => router.push('/payment')}
-                activeOpacity={0.88}>
-                <Text style={[styles.withdrawCtaText, { color: '#FFFFFF' }]}>+ Deposit</Text>
-                <Ionicons name="cash-outline" size={15} color="#FFFFFF" />
-              </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.depositCta, { flex: 0.8 }]}
+                    onPress={() => router.push('/payment')}
+                    activeOpacity={0.88}>
+                    <Ionicons name="arrow-up" size={15} color="#FFFFFF" />
+                    <Text style={styles.depositCtaText}>Top Up</Text>
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
           </LinearGradient>
 
           {/* Quick Metrics */}
-          <View style={styles.statsRow}>
-            <View style={styles.statBox}>
-              <Text style={styles.statLabel}>Total Earned</Text>
-              <Text style={styles.statValue}>GH₵ 12,450</Text>
+          <View style={styles.metricsRow}>
+            <View
+              style={[
+                styles.statCard,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+                {isClient ? 'Avg. Release Time' : 'Avg. Release Window'}
+              </Text>
+              <Text style={[styles.statValue, { color: colors.text }]}>
+                {isClient ? '2.4 Days' : '1.8 Days'}
+              </Text>
             </View>
-            <View style={styles.statBox}>
-              <Text style={styles.statLabel}>Completed Jobs</Text>
-              <Text style={styles.statValue}>8 Contracts</Text>
+
+            <View
+              style={[
+                styles.statCard,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+                MoMo Network Fee
+              </Text>
+              <Text style={[styles.statValue, { color: '#10B981' }]}>1% (Capped)</Text>
             </View>
-            <View style={styles.statBox}>
-              <Text style={styles.statLabel}>Avg Milestone</Text>
-              <Text style={styles.statValue}>GH₵ 1,550</Text>
+
+            <View
+              style={[
+                styles.statCard,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+                DevPay Escrow Fee
+              </Text>
+              <Text style={[styles.statValue, { color: colors.primary }]}>0% (Free)</Text>
             </View>
           </View>
 
-          {/* Transaction Ledger Section */}
+          {/* Transaction History Section */}
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Transaction History</Text>
-            <Text style={styles.sectionSub}>All events recorded in audit ledger</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Transaction Ledger
+            </Text>
+            <Text style={[styles.sectionSub, { color: colors.textSecondary }]}>
+              Immutable Ghana Bank &amp; Mobile Money records
+            </Text>
           </View>
 
           {transactions.map((tx) => (
-            <View key={tx.id} style={styles.txCard}>
-              <View style={styles.txIconBox}>
+            <View
+              key={tx.id}
+              style={[
+                styles.txCard,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}>
+              <View
+                style={[
+                  styles.txIconBox,
+                  {
+                    backgroundColor:
+                      tx.type === 'credit'
+                        ? isDark
+                          ? '#064E3B'
+                          : '#ECFDF5'
+                        : isDark
+                        ? '#1E293B'
+                        : '#EFF6FF',
+                  },
+                ]}>
                 <Ionicons
-                  name={tx.type === 'credit' ? 'arrow-down-circle' : 'arrow-up-circle'}
-                  size={24}
-                  color={tx.type === 'credit' ? '#10B981' : '#64748B'}
+                  name={tx.type === 'credit' ? 'arrow-down-outline' : 'arrow-up-outline'}
+                  size={18}
+                  color={tx.type === 'credit' ? '#10B981' : colors.primary}
                 />
               </View>
 
               <View style={styles.txDetails}>
-                <Text style={styles.txTitle}>{tx.title}</Text>
+                <Text style={[styles.txTitle, { color: colors.text }]} numberOfLines={1}>
+                  {tx.title}
+                </Text>
                 <View style={styles.txMetaRow}>
-                  <Text style={styles.txDate}>{tx.date}</Text>
-                  <Text style={styles.txRef}>• {tx.reference}</Text>
+                  <Text style={[styles.txDate, { color: colors.textSecondary }]}>
+                    {tx.date}
+                  </Text>
+                  <Text style={[styles.txRef, { color: colors.textMuted }]}>
+                    • {tx.reference}
+                  </Text>
                 </View>
               </View>
 
@@ -206,22 +312,28 @@ export default function EarningsScreen() {
                 <Text
                   style={[
                     styles.txAmount,
-                    tx.type === 'credit' && styles.txCredit,
-                    tx.status === 'Pending Escrow' && styles.txPending,
+                    { color: tx.type === 'credit' ? '#10B981' : colors.text },
                   ]}>
                   {tx.amount}
                 </Text>
                 <View
                   style={[
                     styles.statusPill,
-                    tx.status === 'Completed' && styles.statusCompleted,
-                    tx.status === 'Pending Escrow' && styles.statusPendingEscrow,
+                    {
+                      backgroundColor:
+                        tx.status === 'Completed'
+                          ? isDark
+                            ? '#064E3B'
+                            : '#ECFDF5'
+                          : '#FEF3C7',
+                    },
                   ]}>
                   <Text
                     style={[
                       styles.statusPillText,
-                      tx.status === 'Completed' && styles.statusCompletedText,
-                      tx.status === 'Pending Escrow' && styles.statusPendingEscrowText,
+                      {
+                        color: tx.status === 'Completed' ? '#10B981' : '#D97706',
+                      },
                     ]}>
                     {tx.status}
                   </Text>
@@ -231,110 +343,120 @@ export default function EarningsScreen() {
           ))}
         </ScrollView>
 
+        <FloatingTabBar
+          activeTab="jobs"
+          onSelectTab={(tab) => {
+            if (tab === 'home') router.push('/');
+            if (tab === 'jobs') router.push('/contracts');
+            if (tab === 'chats') router.push('/messages');
+            if (tab === 'profile') router.push('/profile');
+          }}
+          onCenterActionPress={() => {
+            if (isClient) {
+              router.push('/job/create');
+            } else {
+              router.push('/explore');
+            }
+          }}
+        />
+
         {/* Withdrawal Modal */}
-        <Modal
-          visible={modalVisible}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setModalVisible(false)}>
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalSheet}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Withdraw Earnings</Text>
+        <Modal visible={modalVisible} transparent animationType="slide">
+          <View style={styles.modalBackdrop}>
+            <View
+              style={[
+                styles.modalCard,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}>
+              <View style={styles.modalTopRow}>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>
+                  Withdraw to Mobile Money
+                </Text>
                 <TouchableOpacity onPress={() => setModalVisible(false)}>
-                  <Ionicons name="close" size={22} color={Colors.light.text} />
+                  <Ionicons name="close" size={22} color={colors.textMuted} />
                 </TouchableOpacity>
               </View>
 
-              <Text style={styles.modalSubtitle}>
-                Funds will be deposited directly to your Ghanaian Mobile Money or Bank Account.
+              <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
+                Instant payout to your verified MTN Mobile Money wallet.
               </Text>
 
-              {/* Method Selector */}
-              <View style={styles.payoutTabs}>
-                <TouchableOpacity
-                  style={[styles.payoutTab, payoutMethod === 'momo' && styles.activePayoutTab]}
-                  onPress={() => setPayoutMethod('momo')}>
-                  <Text style={styles.payoutEmoji}>📱</Text>
-                  <Text style={[styles.payoutText, payoutMethod === 'momo' && styles.activePayoutText]}>
-                    MTN MoMo
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.payoutTab, payoutMethod === 'telecel' && styles.activePayoutTab]}
-                  onPress={() => setPayoutMethod('telecel')}>
-                  <Text style={styles.payoutEmoji}>🔴</Text>
-                  <Text style={[styles.payoutText, payoutMethod === 'telecel' && styles.activePayoutText]}>
-                    Telecel Cash
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.payoutTab, payoutMethod === 'bank' && styles.activePayoutTab]}
-                  onPress={() => setPayoutMethod('bank')}>
-                  <Text style={styles.payoutEmoji}>🏦</Text>
-                  <Text style={[styles.payoutText, payoutMethod === 'bank' && styles.activePayoutText]}>
-                    Bank Transfer
-                  </Text>
-                </TouchableOpacity>
+              {/* Method select */}
+              <View style={styles.methodRow}>
+                {(['momo', 'telecel', 'bank'] as const).map((m) => {
+                  const active = payoutMethod === m;
+                  return (
+                    <TouchableOpacity
+                      key={m}
+                      style={[
+                        styles.methodChip,
+                        {
+                          backgroundColor: active
+                            ? colors.primary
+                            : colors.backgroundElement,
+                          borderColor: active ? colors.primary : colors.border,
+                        },
+                      ]}
+                      onPress={() => setPayoutMethod(m)}>
+                      <Text
+                        style={[
+                          styles.methodChipText,
+                          { color: active ? '#FFFFFF' : colors.text },
+                        ]}>
+                        {m === 'momo'
+                          ? 'MTN MoMo'
+                          : m === 'telecel'
+                          ? 'Telecel Cash'
+                          : 'Bank (EFT)'}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
 
               {/* Amount Input */}
-              <View style={styles.amountInputBox}>
-                <Text style={styles.ghsPrefix}>GH₵</Text>
+              <View style={styles.amountInputWrap}>
+                <Text style={[styles.inputPrefix, { color: colors.textSecondary }]}>
+                  GH₵
+                </Text>
                 <TextInput
-                  style={styles.amountField}
-                  placeholder="0.00"
-                  keyboardType="decimal-pad"
+                  style={[
+                    styles.amountInput,
+                    {
+                      backgroundColor: colors.backgroundElement,
+                      color: colors.text,
+                      borderColor: colors.border,
+                    },
+                  ]}
                   value={withdrawAmount}
+                  placeholder="0.00"
+                  placeholderTextColor={colors.textMuted}
+                  keyboardType="numeric"
                   onChangeText={setWithdrawAmount}
-                  autoFocus
                 />
               </View>
 
-              <Text style={styles.minAmountNote}>
-                Minimum withdrawal: GH₵ 50.00 • Available: GH₵ {availableBalance.toFixed(2)}
-              </Text>
-
-              {/* Transparent Fee Summary Box */}
-              <View style={styles.feeBreakdown}>
-                <View style={styles.feeRow}>
-                  <Text style={styles.feeLabel}>Transfer Fee (MoMo Gateway):</Text>
-                  <Text style={styles.feeValue}>GH₵ 1.50</Text>
-                </View>
-                <View style={styles.feeRow}>
-                  <Text style={styles.feeLabel}>Estimated Delivery:</Text>
-                  <Text style={styles.feeValue}>Instant (&lt; 2 mins)</Text>
-                </View>
+              <View style={styles.walletPreview}>
+                <Ionicons name="phone-portrait-outline" size={16} color="#10B981" />
+                <Text style={[styles.walletPreviewText, { color: colors.textSecondary }]}>
+                  Destination: {momoPhone} (Kwame Mensah)
+                </Text>
               </View>
 
-              {/* Confirm Button */}
-              <TouchableOpacity
-                style={styles.confirmWithdrawBtn}
-                onPress={handleWithdrawConfirm}
-                activeOpacity={0.88}>
-                <LinearGradient
-                  colors={['#0F73F7', '#38BDF8']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.confirmGradient}>
-                  <Text style={styles.confirmText}>Confirm Withdrawal</Text>
-                </LinearGradient>
+              <TouchableOpacity style={styles.confirmWithdrawBtn} onPress={handleWithdraw}>
+                <Text style={styles.confirmWithdrawText}>Confirm Instant Payout</Text>
               </TouchableOpacity>
             </View>
           </View>
         </Modal>
 
-        {/* Floating Tab Bar */}
-        <FloatingTabBar
-          activeTab="home"
-          onSelectTab={(tab) => {
-            if (tab === 'home') router.push('/');
-            if (tab === 'jobs') router.push('/explore');
-            if (tab === 'chats') router.push('/messages');
-            if (tab === 'profile') router.push('/profile');
-          }}
+        <SuccessOverlay
+          visible={showWithdrawSuccess}
+          type="success"
+          title="Payout Initiated!"
+          subtitle={`GH₵ ${withdrawAmount} sent to MTN MoMo (${momoPhone}). Funds will arrive within 60 seconds.`}
+          dismissLabel="Done"
+          onDismiss={() => setShowWithdrawSuccess(false)}
         />
       </SafeAreaView>
     </View>
@@ -344,7 +466,6 @@ export default function EarningsScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
   },
   safeArea: {
     flex: 1,
@@ -355,159 +476,151 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
+    borderBottomWidth: 1,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#EEF3FA',
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: Colors.light.text,
-  },
-  receiptButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#EEF3FA',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 14,
+    paddingTop: 16,
     paddingBottom: 110,
+    gap: 16,
   },
   balanceCard: {
-    borderRadius: 26,
+    borderRadius: 24,
     padding: 22,
+    gap: 10,
     shadowColor: '#0F73F7',
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
-    shadowRadius: 18,
+    shadowRadius: 14,
     elevation: 6,
   },
   balanceHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   balanceLabel: {
-    fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.9)',
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#E0F2FE',
+    letterSpacing: 0.4,
   },
   currencyBadge: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
   },
   currencyBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: 10,
+    fontWeight: '800',
     color: '#FFFFFF',
   },
   balanceAmount: {
-    fontSize: 32,
-    fontWeight: '800',
+    fontSize: 30,
+    fontWeight: '900',
     color: '#FFFFFF',
-    marginTop: 10,
     letterSpacing: -0.5,
   },
   pendingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginTop: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.12)',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    alignSelf: 'flex-start',
+    marginTop: 2,
   },
   pendingText: {
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: 12,
     color: 'rgba(255, 255, 255, 0.9)',
+    fontWeight: '500',
   },
   withdrawCta: {
+    height: 46,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#FFFFFF',
-    height: 48,
-    borderRadius: 24,
-    marginTop: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 2,
   },
   withdrawCtaText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '800',
     color: '#0F73F7',
   },
-  statsRow: {
+  depositCta: {
+    height: 46,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  depositCtaText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  metricsRow: {
     flexDirection: 'row',
     gap: 10,
-    marginTop: 16,
   },
-  statBox: {
+  statCard: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#EEF3FA',
+    alignItems: 'center',
   },
   statLabel: {
-    fontSize: 11,
-    color: Colors.light.textSecondary,
+    fontSize: 10,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   statValue: {
     fontSize: 13,
-    fontWeight: '700',
-    color: Colors.light.text,
+    fontWeight: '800',
     marginTop: 4,
   },
   sectionHeader: {
-    marginTop: 26,
-    marginBottom: 12,
+    marginTop: 8,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: Colors.light.text,
   },
   sectionSub: {
     fontSize: 11,
-    color: Colors.light.textSecondary,
     marginTop: 2,
   },
   txCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
     borderRadius: 18,
     padding: 14,
-    marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#EEF3FA',
+    gap: 12,
   },
   txIconBox: {
-    marginRight: 12,
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   txDetails: {
     flex: 1,
@@ -515,184 +628,114 @@ const styles = StyleSheet.create({
   txTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: Colors.light.text,
   },
   txMetaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginTop: 3,
+    marginTop: 2,
   },
   txDate: {
     fontSize: 11,
-    color: Colors.light.textSecondary,
   },
   txRef: {
     fontSize: 10,
-    color: Colors.light.textMuted,
   },
   txAmountCol: {
     alignItems: 'flex-end',
+    gap: 4,
   },
   txAmount: {
     fontSize: 13,
-    fontWeight: '700',
-    color: Colors.light.text,
-  },
-  txCredit: {
-    color: '#10B981',
-  },
-  txPending: {
-    color: '#F59E0B',
+    fontWeight: '800',
   },
   statusPill: {
-    paddingHorizontal: 8,
-    borderRadius: 8,
-    marginTop: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
   },
   statusPillText: {
-    fontSize: 10,
-    fontWeight: '700',
+    fontSize: 9,
+    fontWeight: '800',
+    textTransform: 'uppercase',
   },
-  statusCompleted: {
-    backgroundColor: '#ECFDF5',
-  },
-  statusCompletedText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#10B981',
-  },
-  statusPendingEscrow: {
-    backgroundColor: '#FEF3C7',
-  },
-  statusPendingEscrowText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#D97706',
-  },
-  modalOverlay: {
+  modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
-  modalSheet: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 40,
+  modalCard: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    borderWidth: 1,
+    gap: 14,
   },
-  modalHeader: {
+  modalTopRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: Colors.light.text,
   },
   modalSubtitle: {
-    fontSize: 12,
-    color: Colors.light.textSecondary,
+    fontSize: 13,
     lineHeight: 18,
-    marginTop: 6,
   },
-  payoutTabs: {
+  methodRow: {
     flexDirection: 'row',
     gap: 8,
-    marginTop: 18,
   },
-  payoutTab: {
+  methodChip: {
     flex: 1,
-    backgroundColor: '#F1F5F9',
-    borderRadius: 14,
     paddingVertical: 10,
+    borderRadius: 10,
     alignItems: 'center',
-    gap: 4,
-  },
-  activePayoutTab: {
-    backgroundColor: '#EBF4FE',
-    borderWidth: 1.5,
-    borderColor: '#0F73F7',
-  },
-  payoutEmoji: {
-    fontSize: 16,
-  },
-  payoutText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: Colors.light.textSecondary,
-  },
-  activePayoutText: {
-    color: '#0F73F7',
-    fontWeight: '700',
-  },
-  amountInputBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    borderRadius: 18,
-    paddingHorizontal: 16,
-    height: 60,
-    marginTop: 18,
-  },
-  ghsPrefix: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#0F73F7',
-    marginRight: 10,
-  },
-  amountField: {
-    flex: 1,
-    fontSize: 24,
-    fontWeight: '800',
-    color: Colors.light.text,
-  },
-  minAmountNote: {
-    fontSize: 11,
-    color: Colors.light.textSecondary,
-    marginTop: 6,
-  },
-  feeBreakdown: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 14,
-    padding: 12,
-    marginTop: 14,
     borderWidth: 1,
-    borderColor: '#EEF3FA',
   },
-  feeRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginVertical: 2,
-  },
-  feeLabel: {
-    fontSize: 11,
-    color: Colors.light.textSecondary,
-  },
-  feeValue: {
+  methodChipText: {
     fontSize: 11,
     fontWeight: '700',
-    color: Colors.light.text,
+  },
+  amountInputWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  inputPrefix: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  amountInput: {
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    fontSize: 16,
+    fontWeight: '800',
+    borderWidth: 1,
+  },
+  walletPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  walletPreviewText: {
+    fontSize: 12,
   },
   confirmWithdrawBtn: {
-    height: 52,
-    borderRadius: 26,
-    overflow: 'hidden',
-    marginTop: 20,
-  },
-  confirmGradient: {
-    flex: 1,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#0F73F7',
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 6,
   },
-  confirmText: {
+  confirmWithdrawText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#FFFFFF',
   },
 });

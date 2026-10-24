@@ -9,8 +9,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Colors } from '@/constants/theme';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useRole } from '@/contexts/RoleContext';
 
 import { DevPayHeader } from '@/components/devpay-header';
 import { ReminderCard } from '@/components/reminder-card';
@@ -25,7 +27,9 @@ import { JobCardSkeleton } from '@/components/skeleton';
 export default function HomeScreen() {
   const router = useRouter();
   const { toastRef, show: showToast } = useToast();
-  const { isDark } = useTheme();
+  const { isDark, colors } = useTheme();
+  const { role, isClient } = useRole();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('See All');
   const [activeTab, setActiveTab] = useState<TabType>('home');
@@ -36,7 +40,7 @@ export default function HomeScreen() {
     // Initial content fetch simulation
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 1200);
+    }, 1000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -44,7 +48,7 @@ export default function HomeScreen() {
     setRefreshing(true);
     setTimeout(() => {
       setRefreshing(false);
-    }, 1000);
+    }, 900);
   };
 
   const categories = [
@@ -70,24 +74,24 @@ export default function HomeScreen() {
     },
     {
       id: '2',
-      company: 'Apple Partner Studio',
-      location: 'Kumasi',
+      company: 'Telecel Digital Labs',
+      location: 'Kumasi (Remote)',
       isTrusted: true,
       logo: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=120',
-      title: 'iOS React Native Engineer',
+      title: 'Mobile Engineer (MoMo SDK)',
       salary: 'GH₵ 4,000 - 6,500 / Milestone',
-      applicantCount: 16,
+      applicantCount: 8,
       isBookmarked: false,
     },
     {
       id: '3',
-      company: 'Paystack Ghana',
-      location: 'Accra',
+      company: 'MTN Ghana Group',
+      location: 'Accra (Hybrid)',
       isTrusted: true,
-      logo: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=120',
-      title: 'Fintech Payment Architect',
+      logo: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=120',
+      title: 'Full Stack React Native Dev',
       salary: 'GH₵ 5,000 - 8,000 / Milestone',
-      applicantCount: 9,
+      applicantCount: 19,
       isBookmarked: false,
     },
   ]);
@@ -95,38 +99,24 @@ export default function HomeScreen() {
   const [latestJobs, setLatestJobs] = useState<LatestJob[]>([
     {
       id: '4',
-      company: 'Microsoft Ghana',
-      location: 'Accra',
+      company: 'Paystack Africa',
+      location: 'Remote (Ghana)',
       isTrusted: true,
-      logo: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=120',
-      title: 'Full-Stack TypeScript Engineer',
-      salary: 'GH₵ 3,800 - 5,200 / Milestone',
-      tags: ['Fixed-Price', 'Remote', 'Milestone 1 Funded'],
-      isBookmarked: false,
-      applicantCount: 14,
+      logo: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=120',
+      title: 'Senior TypeScript & Expo Engineer',
+      salary: 'GH₵ 6,000.00 / Milestone',
+      tags: ['TypeScript', 'Expo SDK'],
+      applicantCount: 5,
     },
     {
       id: '5',
-      company: 'Telecel Digital Labs',
-      location: 'Accra',
+      company: 'Hubtel Logistics',
+      location: 'East Legon, Accra',
       isTrusted: true,
-      logo: 'https://images.unsplash.com/photo-1572021335469-31706a17aaef?w=120',
-      title: 'Mobile App Product Designer',
-      salary: 'GH₵ 2,800 - 4,200 / Milestone',
-      tags: ['On-Site', 'Escrow Protected', '+2'],
-      isBookmarked: true,
-      applicantCount: 7,
-    },
-    {
-      id: '6',
-      company: 'Hubtel Payments Hub',
-      location: 'Takoradi',
-      isTrusted: true,
-      logo: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=120',
-      title: 'MoMo Integration Specialist',
-      salary: 'GH₵ 4,200 - 6,000 / Milestone',
-      tags: ['Remote', 'Verified Client', '+3'],
-      isBookmarked: false,
+      logo: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120',
+      title: 'Mobile App Performance Architect',
+      salary: 'GH₵ 4,500.00 / Milestone',
+      tags: ['React Native', 'Reanimated'],
       applicantCount: 11,
     },
   ]);
@@ -163,18 +153,25 @@ export default function HomeScreen() {
 
   const handleTabSelect = (tab: TabType) => {
     setActiveTab(tab);
-    if (tab === 'jobs') router.push('/explore');
+    if (tab === 'jobs') router.push('/contracts');
     if (tab === 'chats') router.push('/messages');
     if (tab === 'profile') router.push('/profile');
+    if (tab === 'action') {
+      if (isClient) {
+        router.push('/job/create');
+      } else {
+        router.push('/explore');
+      }
+    }
   };
 
   return (
-    <View style={styles.screen}>
+    <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        {/* Top Header: Avatar + Location + Circular Bell Button */}
+        {/* Top App Header */}
         <DevPayHeader
-          location="23/B Airport Res., Accra"
-          unreadCount={3}
+          location="Accra, Ghana"
+          unreadCount={2}
           onNotificationPress={() => router.push('/notifications')}
           onProfilePress={() => router.push('/profile')}
         />
@@ -186,106 +183,296 @@ export default function HomeScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor="#0F73F7"
-              colors={['#0F73F7', '#38BDF8']}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
             />
           }>
-          {/* Reminder Banner */}
-          <ReminderCard
-            title="Reminder"
-            subtitle="Milestone deliverable due in 2 hours"
-            countdown="9 : 4 5"
-            onPress={() => router.push('/job/1' as any)}
-          />
 
-          {/* Search Bar with Filter Button */}
-          <SearchBar
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            onFilterPress={() => router.push('/explore')}
-            placeholder="Search Here..."
-          />
-
-          {/* Category Filter Pills Horizontal Scroll */}
-          <CategoryPills
-            categories={categories}
-            selectedCategory={selectedCategory}
-            onSelectCategory={setSelectedCategory}
-          />
-
-          {/* Section: Recommended 🚀 */}
-          <View style={styles.sectionHeaderRow}>
-            <Text style={[styles.sectionTitle, isDark && { color: '#F1F5F9' }]}>Recommended 🚀</Text>
-            <TouchableOpacity onPress={() => router.push('/explore')}>
-              <Text style={styles.seeAllText}>See all &gt;&gt;</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Horizontal Recommended Jobs Carousel */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalCarousel}>
-            {isLoading ? (
-              <View style={{ flexDirection: 'row', gap: 14 }}>
-                <View style={{ width: 270 }}>
-                  <JobCardSkeleton />
+          {/* ========================================================================= */}
+          {/* CLIENT DASHBOARD MODE                                                     */}
+          {/* ========================================================================= */}
+          {isClient ? (
+            <View style={styles.clientDashboard}>
+              {/* Client Escrow Hero Card */}
+              <LinearGradient
+                colors={isDark ? ['#1E1B4B', '#0F172A'] : ['#0F73F7', '#1D4ED8']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.clientHeroCard}>
+                <View style={styles.clientHeroTop}>
+                  <View>
+                    <Text style={styles.clientHeroSub}>TOTAL ESCROW SECURED</Text>
+                    <Text style={styles.clientHeroAmount}>GH₵ 28,500.00</Text>
+                  </View>
+                  <View style={styles.activeContractsBadge}>
+                    <Text style={styles.activeContractsText}>3 ACTIVE</Text>
+                  </View>
                 </View>
-                <View style={{ width: 270 }}>
-                  <JobCardSkeleton />
+
+                <View style={styles.clientStatsRow}>
+                  <View style={styles.clientStatItem}>
+                    <Text style={styles.clientStatVal}>GH₵ 14,200.00</Text>
+                    <Text style={styles.clientStatLabel}>Released to Date</Text>
+                  </View>
+                  <View style={styles.statDivider} />
+                  <View style={styles.clientStatItem}>
+                    <Text style={styles.clientStatVal}>GH₵ 14,300.00</Text>
+                    <Text style={styles.clientStatLabel}>In Active Escrow</Text>
+                  </View>
                 </View>
-              </View>
-            ) : (
-              recommendedJobs.map((job) => (
-                <RecommendedJobCard
-                  key={job.id}
-                  job={job}
-                  onPress={() => router.push(`/job/${job.id}` as any)}
-                  onBookmarkToggle={() => toggleRecommendedBookmark(job.id)}
-                  onApplyPress={() => router.push(`/job/${job.id}` as any)}
-                />
-              ))
-            )}
-          </ScrollView>
 
-          {/* Section: Latest Post ✨ */}
-          <View style={[styles.sectionHeaderRow, { marginTop: 24 }]}>
-            <Text style={[styles.sectionTitle, isDark && { color: '#F1F5F9' }]}>Latest Post ✨</Text>
-            <TouchableOpacity onPress={() => router.push('/explore')}>
-              <Text style={styles.seeAllText}>See all &gt;&gt;</Text>
-            </TouchableOpacity>
-          </View>
+                <TouchableOpacity
+                  style={styles.postJobBtn}
+                  onPress={() => router.push('/job/create')}
+                  activeOpacity={0.9}>
+                  <LinearGradient
+                    colors={['#38BDF8', '#0F73F7']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.postJobGradient}>
+                    <Ionicons name="add-circle" size={18} color="#FFFFFF" />
+                    <Text style={styles.postJobText}>Post New Milestone Contract</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </LinearGradient>
 
-          {/* Vertical Latest Jobs List */}
-          <View style={styles.latestList}>
-            {isLoading ? (
-              <View style={{ gap: 12 }}>
-                <JobCardSkeleton />
-                <JobCardSkeleton />
-                <JobCardSkeleton />
+              {/* Action Required: Deliverable Awaiting Review */}
+              <View style={styles.sectionHeaderRow}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                  Action Required ⚡
+                </Text>
               </View>
-            ) : (
-              latestJobs.map((job) => (
-                <LatestJobCard
-                  key={job.id}
-                  job={job}
-                  onPress={() => router.push(`/job/${job.id}` as any)}
-                  onBookmarkToggle={() => toggleLatestBookmark(job.id)}
-                  onApplyPress={() => router.push(`/job/${job.id}` as any)}
-                />
-              ))
-            )}
-          </View>
+
+              <TouchableOpacity
+                style={[
+                  styles.reviewActionCard,
+                  { backgroundColor: colors.surface, borderColor: '#F59E0B' },
+                ]}
+                onPress={() => router.push('/contracts/review')}
+                activeOpacity={0.88}>
+                <View style={styles.reviewHeader}>
+                  <View style={styles.pendingBadge}>
+                    <Ionicons name="time" size={12} color="#D97706" />
+                    <Text style={styles.pendingBadgeText}>SUBMITTED FOR REVIEW</Text>
+                  </View>
+                  <Text style={[styles.reviewAmount, { color: colors.primary }]}>
+                    GH₵ 2,000.00
+                  </Text>
+                </View>
+
+                <Text style={[styles.reviewTitle, { color: colors.text }]}>
+                  Mobile App UI/UX Redesign
+                </Text>
+                <Text style={[styles.reviewSubtitle, { color: colors.textSecondary }]}>
+                  Milestone 2 submitted by Kwame Mensah (Senior Dev). Pull request &amp; preview demo attached.
+                </Text>
+
+                <View style={styles.reviewFooter}>
+                  <Text style={styles.reviewTimeLeft}>7 days to auto-release</Text>
+                  <View style={styles.reviewCta}>
+                    <Text style={styles.reviewCtaText}>Review &amp; Release</Text>
+                    <Ionicons name="arrow-forward" size={14} color="#0F73F7" />
+                  </View>
+                </View>
+              </TouchableOpacity>
+
+              {/* Active Job Posts with Proposals */}
+              <View style={[styles.sectionHeaderRow, { marginTop: 18 }]}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                  Active Job Openings (1)
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                style={[
+                  styles.clientJobCard,
+                  { backgroundColor: colors.surface, borderColor: colors.border },
+                ]}
+                onPress={() => router.push('/job/applicants')}
+                activeOpacity={0.88}>
+                <View style={styles.clientJobTop}>
+                  <View style={styles.jobTagRow}>
+                    <View style={styles.openPill}>
+                      <Text style={styles.openPillText}>HIRING OPEN</Text>
+                    </View>
+                    <Text style={[styles.applicantCountPill, { color: colors.primary }]}>
+                      3 Proposals
+                    </Text>
+                  </View>
+                  <Text style={[styles.clientJobBudget, { color: colors.primary }]}>
+                    GH₵ 4,500.00
+                  </Text>
+                </View>
+
+                <Text style={[styles.clientJobTitle, { color: colors.text }]}>
+                  Senior React Native Engineer (MoMo SDK)
+                </Text>
+                <Text style={[styles.clientJobSub, { color: colors.textSecondary }]}>
+                  3 Ghana Card verified developers applied. Compare proposals and hire.
+                </Text>
+
+                <View style={[styles.cardDivider, { backgroundColor: colors.border }]} />
+
+                <View style={styles.clientJobBottom}>
+                  <View style={styles.applicantAvatars}>
+                    <View style={[styles.miniAvatar, { backgroundColor: '#0F73F7' }]}>
+                      <Text style={styles.miniAvatarText}>KM</Text>
+                    </View>
+                    <View style={[styles.miniAvatar, { backgroundColor: '#9333EA', marginLeft: -8 }]}>
+                      <Text style={styles.miniAvatarText}>AS</Text>
+                    </View>
+                    <View style={[styles.miniAvatar, { backgroundColor: '#10B981', marginLeft: -8 }]}>
+                      <Text style={styles.miniAvatarText}>EO</Text>
+                    </View>
+                  </View>
+                  <View style={styles.reviewCta}>
+                    <Text style={styles.reviewCtaText}>View Proposals</Text>
+                    <Ionicons name="chevron-forward" size={14} color="#0F73F7" />
+                  </View>
+                </View>
+              </TouchableOpacity>
+
+              {/* Quick Actions Grid */}
+              <View style={styles.quickGrid}>
+                <TouchableOpacity
+                  style={[styles.quickTile, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                  onPress={() => router.push('/job/create')}>
+                  <Ionicons name="document-text-outline" size={20} color="#0F73F7" />
+                  <Text style={[styles.quickTileText, { color: colors.text }]}>Post Job</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.quickTile, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                  onPress={() => router.push('/contracts')}>
+                  <Ionicons name="briefcase-outline" size={20} color="#10B981" />
+                  <Text style={[styles.quickTileText, { color: colors.text }]}>Contracts</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.quickTile, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                  onPress={() => router.push('/payment')}>
+                  <Ionicons name="card-outline" size={20} color="#9333EA" />
+                  <Text style={[styles.quickTileText, { color: colors.text }]}>Escrow MoMo</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.quickTile, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                  onPress={() => router.push('/settings')}>
+                  <Ionicons name="shield-outline" size={20} color="#F59E0B" />
+                  <Text style={[styles.quickTileText, { color: colors.text }]}>Disputes</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            /* ========================================================================= */
+            /* FREELANCER DASHBOARD MODE                                                 */
+            /* ========================================================================= */
+            <>
+              {/* Reminder Hero Card */}
+              <ReminderCard
+                onPress={() => router.push('/contracts')}
+              />
+
+              {/* Search Bar with Filter Button */}
+              <SearchBar
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                onFilterPress={() => router.push('/explore')}
+                placeholder="Search Here..."
+              />
+
+              {/* Category Filter Pills Horizontal Scroll */}
+              <CategoryPills
+                categories={categories}
+                selectedCategory={selectedCategory}
+                onSelectCategory={setSelectedCategory}
+              />
+
+              {/* Section: Recommended 🚀 */}
+              <View style={styles.sectionHeaderRow}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                  Recommended 🚀
+                </Text>
+                <TouchableOpacity onPress={() => router.push('/explore')}>
+                  <Text style={styles.seeAllText}>See all &gt;&gt;</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Horizontal Recommended Jobs Carousel */}
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalCarousel}>
+                {isLoading ? (
+                  <View style={{ flexDirection: 'row', gap: 14 }}>
+                    <View style={{ width: 270 }}>
+                      <JobCardSkeleton />
+                    </View>
+                    <View style={{ width: 270 }}>
+                      <JobCardSkeleton />
+                    </View>
+                  </View>
+                ) : (
+                  recommendedJobs.map((job) => (
+                    <RecommendedJobCard
+                      key={job.id}
+                      job={job}
+                      onPress={() => router.push(`/job/${job.id}` as any)}
+                      onBookmarkToggle={() => toggleRecommendedBookmark(job.id)}
+                      onApplyPress={() => router.push(`/job/${job.id}` as any)}
+                    />
+                  ))
+                )}
+              </ScrollView>
+
+              {/* Section: Latest Post ✨ */}
+              <View style={[styles.sectionHeaderRow, { marginTop: 24 }]}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                  Latest Post ✨
+                </Text>
+                <TouchableOpacity onPress={() => router.push('/explore')}>
+                  <Text style={styles.seeAllText}>See all &gt;&gt;</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Vertical Latest Jobs List */}
+              <View style={styles.latestList}>
+                {isLoading ? (
+                  <View style={{ gap: 12 }}>
+                    <JobCardSkeleton />
+                    <JobCardSkeleton />
+                    <JobCardSkeleton />
+                  </View>
+                ) : (
+                  latestJobs.map((job) => (
+                    <LatestJobCard
+                      key={job.id}
+                      job={job}
+                      onPress={() => router.push(`/job/${job.id}` as any)}
+                      onBookmarkToggle={() => toggleLatestBookmark(job.id)}
+                      onApplyPress={() => router.push(`/job/${job.id}` as any)}
+                    />
+                  ))
+                )}
+              </View>
+            </>
+          )}
         </ScrollView>
 
         {/* Floating Bottom Navigation Bar */}
         <FloatingTabBar
           activeTab={activeTab}
           onSelectTab={handleTabSelect}
-          onCenterActionPress={() => router.push('/explore')}
+          onCenterActionPress={() => {
+            if (isClient) {
+              router.push('/job/create');
+            } else {
+              router.push('/explore');
+            }
+          }}
         />
 
-        {/* Global Toast — must be inside SafeAreaView, above everything */}
+        {/* Global Toast */}
         <Toast ref={toastRef} />
       </SafeAreaView>
     </View>
@@ -295,38 +482,273 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
   },
   safeArea: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 110, // Space for floating bottom nav
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 120,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    marginTop: 18,
+    marginTop: 20,
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '800',
-    color: Colors.light.text,
-    letterSpacing: -0.3,
+    letterSpacing: -0.2,
   },
   seeAllText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
     color: '#0F73F7',
   },
   horizontalCarousel: {
-    paddingHorizontal: 20,
-    paddingBottom: 6,
+    gap: 14,
+    paddingRight: 10,
+    paddingBottom: 4,
   },
   latestList: {
+    gap: 12,
+  },
+  // Client mode styles
+  clientDashboard: {
+    gap: 16,
+  },
+  clientHeroCard: {
+    borderRadius: 24,
+    padding: 22,
+    gap: 16,
+    shadowColor: '#0F73F7',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 6,
+  },
+  clientHeroTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  clientHeroSub: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#E0F2FE',
+    letterSpacing: 0.8,
+  },
+  clientHeroAmount: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: '#FFFFFF',
     marginTop: 4,
+    letterSpacing: -0.5,
+  },
+  activeContractsBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  activeContractsText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  clientStatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    backgroundColor: 'rgba(0, 0, 0, 0.15)',
+    borderRadius: 16,
+    paddingVertical: 12,
+  },
+  clientStatItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  clientStatVal: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  clientStatLabel: {
+    fontSize: 11,
+    color: '#BAE6FD',
+    marginTop: 2,
+  },
+  statDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+  },
+  postJobBtn: {
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  postJobGradient: {
+    height: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  postJobText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  reviewActionCard: {
+    borderRadius: 20,
+    padding: 18,
+    borderWidth: 1.5,
+    gap: 8,
+  },
+  reviewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  pendingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  pendingBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#D97706',
+  },
+  reviewAmount: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  reviewTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  reviewSubtitle: {
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  reviewFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 6,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.06)',
+  },
+  reviewTimeLeft: {
+    fontSize: 11,
+    color: '#D97706',
+    fontWeight: '600',
+  },
+  reviewCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  reviewCtaText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0F73F7',
+  },
+  clientJobCard: {
+    borderRadius: 20,
+    padding: 18,
+    borderWidth: 1,
+    gap: 8,
+  },
+  clientJobTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  jobTagRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  openPill: {
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  openPillText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#10B981',
+  },
+  applicantCountPill: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  clientJobBudget: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  clientJobTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  clientJobSub: {
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  cardDivider: {
+    height: 1,
+    marginVertical: 4,
+  },
+  clientJobBottom: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  applicantAvatars: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  miniAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  miniAvatarText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  quickGrid: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 6,
+  },
+  quickTile: {
+    flex: 1,
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderWidth: 1,
+  },
+  quickTileText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
 });

@@ -7,13 +7,17 @@ import {
   TouchableOpacity,
   Modal,
   TextInput,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Colors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useRole } from '@/contexts/RoleContext';
 import { FloatingTabBar } from '@/components/floating-tab-bar';
+import { SuccessOverlay } from '@/components/success-overlay';
+import * as Haptics from 'expo-haptics';
 
 interface Milestone {
   id: string;
@@ -26,7 +30,7 @@ interface Milestone {
 
 interface Contract {
   id: string;
-  client: string;
+  party: string; // client name or freelancer name depending on role
   title: string;
   totalBudget: string;
   activeMilestone: Milestone;
@@ -34,34 +38,39 @@ interface Contract {
 
 export default function ContractsScreen() {
   const router = useRouter();
+  const { isDark, colors } = useTheme();
+  const { role, isClient } = useRole();
+
   const [activeSegment, setActiveSegment] = useState<'active' | 'completed'>('active');
   const [submissionModal, setSubmissionModal] = useState(false);
+  const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
   const [deliverableNotes, setDeliverableNotes] = useState('');
   const [githubUrl, setGithubUrl] = useState('');
+  const [showSubmitSuccess, setShowSubmitSuccess] = useState(false);
 
   const contracts: Contract[] = [
     {
       id: 'c_1',
-      client: 'Google Africa',
-      title: 'Mobile App UI/UX Redesign',
+      party: isClient ? 'Kwame Mensah (Lead Dev)' : 'Google Africa',
+      title: 'Mobile App UI/UX Redesign & MoMo SDK',
       totalBudget: 'GH₵ 4,500.00',
       activeMilestone: {
         id: 'm_2',
         title: 'Milestone 2: Design System & Mobile Tokens',
         amount: 'GH₵ 2,000.00',
-        status: 'In Progress',
+        status: isClient ? 'In Review' : 'In Progress',
         deadline: '3 Days Remaining',
         revisionsUsed: 0,
       },
     },
     {
       id: 'c_2',
-      client: 'Telecel Digital Labs',
+      party: isClient ? 'Akosua Serwaa (UI Designer)' : 'Telecel Digital Labs',
       title: 'MoMo Payment Checkout Screen',
       totalBudget: 'GH₵ 3,200.00',
       activeMilestone: {
         id: 'm_1',
-        title: 'Milestone 1: Figma Prototype & Checkout Flow',
+        title: 'Milestone 1: Prototype & Checkout Flow',
         amount: 'GH₵ 1,600.00',
         status: 'In Review',
         deadline: 'Review expires in 4 days (Auto-approves)',
@@ -70,47 +79,97 @@ export default function ContractsScreen() {
     },
   ];
 
+  const handleOpenSubmission = (c: Contract) => {
+    setSelectedContract(c);
+    setSubmissionModal(true);
+  };
+
   const handleSubmitDeliverable = () => {
+    if (!deliverableNotes.trim()) {
+      Alert.alert('Notes Required', 'Please provide a brief summary of the work.');
+      return;
+    }
     setSubmissionModal(false);
-    alert('Deliverable submitted to client! 7-day review window started. Client has been notified via email & in-app.');
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setShowSubmitSuccess(true);
     setDeliverableNotes('');
     setGithubUrl('');
   };
 
   return (
-    <View style={styles.screen}>
+    <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         {/* Header */}
-        <View style={styles.topHeader}>
+        <View
+          style={[
+            styles.topHeader,
+            { backgroundColor: colors.surface, borderBottomColor: colors.border },
+          ]}>
           <TouchableOpacity
-            style={styles.backButton}
+            style={[
+              styles.backButton,
+              { backgroundColor: colors.backgroundElement, borderColor: colors.border },
+            ]}
             onPress={() => router.back()}
             activeOpacity={0.8}>
-            <Ionicons name="chevron-back" size={20} color={Colors.light.text} />
+            <Ionicons name="chevron-back" size={20} color={colors.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>My Contracts &amp; Milestones</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+            {isClient ? 'Managed Contracts & Escrow' : 'My Contracts & Milestones'}
+          </Text>
           <TouchableOpacity
-            style={styles.backButton}
+            style={[
+              styles.backButton,
+              { backgroundColor: colors.backgroundElement, borderColor: colors.border },
+            ]}
             onPress={() => router.push('/notifications')}
             activeOpacity={0.8}>
-            <Ionicons name="notifications-outline" size={20} color={Colors.light.text} />
+            <Ionicons name="notifications-outline" size={20} color={colors.text} />
           </TouchableOpacity>
         </View>
 
         {/* Segmented Control: Active vs Completed */}
         <View style={styles.segmentWrapper}>
           <TouchableOpacity
-            style={[styles.segmentBtn, activeSegment === 'active' && styles.activeSegmentBtn]}
+            style={[
+              styles.segmentBtn,
+              {
+                backgroundColor:
+                  activeSegment === 'active'
+                    ? colors.primary
+                    : colors.backgroundElement,
+                borderColor:
+                  activeSegment === 'active' ? colors.primary : colors.border,
+              },
+            ]}
             onPress={() => setActiveSegment('active')}>
-            <Text style={[styles.segmentText, activeSegment === 'active' && styles.activeSegmentText]}>
+            <Text
+              style={[
+                styles.segmentText,
+                { color: activeSegment === 'active' ? '#FFFFFF' : colors.text },
+              ]}>
               Active Contracts (2)
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.segmentBtn, activeSegment === 'completed' && styles.activeSegmentBtn]}
+            style={[
+              styles.segmentBtn,
+              {
+                backgroundColor:
+                  activeSegment === 'completed'
+                    ? colors.primary
+                    : colors.backgroundElement,
+                borderColor:
+                  activeSegment === 'completed' ? colors.primary : colors.border,
+              },
+            ]}
             onPress={() => setActiveSegment('completed')}>
-            <Text style={[styles.segmentText, activeSegment === 'completed' && styles.activeSegmentText]}>
+            <Text
+              style={[
+                styles.segmentText,
+                { color: activeSegment === 'completed' ? '#FFFFFF' : colors.text },
+              ]}>
               Completed (8)
             </Text>
           </TouchableOpacity>
@@ -120,24 +179,45 @@ export default function ContractsScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}>
           {contracts.map((c) => (
-            <View key={c.id} style={styles.contractCard}>
+            <View
+              key={c.id}
+              style={[
+                styles.contractCard,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}>
               {/* Contract Top Row */}
               <View style={styles.cardHeader}>
-                <View>
-                  <Text style={styles.clientName}>{c.client}</Text>
-                  <Text style={styles.projectTitle}>{c.title}</Text>
+                <View style={{ flex: 1, marginRight: 10 }}>
+                  <Text style={[styles.clientName, { color: colors.primary }]}>
+                    {c.party}
+                  </Text>
+                  <Text style={[styles.projectTitle, { color: colors.text }]}>
+                    {c.title}
+                  </Text>
                 </View>
-                <View style={styles.budgetPill}>
-                  <Text style={styles.budgetText}>{c.totalBudget}</Text>
+                <View
+                  style={[
+                    styles.budgetPill,
+                    { backgroundColor: isDark ? '#1E293B' : '#EFF6FF' },
+                  ]}>
+                  <Text style={[styles.budgetText, { color: colors.primary }]}>
+                    {c.totalBudget}
+                  </Text>
                 </View>
               </View>
 
-              <View style={styles.divider} />
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
               {/* Active Milestone Box */}
-              <View style={styles.milestoneBox}>
+              <View
+                style={[
+                  styles.milestoneBox,
+                  { backgroundColor: colors.backgroundElement, borderColor: colors.border },
+                ]}>
                 <View style={styles.milestoneHeader}>
-                  <Text style={styles.milestoneTag}>ACTIVE MILESTONE</Text>
+                  <Text style={[styles.milestoneTag, { color: colors.textSecondary }]}>
+                    ACTIVE MILESTONE
+                  </Text>
                   <View
                     style={[
                       styles.statusPill,
@@ -157,115 +237,86 @@ export default function ContractsScreen() {
                   </View>
                 </View>
 
-                <Text style={styles.milestoneTitle}>{c.activeMilestone.title}</Text>
-                <Text style={styles.milestoneAmount}>{c.activeMilestone.amount}</Text>
+                <Text style={[styles.milestoneTitle, { color: colors.text }]}>
+                  {c.activeMilestone.title}
+                </Text>
+                <Text style={[styles.milestoneAmount, { color: colors.text }]}>
+                  {c.activeMilestone.amount}
+                </Text>
 
                 {/* Deadlines & Revision Counts */}
                 <View style={styles.metaRow}>
                   <View style={styles.metaItem}>
-                    <Ionicons name="time-outline" size={13} color="#2563EB" />
-                    <Text style={styles.metaText}>{c.activeMilestone.deadline}</Text>
+                    <Ionicons name="time-outline" size={13} color="#0F73F7" />
+                    <Text style={[styles.metaText, { color: colors.textSecondary }]}>
+                      {c.activeMilestone.deadline}
+                    </Text>
                   </View>
                   <View style={styles.metaItem}>
-                    <Ionicons name="refresh-outline" size={13} color="#64748B" />
-                    <Text style={styles.metaText}>
+                    <Ionicons name="refresh-outline" size={13} color="#D97706" />
+                    <Text style={[styles.metaText, { color: colors.textSecondary }]}>
                       Revisions: {c.activeMilestone.revisionsUsed}/2
                     </Text>
                   </View>
                 </View>
 
-                {/* Submit Deliverable Action */}
-                {c.activeMilestone.status === 'In Progress' ? (
-                  <TouchableOpacity
-                    style={styles.submitDeliverableBtn}
-                    onPress={() => setSubmissionModal(true)}
-                    activeOpacity={0.88}>
-                    <LinearGradient
-                      colors={['#0F73F7', '#38BDF8']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      style={styles.btnGradient}>
-                      <Ionicons name="cloud-upload-outline" size={16} color="#FFFFFF" />
-                      <Text style={styles.btnText}>Submit Deliverable</Text>
-                    </LinearGradient>
-                  </TouchableOpacity>
+                {/* Actions: Client vs Freelancer */}
+                {isClient ? (
+                  c.activeMilestone.status === 'In Review' ? (
+                    <TouchableOpacity
+                      style={styles.reviewBtnWrap}
+                      onPress={() => router.push('/contracts/review')}
+                      activeOpacity={0.88}>
+                      <LinearGradient
+                        colors={['#10B981', '#059669']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={styles.actionBtnGradient}>
+                        <Ionicons name="shield-checkmark" size={16} color="#FFFFFF" />
+                        <Text style={styles.actionBtnText}>
+                          Review Deliverable &amp; Release Escrow
+                        </Text>
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  ) : (
+                    <View style={styles.clientWaitingBox}>
+                      <Ionicons name="hourglass-outline" size={16} color="#0F73F7" />
+                      <Text style={[styles.clientWaitingText, { color: colors.textSecondary }]}>
+                        Developer is working on deliverable. Funds locked in escrow.
+                      </Text>
+                    </View>
+                  )
                 ) : (
-                  <View style={styles.inReviewBanner}>
-                    <Ionicons name="hourglass-outline" size={15} color="#D97706" />
-                    <Text style={styles.inReviewText}>
-                      Deliverable submitted. Client review window active.
-                    </Text>
-                  </View>
+                  c.activeMilestone.status === 'In Progress' ? (
+                    <TouchableOpacity
+                      style={styles.submitBtnWrap}
+                      onPress={() => handleOpenSubmission(c)}
+                      activeOpacity={0.88}>
+                      <LinearGradient
+                        colors={['#0F73F7', '#38BDF8']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={styles.actionBtnGradient}>
+                        <Ionicons name="cloud-upload" size={16} color="#FFFFFF" />
+                        <Text style={styles.actionBtnText}>
+                          Submit Work &amp; Request Release
+                        </Text>
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  ) : (
+                    <View style={styles.waitingReviewBox}>
+                      <Ionicons name="time" size={15} color="#D97706" />
+                      <Text style={styles.waitingReviewText}>
+                        Client is currently reviewing your submission (7-day window)
+                      </Text>
+                    </View>
+                  )
                 )}
               </View>
             </View>
           ))}
         </ScrollView>
 
-        {/* Deliverable Submission Modal */}
-        <Modal
-          visible={submissionModal}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setSubmissionModal(false)}>
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalSheet}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Submit Milestone Work</Text>
-                <TouchableOpacity onPress={() => setSubmissionModal(false)}>
-                  <Ionicons name="close" size={22} color={Colors.light.text} />
-                </TouchableOpacity>
-              </View>
-
-              <Text style={styles.modalSubtitle}>
-                Provide links to your deliverables (Figma, GitHub, Loom) and a summary of completed work.
-              </Text>
-
-              <View style={styles.modalInputGroup}>
-                <Text style={styles.modalLabel}>GitHub / Figma / Deliverable Link</Text>
-                <View style={styles.modalInputBox}>
-                  <Ionicons name="link-outline" size={18} color={Colors.light.textMuted} style={{ marginRight: 8 }} />
-                  <TextInput
-                    style={styles.modalInput}
-                    placeholder="https://github.com/... or https://figma.com/..."
-                    placeholderTextColor={Colors.light.textMuted}
-                    value={githubUrl}
-                    onChangeText={setGithubUrl}
-                  />
-                </View>
-              </View>
-
-              <View style={styles.modalInputGroup}>
-                <Text style={styles.modalLabel}>Submission Notes</Text>
-                <TextInput
-                  style={[styles.modalInputBox, styles.modalTextArea]}
-                  placeholder="Detail what was built and instructions for the client..."
-                  placeholderTextColor={Colors.light.textMuted}
-                  multiline
-                  numberOfLines={4}
-                  value={deliverableNotes}
-                  onChangeText={setDeliverableNotes}
-                />
-              </View>
-
-              {/* Submit CTA */}
-              <TouchableOpacity
-                style={styles.confirmSubmitBtn}
-                onPress={handleSubmitDeliverable}
-                activeOpacity={0.88}>
-                <LinearGradient
-                  colors={['#0F73F7', '#38BDF8']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.btnGradient}>
-                  <Text style={styles.confirmSubmitText}>Send for Client Approval</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-
-        {/* Floating Tab Bar */}
         <FloatingTabBar
           activeTab="jobs"
           onSelectTab={(tab) => {
@@ -273,6 +324,107 @@ export default function ContractsScreen() {
             if (tab === 'chats') router.push('/messages');
             if (tab === 'profile') router.push('/profile');
           }}
+          onCenterActionPress={() => {
+            if (isClient) {
+              router.push('/job/create');
+            } else {
+              router.push('/explore');
+            }
+          }}
+        />
+
+        {/* Deliverable Submission Modal */}
+        <Modal visible={submissionModal} transparent animationType="slide">
+          <View style={styles.modalBackdrop}>
+            <View
+              style={[
+                styles.modalCard,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}>
+              <View style={styles.modalTopRow}>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>
+                  Submit Milestone Work
+                </Text>
+                <TouchableOpacity onPress={() => setSubmissionModal(false)}>
+                  <Ionicons name="close" size={22} color={colors.textMuted} />
+                </TouchableOpacity>
+              </View>
+
+              <Text style={[styles.modalSub, { color: colors.textSecondary }]}>
+                {selectedContract?.activeMilestone.title} ({selectedContract?.activeMilestone.amount})
+              </Text>
+
+              <View style={styles.modalInputGroup}>
+                <Text style={[styles.modalLabel, { color: colors.text }]}>
+                  GitHub PR or Repository URL
+                </Text>
+                <TextInput
+                  style={[
+                    styles.modalInput,
+                    {
+                      backgroundColor: colors.backgroundElement,
+                      color: colors.text,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                  placeholder="https://github.com/..."
+                  placeholderTextColor={colors.textMuted}
+                  value={githubUrl}
+                  onChangeText={setGithubUrl}
+                />
+              </View>
+
+              <View style={styles.modalInputGroup}>
+                <Text style={[styles.modalLabel, { color: colors.text }]}>
+                  Deliverable Notes
+                </Text>
+                <TextInput
+                  style={[
+                    styles.modalTextArea,
+                    {
+                      backgroundColor: colors.backgroundElement,
+                      color: colors.text,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                  placeholder="Describe your delivery, setup instructions, or test accounts..."
+                  placeholderTextColor={colors.textMuted}
+                  multiline
+                  numberOfLines={4}
+                  value={deliverableNotes}
+                  onChangeText={setDeliverableNotes}
+                />
+              </View>
+
+              <View style={styles.modalBtnRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.cancelBtn,
+                    { backgroundColor: colors.backgroundElement },
+                  ]}
+                  onPress={() => setSubmissionModal(false)}>
+                  <Text style={[styles.cancelBtnText, { color: colors.text }]}>
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.submitModalBtn}
+                  onPress={handleSubmitDeliverable}>
+                  <Text style={styles.submitModalBtnText}>Submit to Client</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        <SuccessOverlay
+          visible={showSubmitSuccess}
+          type="verified"
+          title="Deliverable Submitted!"
+          subtitle="Your work has been submitted to the client. The 7-day review window has started."
+          dismissLabel="Done"
+          onDismiss={() => setShowSubmitSuccess(false)}
         />
       </SafeAreaView>
     </View>
@@ -282,7 +434,6 @@ export default function ContractsScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
   },
   safeArea: {
     flex: 1,
@@ -293,163 +444,127 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
+    borderBottomWidth: 1,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#EEF3FA',
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: Colors.light.text,
   },
   segmentWrapper: {
     flexDirection: 'row',
-    backgroundColor: '#F1F5F9',
-    borderRadius: 14,
-    marginHorizontal: 20,
-    marginTop: 8,
-    padding: 4,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    gap: 10,
   },
   segmentBtn: {
     flex: 1,
-    paddingVertical: 10,
+    height: 40,
+    borderRadius: 12,
     alignItems: 'center',
-    borderRadius: 11,
-  },
-  activeSegmentBtn: {
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
+    justifyContent: 'center',
+    borderWidth: 1,
   },
   segmentText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.light.textSecondary,
-  },
-  activeSegmentText: {
-    color: '#0F73F7',
+    fontSize: 13,
     fontWeight: '700',
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingTop: 4,
     paddingBottom: 110,
+    gap: 16,
   },
   contractCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 22,
+    borderRadius: 20,
     padding: 18,
-    marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#EEF3FA',
-    shadowColor: '#0F73F7',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
+    gap: 12,
   },
   cardHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'flex-start',
+    justifyContent: 'space-between',
   },
   clientName: {
     fontSize: 12,
-    color: Colors.light.textSecondary,
-    fontWeight: '600',
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   projectTitle: {
     fontSize: 15,
     fontWeight: '800',
-    color: Colors.light.text,
     marginTop: 2,
   },
   budgetPill: {
-    backgroundColor: '#F0FDF4',
-    paddingVertical: 4,
     paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#DCFCE7',
   },
   budgetText: {
     fontSize: 12,
-    fontWeight: '700',
-    color: '#166534',
+    fontWeight: '800',
   },
   divider: {
     height: 1,
-    backgroundColor: '#EEF3FA',
-    marginVertical: 14,
   },
   milestoneBox: {
-    backgroundColor: '#F8FAFC',
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#E8EFF8',
+    gap: 8,
   },
   milestoneHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   milestoneTag: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#0F73F7',
-    letterSpacing: 0.5,
+    letterSpacing: 0.6,
   },
   statusPill: {
+    paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 8,
-  },
-  statusText: {
-    fontSize: 10,
-    fontWeight: '700',
+    borderRadius: 6,
   },
   statusInProgress: {
     backgroundColor: '#EFF6FF',
   },
-  statusInProgressText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#2563EB',
-  },
   statusInReview: {
     backgroundColor: '#FEF3C7',
   },
-  statusInReviewText: {
-    fontSize: 10,
+  statusText: {
+    fontSize: 11,
     fontWeight: '700',
+  },
+  statusInProgressText: {
+    color: '#0F73F7',
+  },
+  statusInReviewText: {
     color: '#D97706',
   },
   milestoneTitle: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
-    color: Colors.light.text,
-    marginTop: 8,
   },
   milestoneAmount: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#0F73F7',
-    marginTop: 4,
+    fontSize: 18,
+    fontWeight: '900',
   },
   metaRow: {
     flexDirection: 'row',
     gap: 14,
-    marginTop: 10,
+    marginTop: 2,
   },
   metaItem: {
     flexDirection: 'row',
@@ -457,109 +572,130 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   metaText: {
-    fontSize: 11,
-    color: Colors.light.textSecondary,
+    fontSize: 12,
     fontWeight: '500',
   },
-  submitDeliverableBtn: {
-    height: 44,
-    borderRadius: 22,
+  submitBtnWrap: {
+    borderRadius: 14,
     overflow: 'hidden',
-    marginTop: 14,
+    marginTop: 6,
   },
-  btnGradient: {
-    flex: 1,
+  reviewBtnWrap: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    marginTop: 6,
+  },
+  actionBtnGradient: {
+    height: 44,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
   },
-  btnText: {
+  actionBtnText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#FFFFFF',
   },
-  inReviewBanner: {
+  clientWaitingBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 6,
+    paddingVertical: 6,
+  },
+  clientWaitingText: {
+    fontSize: 12,
+    flex: 1,
+  },
+  waitingReviewBox: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#FFFBEB',
-    padding: 10,
-    borderRadius: 10,
-    marginTop: 12,
+    marginTop: 6,
+    paddingVertical: 6,
   },
-  inReviewText: {
-    fontSize: 11,
-    color: '#B45309',
+  waitingReviewText: {
+    fontSize: 12,
+    color: '#D97706',
     fontWeight: '600',
-  },
-  modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
-  modalSheet: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 40,
+  modalCard: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    borderWidth: 1,
+    gap: 14,
   },
-  modalHeader: {
+  modalTopRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: Colors.light.text,
   },
-  modalSubtitle: {
-    fontSize: 12,
-    color: Colors.light.textSecondary,
-    lineHeight: 18,
-    marginTop: 6,
+  modalSub: {
+    fontSize: 13,
+    fontWeight: '600',
   },
   modalInputGroup: {
-    marginTop: 16,
+    gap: 6,
   },
   modalLabel: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
-    color: Colors.light.text,
-    marginBottom: 6,
-  },
-  modalInputBox: {
-    height: 50,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#EEF3FA',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
   },
   modalInput: {
-    flex: 1,
+    height: 46,
+    borderRadius: 12,
+    paddingHorizontal: 12,
     fontSize: 13,
-    color: Colors.light.text,
+    borderWidth: 1,
   },
   modalTextArea: {
-    height: 100,
-    alignItems: 'flex-start',
-    paddingVertical: 12,
+    minHeight: 90,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 13,
+    borderWidth: 1,
+    textAlignVertical: 'top',
   },
-  confirmSubmitBtn: {
-    height: 52,
-    borderRadius: 26,
-    overflow: 'hidden',
-    marginTop: 22,
+  modalBtnRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 6,
   },
-  confirmSubmitText: {
+  cancelBtn: {
+    flex: 1,
+    height: 46,
+    borderRadius: 23,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelBtnText: {
     fontSize: 14,
     fontWeight: '700',
+  },
+  submitModalBtn: {
+    flex: 2,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: '#0F73F7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  submitModalBtnText: {
+    fontSize: 14,
+    fontWeight: '800',
     color: '#FFFFFF',
   },
 });
