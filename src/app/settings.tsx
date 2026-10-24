@@ -12,14 +12,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as Haptics from 'expo-haptics';
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { isDark } = useTheme();
+  const { isDark, toggleTheme, colors } = useTheme();
 
   // Settings Toggles
   const [biometricsEnabled, setBiometricsEnabled] = useState(true);
@@ -53,7 +52,7 @@ export default function SettingsScreen() {
         } else {
           await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         }
-      } catch (e) {
+      } catch (_e) {
         setBiometricsEnabled(value);
       }
     } else {
@@ -62,18 +61,23 @@ export default function SettingsScreen() {
     }
   };
 
+  const handleToggleTheme = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    toggleTheme();
+  };
+
   return (
-    <View style={styles.screen}>
+    <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         {/* Top Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
           <TouchableOpacity
-            style={styles.backButton}
+            style={[styles.backButton, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}
             onPress={() => router.back()}
             activeOpacity={0.8}>
-            <Ionicons name="chevron-back" size={20} color={Colors.light.text} />
+            <Ionicons name="chevron-back" size={20} color={colors.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Settings</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Settings</Text>
           <View style={{ width: 40 }} />
         </View>
 
@@ -82,7 +86,7 @@ export default function SettingsScreen() {
           contentContainerStyle={styles.scrollContent}>
           {/* User Profile Mini Banner */}
           <TouchableOpacity
-            style={styles.profileCard}
+            style={[styles.profileCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
             onPress={() => router.push('/edit-profile')}
             activeOpacity={0.85}>
             <Image
@@ -91,50 +95,102 @@ export default function SettingsScreen() {
             />
             <View style={styles.profileInfo}>
               <View style={styles.nameRow}>
-                <Text style={styles.profileName}>Kwame Mensah</Text>
+                <Text style={[styles.profileName, { color: colors.text }]}>Kwame Mensah</Text>
                 <View style={styles.verifiedBadge}>
                   <Ionicons name="checkmark-circle" size={14} color="#10B981" />
                 </View>
               </View>
-              <Text style={styles.profileSubtitle}>Senior Mobile & React Native Engineer</Text>
-              <Text style={styles.profileEmail}>kwame.mensah@devpay.africa</Text>
+              <Text style={[styles.profileSubtitle, { color: colors.textSecondary }]}>
+                Senior Mobile & React Native Engineer
+              </Text>
+              <Text style={[styles.profileEmail, { color: colors.textMuted }]}>
+                kwame.mensah@devpay.africa
+              </Text>
             </View>
-            <View style={styles.editBtn}>
-              <Text style={styles.editBtnText}>Edit</Text>
-              <Ionicons name="chevron-forward" size={14} color="#0F73F7" />
+            <View style={[styles.editBtn, { backgroundColor: isDark ? colors.backgroundElement : '#EFF6FF' }]}>
+              <Text style={[styles.editBtnText, { color: colors.primary }]}>Edit</Text>
+              <Ionicons name="chevron-forward" size={14} color={colors.primary} />
             </View>
           </TouchableOpacity>
 
+          {/* Section: Appearance & Display */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Appearance & Theme</Text>
+            <View style={[styles.menuBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              {/* Direct Dark Mode Switch */}
+              <View style={styles.menuItem}>
+                <View style={styles.menuLeft}>
+                  <View style={[styles.menuIconWrap, { backgroundColor: isDark ? '#312E81' : '#EEF2FF' }]}>
+                    <Ionicons name={isDark ? 'moon' : 'sunny'} size={18} color={isDark ? '#818CF8' : '#4F46E5'} />
+                  </View>
+                  <View>
+                    <Text style={[styles.menuLabel, { color: colors.text }]}>Dark Theme</Text>
+                    <Text style={[styles.menuSublabel, { color: colors.textSecondary }]}>
+                      {isDark ? 'Dark theme is active' : 'Light theme is active'}
+                    </Text>
+                  </View>
+                </View>
+                <Switch
+                  value={isDark}
+                  onValueChange={handleToggleTheme}
+                  trackColor={{ false: '#E2E8F0', true: '#4F46E5' }}
+                  thumbColor={isDark ? '#818CF8' : '#FFFFFF'}
+                />
+              </View>
+
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+              {/* Link to detailed Appearance screen */}
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => router.push('/appearance')}
+                activeOpacity={0.7}>
+                <View style={styles.menuLeft}>
+                  <View style={[styles.menuIconWrap, { backgroundColor: isDark ? '#1E293B' : '#F1F5F9' }]}>
+                    <Ionicons name="color-palette-outline" size={18} color={colors.primary} />
+                  </View>
+                  <View>
+                    <Text style={[styles.menuLabel, { color: colors.text }]}>Theme & Display Options</Text>
+                    <Text style={[styles.menuSublabel, { color: colors.textSecondary }]}>
+                      Follow system, contrast & motion
+                    </Text>
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+          </View>
+
           {/* Section 1: Account & KYC */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Account & Verification</Text>
-            <View style={styles.menuBox}>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Account & Verification</Text>
+            <View style={[styles.menuBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={() => router.push('/edit-profile')}
                 activeOpacity={0.7}>
                 <View style={styles.menuLeft}>
-                  <View style={[styles.menuIconWrap, { backgroundColor: '#EBF3FE' }]}>
+                  <View style={[styles.menuIconWrap, { backgroundColor: isDark ? '#1E293B' : '#EBF3FE' }]}>
                     <Ionicons name="person-outline" size={18} color="#0F73F7" />
                   </View>
-                  <Text style={styles.menuLabel}>Edit Profile Details</Text>
+                  <Text style={[styles.menuLabel, { color: colors.text }]}>Edit Profile Details</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={16} color={Colors.light.textMuted} />
+                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
               </TouchableOpacity>
 
-              <View style={styles.divider} />
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={() => router.push('/kyc')}
                 activeOpacity={0.7}>
                 <View style={styles.menuLeft}>
-                  <View style={[styles.menuIconWrap, { backgroundColor: '#ECFDF5' }]}>
+                  <View style={[styles.menuIconWrap, { backgroundColor: isDark ? '#064E3B' : '#ECFDF5' }]}>
                     <Ionicons name="card-outline" size={18} color="#10B981" />
                   </View>
                   <View>
-                    <Text style={styles.menuLabel}>Ghana Card (NIA) Verification</Text>
-                    <Text style={styles.menuSublabel}>GHA-729481029-4</Text>
+                    <Text style={[styles.menuLabel, { color: colors.text }]}>Ghana Card (NIA) Verification</Text>
+                    <Text style={[styles.menuSublabel, { color: colors.textSecondary }]}>GHA-729481029-4</Text>
                   </View>
                 </View>
                 <View style={styles.badgeWrap}>
@@ -142,110 +198,110 @@ export default function SettingsScreen() {
                 </View>
               </TouchableOpacity>
 
-              <View style={styles.divider} />
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={() => Alert.alert('Contact Info', 'Phone: +233 24 123 4567\nEmail: kwame.mensah@devpay.africa\nVerified through OTP.')}
                 activeOpacity={0.7}>
                 <View style={styles.menuLeft}>
-                  <View style={[styles.menuIconWrap, { backgroundColor: '#F1F5F9' }]}>
-                    <Ionicons name="call-outline" size={18} color={Colors.light.text} />
+                  <View style={[styles.menuIconWrap, { backgroundColor: isDark ? '#1E293B' : '#F1F5F9' }]}>
+                    <Ionicons name="call-outline" size={18} color={colors.text} />
                   </View>
                   <View>
-                    <Text style={styles.menuLabel}>Phone & Contact</Text>
-                    <Text style={styles.menuSublabel}>+233 24 123 4567</Text>
+                    <Text style={[styles.menuLabel, { color: colors.text }]}>Phone & Contact</Text>
+                    <Text style={[styles.menuSublabel, { color: colors.textSecondary }]}>+233 24 123 4567</Text>
                   </View>
                 </View>
-                <Ionicons name="chevron-forward" size={16} color={Colors.light.textMuted} />
+                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
           </View>
 
           {/* Section 2: Payouts & Escrow */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Escrow & Payout Preferences</Text>
-            <View style={styles.menuBox}>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Escrow & Payout Preferences</Text>
+            <View style={[styles.menuBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={() => router.push('/earnings')}
                 activeOpacity={0.7}>
                 <View style={styles.menuLeft}>
-                  <View style={[styles.menuIconWrap, { backgroundColor: '#EFF6FF' }]}>
+                  <View style={[styles.menuIconWrap, { backgroundColor: isDark ? '#1E293B' : '#EFF6FF' }]}>
                     <Ionicons name="wallet-outline" size={18} color="#0F73F7" />
                   </View>
                   <View>
-                    <Text style={styles.menuLabel}>Payout MoMo / Bank Accounts</Text>
-                    <Text style={styles.menuSublabel}>MTN MoMo (024 123 4567)</Text>
+                    <Text style={[styles.menuLabel, { color: colors.text }]}>Payout MoMo / Bank Accounts</Text>
+                    <Text style={[styles.menuSublabel, { color: colors.textSecondary }]}>MTN MoMo (024 123 4567)</Text>
                   </View>
                 </View>
-                <Ionicons name="chevron-forward" size={16} color={Colors.light.textMuted} />
+                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
               </TouchableOpacity>
 
-              <View style={styles.divider} />
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={() => Alert.alert('Currency', 'Current default currency is GH₵ (Ghanaian Cedi). International client milestones are converted using official BoG mid-rates.')}
                 activeOpacity={0.7}>
                 <View style={styles.menuLeft}>
-                  <View style={[styles.menuIconWrap, { backgroundColor: '#FEF3C7' }]}>
+                  <View style={[styles.menuIconWrap, { backgroundColor: isDark ? '#451A03' : '#FEF3C7' }]}>
                     <Ionicons name="cash-outline" size={18} color="#D97706" />
                   </View>
-                  <Text style={styles.menuLabel}>Default Currency</Text>
+                  <Text style={[styles.menuLabel, { color: colors.text }]}>Default Currency</Text>
                 </View>
-                <View style={styles.badgeWrapGray}>
-                  <Text style={styles.badgeTextGray}>GH₵ (Cedi)</Text>
+                <View style={[styles.badgeWrapGray, { backgroundColor: colors.backgroundElement }]}>
+                  <Text style={[styles.badgeTextGray, { color: colors.textSecondary }]}>GH₵ (Cedi)</Text>
                 </View>
               </TouchableOpacity>
 
-              <View style={styles.divider} />
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={() => Alert.alert('Escrow Review Policy', 'Standard DevPay client review window is 7 days. If the client does not request a revision within 7 days, funds automatically release to you.')}
                 activeOpacity={0.7}>
                 <View style={styles.menuLeft}>
-                  <View style={[styles.menuIconWrap, { backgroundColor: '#F3E8FF' }]}>
+                  <View style={[styles.menuIconWrap, { backgroundColor: isDark ? '#3B0764' : '#F3E8FF' }]}>
                     <Ionicons name="timer-outline" size={18} color="#9333EA" />
                   </View>
-                  <Text style={styles.menuLabel}>Auto-Release Window</Text>
+                  <Text style={[styles.menuLabel, { color: colors.text }]}>Auto-Release Window</Text>
                 </View>
-                <View style={styles.badgeWrapGray}>
-                  <Text style={styles.badgeTextGray}>7 Days</Text>
+                <View style={[styles.badgeWrapGray, { backgroundColor: colors.backgroundElement }]}>
+                  <Text style={[styles.badgeTextGray, { color: colors.textSecondary }]}>7 Days</Text>
                 </View>
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Section 3: Security & Privacy */}
+          {/* Section 3: Security & PIN */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Security & PIN</Text>
-            <View style={styles.menuBox}>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Security & PIN</Text>
+            <View style={[styles.menuBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={() => Alert.alert('Transaction PIN', 'Your 4-digit DevPay Security PIN is required for releasing escrow or withdrawing to Mobile Money.')}
                 activeOpacity={0.7}>
                 <View style={styles.menuLeft}>
-                  <View style={[styles.menuIconWrap, { backgroundColor: '#EFF6FF' }]}>
+                  <View style={[styles.menuIconWrap, { backgroundColor: isDark ? '#1E293B' : '#EFF6FF' }]}>
                     <Ionicons name="keypad-outline" size={18} color="#0F73F7" />
                   </View>
                   <View>
-                    <Text style={styles.menuLabel}>Change 4-Digit Payout PIN</Text>
-                    <Text style={styles.menuSublabel}>Used to authorize MoMo transfers</Text>
+                    <Text style={[styles.menuLabel, { color: colors.text }]}>Change 4-Digit Payout PIN</Text>
+                    <Text style={[styles.menuSublabel, { color: colors.textSecondary }]}>Used to authorize MoMo transfers</Text>
                   </View>
                 </View>
-                <Ionicons name="chevron-forward" size={16} color={Colors.light.textMuted} />
+                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
               </TouchableOpacity>
 
-              <View style={styles.divider} />
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
               <View style={styles.menuItem}>
                 <View style={styles.menuLeft}>
-                  <View style={[styles.menuIconWrap, { backgroundColor: '#ECFDF5' }]}>
+                  <View style={[styles.menuIconWrap, { backgroundColor: isDark ? '#064E3B' : '#ECFDF5' }]}>
                     <Ionicons name="finger-print-outline" size={18} color="#10B981" />
                   </View>
-                  <Text style={styles.menuLabel}>Biometric Face ID / Fingerprint</Text>
+                  <Text style={[styles.menuLabel, { color: colors.text }]}>Biometric Face ID / Fingerprint</Text>
                 </View>
                 <Switch
                   value={biometricsEnabled}
@@ -255,14 +311,14 @@ export default function SettingsScreen() {
                 />
               </View>
 
-              <View style={styles.divider} />
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
               <View style={styles.menuItem}>
                 <View style={styles.menuLeft}>
-                  <View style={[styles.menuIconWrap, { backgroundColor: '#F3E8FF' }]}>
+                  <View style={[styles.menuIconWrap, { backgroundColor: isDark ? '#3B0764' : '#F3E8FF' }]}>
                     <Ionicons name="shield-outline" size={18} color="#9333EA" />
                   </View>
-                  <Text style={styles.menuLabel}>Two-Factor Authentication (SMS)</Text>
+                  <Text style={[styles.menuLabel, { color: colors.text }]}>Two-Factor Authentication (SMS)</Text>
                 </View>
                 <Switch
                   value={twoFactorEnabled}
@@ -271,37 +327,19 @@ export default function SettingsScreen() {
                   thumbColor={twoFactorEnabled ? '#0F73F7' : '#FFFFFF'}
                 />
               </View>
-
-              <View style={styles.divider} />
-
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => router.push('/appearance')}
-                activeOpacity={0.7}>
-                <View style={styles.menuLeft}>
-                  <View style={[styles.menuIconWrap, { backgroundColor: isDark ? '#312E81' : '#EEF2FF' }]}>
-                    <Ionicons name="moon-outline" size={18} color="#6366F1" />
-                  </View>
-                  <View>
-                    <Text style={[styles.menuLabel, isDark && { color: '#F1F5F9' }]}>Appearance & Theme</Text>
-                    <Text style={styles.menuSublabel}>{isDark ? 'Dark Mode active' : 'Light Mode active'}</Text>
-                  </View>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={isDark ? '#64748B' : Colors.light.textMuted} />
-              </TouchableOpacity>
             </View>
           </View>
 
           {/* Section 4: Notifications */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Notification Alerts</Text>
-            <View style={styles.menuBox}>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Notification Alerts</Text>
+            <View style={[styles.menuBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <View style={styles.menuItem}>
                 <View style={styles.menuLeft}>
-                  <View style={[styles.menuIconWrap, { backgroundColor: '#EFF6FF' }]}>
+                  <View style={[styles.menuIconWrap, { backgroundColor: isDark ? '#1E293B' : '#EFF6FF' }]}>
                     <Ionicons name="notifications-outline" size={18} color="#0F73F7" />
                   </View>
-                  <Text style={styles.menuLabel}>Push Notifications</Text>
+                  <Text style={[styles.menuLabel, { color: colors.text }]}>Push Notifications</Text>
                 </View>
                 <Switch
                   value={pushNotifs}
@@ -311,16 +349,16 @@ export default function SettingsScreen() {
                 />
               </View>
 
-              <View style={styles.divider} />
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
               <View style={styles.menuItem}>
                 <View style={styles.menuLeft}>
-                  <View style={[styles.menuIconWrap, { backgroundColor: '#ECFDF5' }]}>
+                  <View style={[styles.menuIconWrap, { backgroundColor: isDark ? '#064E3B' : '#ECFDF5' }]}>
                     <Ionicons name="chatbox-ellipses-outline" size={18} color="#10B981" />
                   </View>
                   <View>
-                    <Text style={styles.menuLabel}>SMS Alerts for Escrow Deposit</Text>
-                    <Text style={styles.menuSublabel}>Instant SMS when client funds</Text>
+                    <Text style={[styles.menuLabel, { color: colors.text }]}>SMS Alerts for Escrow Deposit</Text>
+                    <Text style={[styles.menuSublabel, { color: colors.textSecondary }]}>Instant SMS when client funds</Text>
                   </View>
                 </View>
                 <Switch
@@ -331,14 +369,14 @@ export default function SettingsScreen() {
                 />
               </View>
 
-              <View style={styles.divider} />
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
               <View style={styles.menuItem}>
                 <View style={styles.menuLeft}>
-                  <View style={[styles.menuIconWrap, { backgroundColor: '#F1F5F9' }]}>
-                    <Ionicons name="mail-outline" size={18} color={Colors.light.text} />
+                  <View style={[styles.menuIconWrap, { backgroundColor: isDark ? '#1E293B' : '#F1F5F9' }]}>
+                    <Ionicons name="mail-outline" size={18} color={colors.text} />
                   </View>
-                  <Text style={styles.menuLabel}>Weekly Earnings Report Email</Text>
+                  <Text style={[styles.menuLabel, { color: colors.text }]}>Weekly Earnings Report Email</Text>
                 </View>
                 <Switch
                   value={emailSummary}
@@ -350,51 +388,51 @@ export default function SettingsScreen() {
             </View>
           </View>
 
-          {/* Section 5: Support & Arbitration */}
+          {/* Section 5: Support & Legal */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Support & Legal</Text>
-            <View style={styles.menuBox}>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Support & Legal</Text>
+            <View style={[styles.menuBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={() => Alert.alert('DevPay Arbitration', 'DevPay Escrow Dispute Center mediates milestone deliverables using submitted work logs, contracts, and NIA identity verification.')}
                 activeOpacity={0.7}>
                 <View style={styles.menuLeft}>
-                  <View style={[styles.menuIconWrap, { backgroundColor: '#EFF6FF' }]}>
+                  <View style={[styles.menuIconWrap, { backgroundColor: isDark ? '#1E293B' : '#EFF6FF' }]}>
                     <Ionicons name="help-buoy-outline" size={18} color="#0F73F7" />
                   </View>
-                  <Text style={styles.menuLabel}>Escrow Dispute & Arbitration</Text>
+                  <Text style={[styles.menuLabel, { color: colors.text }]}>Escrow Dispute & Arbitration</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={16} color={Colors.light.textMuted} />
+                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
               </TouchableOpacity>
 
-              <View style={styles.divider} />
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={() => Alert.alert('Terms of Service', 'DevPay Africa escrow services operate in compliance with Bank of Ghana Payment Systems and Services Act.')}
                 activeOpacity={0.7}>
                 <View style={styles.menuLeft}>
-                  <View style={[styles.menuIconWrap, { backgroundColor: '#F1F5F9' }]}>
-                    <Ionicons name="document-text-outline" size={18} color={Colors.light.text} />
+                  <View style={[styles.menuIconWrap, { backgroundColor: isDark ? '#1E293B' : '#F1F5F9' }]}>
+                    <Ionicons name="document-text-outline" size={18} color={colors.text} />
                   </View>
-                  <Text style={styles.menuLabel}>Terms of Service</Text>
+                  <Text style={[styles.menuLabel, { color: colors.text }]}>Terms of Service</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={16} color={Colors.light.textMuted} />
+                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
               </TouchableOpacity>
 
-              <View style={styles.divider} />
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={() => Alert.alert('Privacy Policy', 'Your Ghana Card credentials and transaction records are encrypted using AES-256 standard.')}
                 activeOpacity={0.7}>
                 <View style={styles.menuLeft}>
-                  <View style={[styles.menuIconWrap, { backgroundColor: '#F1F5F9' }]}>
-                    <Ionicons name="lock-closed-outline" size={18} color={Colors.light.text} />
+                  <View style={[styles.menuIconWrap, { backgroundColor: isDark ? '#1E293B' : '#F1F5F9' }]}>
+                    <Ionicons name="lock-closed-outline" size={18} color={colors.text} />
                   </View>
-                  <Text style={styles.menuLabel}>Privacy Policy</Text>
+                  <Text style={[styles.menuLabel, { color: colors.text }]}>Privacy Policy</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={16} color={Colors.light.textMuted} />
+                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
           </View>
@@ -402,13 +440,20 @@ export default function SettingsScreen() {
           {/* Section 6: Danger Zone (Logout & Delete Account) */}
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: '#EF4444' }]}>Danger Zone</Text>
-            <View style={[styles.menuBox, styles.dangerBox]}>
+            <View style={[
+              styles.menuBox,
+              styles.dangerBox,
+              {
+                backgroundColor: isDark ? '#2A1215' : '#FFFBFB',
+                borderColor: isDark ? '#7F1D1D' : '#FECACA',
+              }
+            ]}>
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={() => router.push('/logout')}
                 activeOpacity={0.7}>
                 <View style={styles.menuLeft}>
-                  <View style={[styles.menuIconWrap, { backgroundColor: '#FEE2E2' }]}>
+                  <View style={[styles.menuIconWrap, { backgroundColor: isDark ? '#450A0A' : '#FEE2E2' }]}>
                     <Ionicons name="log-out-outline" size={18} color="#EF4444" />
                   </View>
                   <Text style={[styles.menuLabel, { color: '#EF4444' }]}>Sign Out</Text>
@@ -416,21 +461,23 @@ export default function SettingsScreen() {
                 <Ionicons name="chevron-forward" size={16} color="#EF4444" />
               </TouchableOpacity>
 
-              <View style={styles.divider} />
+              <View style={[styles.divider, { backgroundColor: isDark ? '#450A0A' : '#FEE2E2' }]} />
 
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={() => router.push('/delete-account')}
                 activeOpacity={0.7}>
                 <View style={styles.menuLeft}>
-                  <View style={[styles.menuIconWrap, { backgroundColor: '#FEE2E2' }]}>
+                  <View style={[styles.menuIconWrap, { backgroundColor: isDark ? '#450A0A' : '#FEE2E2' }]}>
                     <Ionicons name="trash-outline" size={18} color="#DC2626" />
                   </View>
                   <View>
                     <Text style={[styles.menuLabel, { color: '#DC2626', fontWeight: '700' }]}>
                       Delete Account
                     </Text>
-                    <Text style={styles.menuSublabel}>Permanently erase profile & history</Text>
+                    <Text style={[styles.menuSublabel, { color: isDark ? '#FCA5A5' : '#EF4444' }]}>
+                      Permanently erase profile & history
+                    </Text>
                   </View>
                 </View>
                 <Ionicons name="chevron-forward" size={16} color="#DC2626" />
@@ -438,7 +485,9 @@ export default function SettingsScreen() {
             </View>
           </View>
 
-          <Text style={styles.versionFooter}>DevPay Africa Mobile • v1.0.0 (SDK 58)</Text>
+          <Text style={[styles.versionFooter, { color: colors.textMuted }]}>
+            DevPay Africa Mobile • v1.0.0 (SDK 58)
+          </Text>
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -448,7 +497,6 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
   },
   safeArea: {
     flex: 1,
@@ -460,23 +508,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#EEF3FA',
-    backgroundColor: '#FFFFFF',
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#EEF3FA',
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 17,
     fontWeight: '800',
-    color: Colors.light.text,
   },
   scrollContent: {
     padding: 20,
@@ -484,14 +527,12 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   profileCard: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
     borderWidth: 1,
-    borderColor: '#EEF3FA',
     shadowColor: '#0F73F7',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -515,7 +556,6 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 16,
     fontWeight: '800',
-    color: Colors.light.text,
   },
   verifiedBadge: {
     alignItems: 'center',
@@ -523,12 +563,10 @@ const styles = StyleSheet.create({
   },
   profileSubtitle: {
     fontSize: 12,
-    color: Colors.light.textSecondary,
     marginTop: 2,
   },
   profileEmail: {
     fontSize: 11,
-    color: Colors.light.textMuted,
     marginTop: 2,
   },
   editBtn: {
@@ -537,13 +575,11 @@ const styles = StyleSheet.create({
     gap: 2,
     paddingHorizontal: 10,
     paddingVertical: 6,
-    backgroundColor: '#EFF6FF',
     borderRadius: 12,
   },
   editBtnText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#0F73F7',
   },
   section: {
     gap: 8,
@@ -551,21 +587,17 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: Colors.light.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginLeft: 4,
   },
   menuBox: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#EEF3FA',
     overflow: 'hidden',
   },
   dangerBox: {
-    borderColor: '#FECACA',
-    backgroundColor: '#FFFBFB',
+    borderWidth: 1,
   },
   menuItem: {
     flexDirection: 'row',
@@ -590,16 +622,13 @@ const styles = StyleSheet.create({
   menuLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.light.text,
   },
   menuSublabel: {
     fontSize: 12,
-    color: Colors.light.textMuted,
     marginTop: 1,
   },
   divider: {
     height: 1,
-    backgroundColor: '#F1F5F9',
     marginLeft: 64,
   },
   badgeWrap: {
@@ -614,7 +643,6 @@ const styles = StyleSheet.create({
     color: '#10B981',
   },
   badgeWrapGray: {
-    backgroundColor: '#F1F5F9',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
@@ -622,12 +650,10 @@ const styles = StyleSheet.create({
   badgeTextGray: {
     fontSize: 11,
     fontWeight: '700',
-    color: Colors.light.textSecondary,
   },
   versionFooter: {
     textAlign: 'center',
     fontSize: 12,
-    color: Colors.light.textMuted,
     marginTop: 10,
   },
 });

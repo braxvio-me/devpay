@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -89,17 +90,31 @@ export function FloatingTabBar({
   onCenterActionPress,
   unreadChats = 2,
 }: FloatingTabBarProps) {
+  const { isDark, colors } = useTheme();
+
   return (
     <View style={styles.floatingContainer}>
-      <View style={styles.bar}>
+      <View
+        style={[
+          styles.bar,
+          {
+            backgroundColor: isDark ? 'rgba(15, 23, 42, 0.94)' : 'rgba(255, 255, 255, 0.95)',
+            borderColor: isDark ? 'rgba(51, 65, 85, 0.6)' : 'rgba(238, 243, 250, 0.95)',
+          },
+        ]}>
         {/* Tab 1: Home */}
         <AnimatedTab onPress={() => onSelectTab('home')}>
           <Ionicons
             name={activeTab === 'home' ? 'home' : 'home-outline'}
             size={22}
-            color={activeTab === 'home' ? Colors.light.text : Colors.light.textMuted}
+            color={activeTab === 'home' ? colors.text : colors.textMuted}
           />
-          <Text style={[styles.tabLabel, activeTab === 'home' && styles.activeTabLabel]}>
+          <Text
+            style={[
+              styles.tabLabel,
+              { color: activeTab === 'home' ? colors.text : colors.textMuted },
+              activeTab === 'home' && styles.activeTabLabel,
+            ]}>
             Home
           </Text>
         </AnimatedTab>
@@ -109,9 +124,14 @@ export function FloatingTabBar({
           <Ionicons
             name={activeTab === 'jobs' ? 'briefcase' : 'briefcase-outline'}
             size={22}
-            color={activeTab === 'jobs' ? Colors.light.text : Colors.light.textMuted}
+            color={activeTab === 'jobs' ? colors.text : colors.textMuted}
           />
-          <Text style={[styles.tabLabel, activeTab === 'jobs' && styles.activeTabLabel]}>
+          <Text
+            style={[
+              styles.tabLabel,
+              { color: activeTab === 'jobs' ? colors.text : colors.textMuted },
+              activeTab === 'jobs' && styles.activeTabLabel,
+            ]}>
             Jobs
           </Text>
         </AnimatedTab>
@@ -127,11 +147,16 @@ export function FloatingTabBar({
             <Ionicons
               name={activeTab === 'chats' ? 'chatbubble' : 'chatbubble-outline'}
               size={21}
-              color={activeTab === 'chats' ? Colors.light.text : Colors.light.textMuted}
+              color={activeTab === 'chats' ? colors.text : colors.textMuted}
             />
             {unreadChats > 0 && <View style={styles.chatBadge} />}
           </View>
-          <Text style={[styles.tabLabel, activeTab === 'chats' && styles.activeTabLabel]}>
+          <Text
+            style={[
+              styles.tabLabel,
+              { color: activeTab === 'chats' ? colors.text : colors.textMuted },
+              activeTab === 'chats' && styles.activeTabLabel,
+            ]}>
             Chats
           </Text>
         </AnimatedTab>
@@ -141,9 +166,14 @@ export function FloatingTabBar({
           <Ionicons
             name={activeTab === 'profile' ? 'person' : 'person-outline'}
             size={22}
-            color={activeTab === 'profile' ? Colors.light.text : Colors.light.textMuted}
+            color={activeTab === 'profile' ? colors.text : colors.textMuted}
           />
-          <Text style={[styles.tabLabel, activeTab === 'profile' && styles.activeTabLabel]}>
+          <Text
+            style={[
+              styles.tabLabel,
+              { color: activeTab === 'profile' ? colors.text : colors.textMuted },
+              activeTab === 'profile' && styles.activeTabLabel,
+            ]}>
             Profile
           </Text>
         </AnimatedTab>
