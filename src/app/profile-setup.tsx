@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -165,7 +165,7 @@ export default function ProfileSetupScreen() {
           <View style={styles.introBlock}>
             <Text style={styles.title}>Fill Out Your Profile</Text>
             <Text style={styles.subtitle}>
-              Tell African clients about your engineering &amp; design skills to start receiving milestone offers.
+              Tell African clients about your engineering & design skills to start receiving milestone offers.
             </Text>
           </View>
 
@@ -246,7 +246,7 @@ export default function ProfileSetupScreen() {
 
           {/* Bio */}
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Professional Summary &amp; Bio</Text>
+            <Text style={styles.label}>Professional Summary & Bio</Text>
             <TextInput
               style={styles.bioInput}
               value={bio}
@@ -261,7 +261,7 @@ export default function ProfileSetupScreen() {
 
           {/* Skills Picker */}
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Select Skills &amp; Frameworks</Text>
+            <Text style={styles.label}>Select Skills & Frameworks</Text>
             <View style={styles.skillsWrapper}>
               {suggestedSkills.map((skill) => {
                 const isPicked = selectedSkills.includes(skill);

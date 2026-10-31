@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -39,7 +39,7 @@ interface Contract {
 export default function ContractsScreen() {
   const router = useRouter();
   const { isDark, colors } = useTheme();
-  const { role, isClient } = useRole();
+  const { isClient } = useRole();
 
   const [activeSegment, setActiveSegment] = useState<'active' | 'completed'>('active');
   const [submissionModal, setSubmissionModal] = useState(false);
@@ -274,7 +274,7 @@ export default function ContractsScreen() {
                         style={styles.actionBtnGradient}>
                         <Ionicons name="shield-checkmark" size={16} color="#FFFFFF" />
                         <Text style={styles.actionBtnText}>
-                          Review Deliverable &amp; Release Escrow
+                          Review Deliverable & Release Escrow
                         </Text>
                       </LinearGradient>
                     </TouchableOpacity>
@@ -299,7 +299,7 @@ export default function ContractsScreen() {
                         style={styles.actionBtnGradient}>
                         <Ionicons name="cloud-upload" size={16} color="#FFFFFF" />
                         <Text style={styles.actionBtnText}>
-                          Submit Work &amp; Request Release
+                          Submit Work & Request Release
                         </Text>
                       </LinearGradient>
                     </TouchableOpacity>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -273,7 +273,7 @@ export default function MilestoneReviewScreen() {
                 style={styles.approveGradient}>
                 <Ionicons name="checkmark-done" size={20} color="#FFFFFF" />
                 <Text style={styles.approveBtnText}>
-                  Approve &amp; Release {deliverable.amount}
+                  Approve & Release {deliverable.amount}
                 </Text>
               </LinearGradient>
             </TouchableOpacity>

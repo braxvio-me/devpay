@@ -44,7 +44,7 @@ export default function CreateJobScreen() {
     'Mobile Apps',
     'Writing',
     'Marketing',
-    'Data & AI',
+    'Cloud & APIs',
   ];
 
   const totalBudget = milestones.reduce(
@@ -59,8 +59,8 @@ export default function CreateJobScreen() {
       ...prev,
       {
         id: String(Date.now()),
-        title: `Milestone ${nextNum}: Deliverable Phase ${nextNum}`,
-        amount: '1000',
+        title: '',
+        amount: '',
       },
     ]);
   };
@@ -450,7 +450,7 @@ export default function CreateJobScreen() {
               style={styles.publishGradient}>
               <Ionicons name="rocket-outline" size={20} color="#FFFFFF" />
               <Text style={styles.publishBtnText}>
-                Post Contract &amp; Pre-Fund Escrow
+                Post Contract & Pre-Fund Escrow
               </Text>
             </LinearGradient>
           </TouchableOpacity>

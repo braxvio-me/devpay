@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRole } from '@/contexts/RoleContext';
+import * as Haptics from 'expo-haptics';
 
 import { DevPayHeader } from '@/components/devpay-header';
 import { ReminderCard } from '@/components/reminder-card';
@@ -28,9 +29,10 @@ export default function HomeScreen() {
   const router = useRouter();
   const { toastRef, show: showToast } = useToast();
   const { isDark, colors } = useTheme();
-  const { role, isClient } = useRole();
+  const { isClient } = useRole();
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [clientSearchQuery, setClientSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('See All');
   const [activeTab, setActiveTab] = useState<TabType>('home');
   const [isLoading, setIsLoading] = useState(true);
@@ -151,9 +153,42 @@ export default function HomeScreen() {
     );
   };
 
+  const filteredRecommendedJobs = recommendedJobs.filter((job) => {
+    const q = searchQuery.toLowerCase().trim();
+    const matchesSearch =
+      !q ||
+      job.title.toLowerCase().includes(q) ||
+      job.company.toLowerCase().includes(q) ||
+      job.location.toLowerCase().includes(q);
+    const matchesCategory =
+      selectedCategory === 'See All' ||
+      job.title.toLowerCase().includes(selectedCategory.toLowerCase());
+    return matchesSearch && matchesCategory;
+  });
+
+  const filteredLatestJobs = latestJobs.filter((job) => {
+    const q = searchQuery.toLowerCase().trim();
+    const matchesSearch =
+      !q ||
+      job.title.toLowerCase().includes(q) ||
+      job.company.toLowerCase().includes(q) ||
+      job.tags.some((t) => t.toLowerCase().includes(q));
+    const matchesCategory =
+      selectedCategory === 'See All' ||
+      job.tags.some((t) => t.toLowerCase().includes(selectedCategory.toLowerCase())) ||
+      job.title.toLowerCase().includes(selectedCategory.toLowerCase());
+    return matchesSearch && matchesCategory;
+  });
+
   const handleTabSelect = (tab: TabType) => {
     setActiveTab(tab);
-    if (tab === 'jobs') router.push('/contracts');
+    if (tab === 'jobs') {
+      if (isClient) {
+        router.push('/explore');
+      } else {
+        router.push('/contracts');
+      }
+    }
     if (tab === 'chats') router.push('/messages');
     if (tab === 'profile') router.push('/profile');
     if (tab === 'action') {
@@ -236,6 +271,27 @@ export default function HomeScreen() {
                 </TouchableOpacity>
               </LinearGradient>
 
+              {/* Client Search for Verified Developers & Skills */}
+              <SearchBar
+                value={clientSearchQuery}
+                onChangeText={setClientSearchQuery}
+                onFilterPress={() => router.push('/explore')}
+                placeholder="Search verified talent, React Native, UI/UX…"
+                onSubmitEditing={() => router.push('/explore')}
+              />
+              {clientSearchQuery.trim().length > 0 && (
+                <TouchableOpacity
+                  style={[styles.clientSearchDirectBtn, { backgroundColor: colors.surface, borderColor: colors.primary }]}
+                  onPress={() => router.push('/explore')}
+                  activeOpacity={0.85}>
+                  <Ionicons name="search" size={16} color={colors.primary} />
+                  <Text style={[styles.clientSearchDirectText, { color: colors.text }]}>
+                    Find developers matching <Text style={{ color: colors.primary, fontWeight: '800' }}>&ldquo;{clientSearchQuery}&rdquo;</Text> in Directory
+                  </Text>
+                  <Ionicons name="arrow-forward" size={14} color={colors.primary} />
+                </TouchableOpacity>
+              )}
+
               {/* Action Required: Deliverable Awaiting Review */}
               <View style={styles.sectionHeaderRow}>
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>
@@ -264,13 +320,13 @@ export default function HomeScreen() {
                   Mobile App UI/UX Redesign
                 </Text>
                 <Text style={[styles.reviewSubtitle, { color: colors.textSecondary }]}>
-                  Milestone 2 submitted by Kwame Mensah (Senior Dev). Pull request &amp; preview demo attached.
+                  Milestone 2 submitted by Kwame Mensah. Pull request and live demo attached.
                 </Text>
 
                 <View style={styles.reviewFooter}>
                   <Text style={styles.reviewTimeLeft}>7 days to auto-release</Text>
                   <View style={styles.reviewCta}>
-                    <Text style={styles.reviewCtaText}>Review &amp; Release</Text>
+                    <Text style={styles.reviewCtaText}>Review & Release</Text>
                     <Ionicons name="arrow-forward" size={14} color="#0F73F7" />
                   </View>
                 </View>
@@ -378,7 +434,6 @@ export default function HomeScreen() {
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 onFilterPress={() => router.push('/explore')}
-                placeholder="Search Here..."
               />
 
               {/* Category Filter Pills Horizontal Scroll */}
@@ -388,73 +443,105 @@ export default function HomeScreen() {
                 onSelectCategory={setSelectedCategory}
               />
 
-              {/* Section: Recommended 🚀 */}
-              <View style={styles.sectionHeaderRow}>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                  Recommended 🚀
-                </Text>
-                <TouchableOpacity onPress={() => router.push('/explore')}>
-                  <Text style={styles.seeAllText}>See all &gt;&gt;</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Horizontal Recommended Jobs Carousel */}
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.horizontalCarousel}>
-                {isLoading ? (
-                  <View style={{ flexDirection: 'row', gap: 14 }}>
-                    <View style={{ width: 270 }}>
-                      <JobCardSkeleton />
-                    </View>
-                    <View style={{ width: 270 }}>
-                      <JobCardSkeleton />
-                    </View>
+              {filteredRecommendedJobs.length === 0 && filteredLatestJobs.length === 0 ? (
+                <View style={[styles.emptySearchCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  <View style={[styles.emptySearchCircle, { backgroundColor: isDark ? '#1E293B' : '#EBF4FE' }]}>
+                    <Ionicons name="search" size={26} color={colors.primary} />
                   </View>
-                ) : (
-                  recommendedJobs.map((job) => (
-                    <RecommendedJobCard
-                      key={job.id}
-                      job={job}
-                      onPress={() => router.push(`/job/${job.id}` as any)}
-                      onBookmarkToggle={() => toggleRecommendedBookmark(job.id)}
-                      onApplyPress={() => router.push(`/job/${job.id}` as any)}
-                    />
-                  ))
-                )}
-              </ScrollView>
+                  <Text style={[styles.emptySearchTitle, { color: colors.text }]}>No Escrow Jobs Found</Text>
+                  <Text style={[styles.emptySearchSub, { color: colors.textSecondary }]}>
+                    No jobs match &ldquo;{searchQuery}&rdquo; under &ldquo;{selectedCategory}&rdquo;.
+                  </Text>
+                  <TouchableOpacity
+                    style={[styles.resetSearchBtn, { backgroundColor: colors.primary }]}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setSearchQuery('');
+                      setSelectedCategory('See All');
+                    }}
+                    activeOpacity={0.85}>
+                    <Text style={styles.resetSearchBtnText}>Reset Search & Filters</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <>
+                  {/* Section: Recommended 🚀 */}
+                  {filteredRecommendedJobs.length > 0 && (
+                    <>
+                      <View style={styles.sectionHeaderRow}>
+                        <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                          Recommended 🚀
+                        </Text>
+                        <TouchableOpacity onPress={() => router.push('/explore')}>
+                          <Text style={styles.seeAllText}>See all →</Text>
+                        </TouchableOpacity>
+                      </View>
 
-              {/* Section: Latest Post ✨ */}
-              <View style={[styles.sectionHeaderRow, { marginTop: 24 }]}>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                  Latest Post ✨
-                </Text>
-                <TouchableOpacity onPress={() => router.push('/explore')}>
-                  <Text style={styles.seeAllText}>See all &gt;&gt;</Text>
-                </TouchableOpacity>
-              </View>
+                      {/* Horizontal Recommended Jobs Carousel */}
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.horizontalCarousel}>
+                        {isLoading ? (
+                          <View style={{ flexDirection: 'row', gap: 14 }}>
+                            <View style={{ width: 270 }}>
+                              <JobCardSkeleton />
+                            </View>
+                            <View style={{ width: 270 }}>
+                              <JobCardSkeleton />
+                            </View>
+                          </View>
+                        ) : (
+                          filteredRecommendedJobs.map((job) => (
+                            <RecommendedJobCard
+                              key={job.id}
+                              job={job}
+                              onPress={() => router.push(`/job/${job.id}` as any)}
+                              onBookmarkToggle={() => toggleRecommendedBookmark(job.id)}
+                              onApplyPress={() => router.push(`/job/${job.id}` as any)}
+                            />
+                          ))
+                        )}
+                      </ScrollView>
+                    </>
+                  )}
 
-              {/* Vertical Latest Jobs List */}
-              <View style={styles.latestList}>
-                {isLoading ? (
-                  <View style={{ gap: 12 }}>
-                    <JobCardSkeleton />
-                    <JobCardSkeleton />
-                    <JobCardSkeleton />
-                  </View>
-                ) : (
-                  latestJobs.map((job) => (
-                    <LatestJobCard
-                      key={job.id}
-                      job={job}
-                      onPress={() => router.push(`/job/${job.id}` as any)}
-                      onBookmarkToggle={() => toggleLatestBookmark(job.id)}
-                      onApplyPress={() => router.push(`/job/${job.id}` as any)}
-                    />
-                  ))
-                )}
-              </View>
+                  {/* Section: Latest Post ✨ */}
+                  {filteredLatestJobs.length > 0 && (
+                    <>
+                      <View style={[styles.sectionHeaderRow, { marginTop: 24 }]}>
+                        <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                          Latest Post ✨
+                        </Text>
+                        <TouchableOpacity onPress={() => router.push('/explore')}>
+                          <Text style={styles.seeAllText}>See all →</Text>
+                        </TouchableOpacity>
+                      </View>
+
+                      {/* Vertical Latest Jobs List */}
+                      <View style={styles.latestList}>
+                        {isLoading ? (
+                          <View style={{ gap: 12 }}>
+                            <JobCardSkeleton />
+                            <JobCardSkeleton />
+                            <JobCardSkeleton />
+                          </View>
+                        ) : (
+                          filteredLatestJobs.map((job) => (
+                            <LatestJobCard
+                              key={job.id}
+                              job={job}
+                              onPress={() => router.push(`/job/${job.id}` as any)}
+                              onBookmarkToggle={() => toggleLatestBookmark(job.id)}
+                              onApplyPress={() => router.push(`/job/${job.id}` as any)}
+                            />
+                          ))
+                        )}
+                      </View>
+                    </>
+                  )}
+                </>
+              )}
             </>
           )}
         </ScrollView>
@@ -750,5 +837,61 @@ const styles = StyleSheet.create({
   quickTileText: {
     fontSize: 11,
     fontWeight: '700',
+  },
+  clientSearchDirectBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 8,
+    gap: 8,
+  },
+  clientSearchDirectText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  emptySearchCard: {
+    borderRadius: 20,
+    borderWidth: 1,
+    paddingVertical: 36,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 18,
+  },
+  emptySearchCircle: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  emptySearchTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  emptySearchSub: {
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  resetSearchBtn: {
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  resetSearchBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 });

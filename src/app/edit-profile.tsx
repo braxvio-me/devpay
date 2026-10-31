@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -12,27 +12,60 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useRole } from '@/contexts/RoleContext';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 
 export default function EditProfileScreen() {
   const router = useRouter();
+  const { isDark, colors } = useTheme();
+  const { isClient } = useRole();
 
+  // Freelancer profile state
   const [avatarUri, setAvatarUri] = useState(
-    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200'
+    isClient
+      ? 'https://images.unsplash.com/photo-1572021335469-31706a17aaef?w=200'
+      : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200'
   );
-  const [name, setName] = useState('Kwame Mensah');
-  const [headline, setHeadline] = useState('Senior Mobile & React Native Engineer');
+  const [name, setName] = useState(isClient ? 'TechCorp Africa Ltd' : 'Kwame Mensah');
+  const [headline, setHeadline] = useState(
+    isClient
+      ? 'Enterprise Client • Digital Products & Fintech'
+      : 'Senior Mobile & React Native Engineer'
+  );
+  const [rate, setRate] = useState('150');
+  const [location, setLocation] = useState(isClient ? 'Airport City, Accra • Ghana' : 'Accra, Ghana');
+  const [bio, setBio] = useState(
+    isClient
+      ? 'TechCorp Africa builds next-generation payment systems and financial infrastructure for West African enterprises. We partner with top-tier verified software engineers to build scalable mobile solutions.'
+      : 'Specialized in building high-performance cross-platform fintech apps with React Native, Expo SDK 58, and Mobile Money gateway integrations. Over 6 years shipping consumer apps across Africa.'
+  );
+
+  // Client specific fields
+  const [tinNumber, setTinNumber] = useState('C0028192847 - Verified');
+  const [website, setWebsite] = useState('https://techcorp.africa');
+  const [billingPhone, setBillingPhone] = useState('024 123 4567 (MTN MoMo Business)');
+
+  // Freelancer specific fields
+  const [skills, setSkills] = useState(
+    isClient
+      ? ['React Native', 'MoMo API Webhooks', 'UI/UX Design', 'NestJS Backend', 'PostgreSQL']
+      : ['React Native', 'Expo SDK 58', 'TypeScript', 'UI/UX Design', 'Mobile Money APIs', 'Supabase']
+  );
+  const [newSkill, setNewSkill] = useState('');
+  const [github, setGithub] = useState('https://github.com/kwamemensah');
+  const [portfolioUrl, setPortfolioUrl] = useState('https://kwamemensah.dev');
+  const [isSaving, setIsSaving] = useState(false);
 
   const handlePickImage = async () => {
-    Alert.alert('Upload Profile Photo', 'Select image source', [
+    Alert.alert('Upload Photo', isClient ? 'Select company logo' : 'Select profile photo', [
       {
         text: 'Take Photo with Camera',
         onPress: async () => {
           const { status } = await ImagePicker.requestCameraPermissionsAsync();
           if (status !== 'granted') {
-            Alert.alert('Permission Denied', 'Camera permission is required to take a profile photo.');
+            Alert.alert('Permission Denied', 'Camera permission is required.');
             return;
           }
           const result = await ImagePicker.launchCameraAsync({
@@ -51,7 +84,7 @@ export default function EditProfileScreen() {
         onPress: async () => {
           const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
           if (status !== 'granted') {
-            Alert.alert('Permission Denied', 'Media library permission is required to select a photo.');
+            Alert.alert('Permission Denied', 'Media library permission is required.');
             return;
           }
           const result = await ImagePicker.launchImageLibraryAsync({
@@ -69,28 +102,11 @@ export default function EditProfileScreen() {
       { text: 'Cancel', style: 'cancel' },
     ]);
   };
-  const [rate, setRate] = useState('150');
-  const [location, setLocation] = useState('Accra, Ghana');
-  const [bio, setBio] = useState(
-    'Specialized in building high-performance cross-platform fintech apps with React Native, Expo SDK 58, and Mobile Money gateway integrations. Over 6 years shipping consumer apps across Africa.'
-  );
-  const [skills, setSkills] = useState([
-    'React Native',
-    'Expo SDK 58',
-    'TypeScript',
-    'UI/UX Design',
-    'Mobile Money APIs',
-    'Supabase',
-  ]);
-  const [newSkill, setNewSkill] = useState('');
-  const [github, setGithub] = useState('https://github.com/kwamemensah');
-  const [portfolioUrl, setPortfolioUrl] = useState('https://kwamemensah.dev');
-  const [isSaving, setIsSaving] = useState(false);
 
   const handleAddSkill = () => {
     if (!newSkill.trim()) return;
     if (skills.includes(newSkill.trim())) {
-      Alert.alert('Duplicate Skill', 'This skill is already on your profile.');
+      Alert.alert('Duplicate Item', 'This tag is already on your profile.');
       return;
     }
     setSkills([...skills, newSkill.trim()]);
@@ -103,35 +119,55 @@ export default function EditProfileScreen() {
 
   const handleSave = () => {
     if (!name.trim()) {
-      Alert.alert('Required', 'Please enter your full name.');
+      Alert.alert('Required', isClient ? 'Please enter company name.' : 'Please enter full name.');
       return;
     }
     setIsSaving(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setTimeout(() => {
       setIsSaving(false);
-      Alert.alert('Profile Saved', 'Your profile updates have been published to clients across DevPay.');
+      Alert.alert(
+        'Profile Saved',
+        isClient
+          ? 'Company profile updated and visible to verified developers across DevPay.'
+          : 'Your developer profile has been published to clients across DevPay.'
+      );
       router.back();
     }, 600);
   };
 
   return (
-    <View style={styles.screen}>
+    <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         {/* Top Header */}
-        <View style={styles.header}>
+        <View
+          style={[
+            styles.header,
+            { backgroundColor: colors.surface, borderBottomColor: colors.border },
+          ]}>
           <TouchableOpacity
-            style={styles.backButton}
+            style={[
+              styles.backButton,
+              { backgroundColor: colors.backgroundElement, borderColor: colors.border },
+            ]}
             onPress={() => router.back()}
             activeOpacity={0.8}>
-            <Ionicons name="chevron-back" size={20} color={Colors.light.text} />
+            <Ionicons name="chevron-back" size={20} color={colors.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Edit Profile</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+            {isClient ? 'Edit Company Profile' : 'Edit Developer Profile'}
+          </Text>
           <TouchableOpacity
-            style={styles.saveBtn}
+            style={[
+              styles.saveBtn,
+              { backgroundColor: isDark ? '#1E293B' : '#EFF6FF' },
+            ]}
             onPress={handleSave}
             disabled={isSaving}
             activeOpacity={0.8}>
-            <Text style={styles.saveBtnText}>{isSaving ? 'Saving...' : 'Save'}</Text>
+            <Text style={[styles.saveBtnText, { color: colors.primary }]}>
+              {isSaving ? 'Saving...' : 'Save'}
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -141,10 +177,7 @@ export default function EditProfileScreen() {
           {/* Avatar Upload Preview */}
           <View style={styles.avatarSection}>
             <View style={styles.avatarWrap}>
-              <Image
-                source={{ uri: avatarUri }}
-                style={styles.avatarImg}
-              />
+              <Image source={{ uri: avatarUri }} style={styles.avatarImg} />
               <TouchableOpacity
                 style={styles.cameraBadge}
                 onPress={handlePickImage}
@@ -152,135 +185,287 @@ export default function EditProfileScreen() {
                 <Ionicons name="camera" size={16} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
-            <Text style={styles.avatarHint}>Tap camera to update profile photo</Text>
+            <Text style={[styles.avatarHint, { color: colors.textSecondary }]}>
+              {isClient ? 'Tap camera to update company logo' : 'Tap camera to update profile photo'}
+            </Text>
           </View>
 
-          {/* Form Fields */}
-          <View style={styles.formGroup}>
-            <Text style={styles.inputLabel}>Full Name</Text>
-            <TextInput
-              style={styles.input}
-              value={name}
-              onChangeText={setName}
-              placeholder="e.g. Kwame Mensah"
-              placeholderTextColor={Colors.light.textMuted}
-            />
-          </View>
+          {/* Form Fields: Dual Mode */}
+          {isClient ? (
+            /* ========================================================================= */
+            /* CLIENT EDIT PROFILE FIELDS                                                */
+            /* ========================================================================= */
+            <>
+              <View style={styles.formGroup}>
+                <Text style={[styles.inputLabel, { color: colors.text }]}>Company / Business Name</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
+                  value={name}
+                  onChangeText={setName}
+                  placeholder="e.g. TechCorp Africa Ltd"
+                  placeholderTextColor={colors.textMuted}
+                />
+              </View>
 
-          <View style={styles.formGroup}>
-            <Text style={styles.inputLabel}>Professional Headline</Text>
-            <TextInput
-              style={styles.input}
-              value={headline}
-              onChangeText={setHeadline}
-              placeholder="e.g. Senior Mobile & React Native Engineer"
-              placeholderTextColor={Colors.light.textMuted}
-            />
-          </View>
+              <View style={styles.formGroup}>
+                <Text style={[styles.inputLabel, { color: colors.text }]}>Sector / Business Focus</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
+                  value={headline}
+                  onChangeText={setHeadline}
+                  placeholder="e.g. Fintech & Digital Payments"
+                  placeholderTextColor={colors.textMuted}
+                />
+              </View>
 
-          <View style={styles.rowTwo}>
-            <View style={[styles.formGroup, { flex: 1 }]}>
-              <Text style={styles.inputLabel}>Hourly Rate (GH₵)</Text>
-              <TextInput
-                style={styles.input}
-                value={rate}
-                onChangeText={setRate}
-                placeholder="150"
-                keyboardType="numeric"
-                placeholderTextColor={Colors.light.textMuted}
-              />
-            </View>
+              <View style={styles.rowTwo}>
+                <View style={[styles.formGroup, { flex: 1.2 }]}>
+                  <Text style={[styles.inputLabel, { color: colors.text }]}>GRA TIN / Reg. No</Text>
+                  <TextInput
+                    style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
+                    value={tinNumber}
+                    onChangeText={setTinNumber}
+                    placeholder="C0028192847"
+                    placeholderTextColor={colors.textMuted}
+                  />
+                </View>
 
-            <View style={[styles.formGroup, { flex: 1.2 }]}>
-              <Text style={styles.inputLabel}>Location</Text>
-              <TextInput
-                style={styles.input}
-                value={location}
-                onChangeText={setLocation}
-                placeholder="Accra, Ghana"
-                placeholderTextColor={Colors.light.textMuted}
-              />
-            </View>
-          </View>
+                <View style={[styles.formGroup, { flex: 1 }]}>
+                  <Text style={[styles.inputLabel, { color: colors.text }]}>HQ Location</Text>
+                  <TextInput
+                    style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
+                    value={location}
+                    onChangeText={setLocation}
+                    placeholder="Accra, Ghana"
+                    placeholderTextColor={colors.textMuted}
+                  />
+                </View>
+              </View>
 
-          <View style={styles.formGroup}>
-            <Text style={styles.inputLabel}>Bio / Professional Summary</Text>
-            <TextInput
-              style={[styles.input, styles.bioInput]}
-              value={bio}
-              onChangeText={setBio}
-              placeholder="Describe your expertise, experience, and past deliverables..."
-              placeholderTextColor={Colors.light.textMuted}
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-            />
-          </View>
+              <View style={styles.formGroup}>
+                <Text style={[styles.inputLabel, { color: colors.text }]}>Company Website</Text>
+                <View style={styles.linkInputWrap}>
+                  <Ionicons name="globe-outline" size={18} color={colors.primary} style={styles.linkIcon} />
+                  <TextInput
+                    style={[styles.input, styles.linkInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
+                    value={website}
+                    onChangeText={setWebsite}
+                    placeholder="https://company.com"
+                    placeholderTextColor={colors.textMuted}
+                    autoCapitalize="none"
+                  />
+                </View>
+              </View>
 
-          {/* Skills Management */}
-          <View style={styles.formGroup}>
-            <Text style={styles.inputLabel}>Skills & Technologies</Text>
-            <View style={styles.addSkillRow}>
-              <TextInput
-                style={[styles.input, { flex: 1 }]}
-                value={newSkill}
-                onChangeText={setNewSkill}
-                placeholder="Add skill (e.g. Kotlin, Flutter)..."
-                placeholderTextColor={Colors.light.textMuted}
-                onSubmitEditing={handleAddSkill}
-              />
-              <TouchableOpacity
-                style={styles.addSkillBtn}
-                onPress={handleAddSkill}
-                activeOpacity={0.85}>
-                <Ionicons name="add" size={20} color="#FFFFFF" />
-              </TouchableOpacity>
-            </View>
+              <View style={styles.formGroup}>
+                <Text style={[styles.inputLabel, { color: colors.text }]}>MoMo Billing / Corporate Wallet</Text>
+                <View style={styles.linkInputWrap}>
+                  <Ionicons name="phone-portrait-outline" size={18} color="#10B981" style={styles.linkIcon} />
+                  <TextInput
+                    style={[styles.input, styles.linkInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
+                    value={billingPhone}
+                    onChangeText={setBillingPhone}
+                    placeholder="024 XXX XXXX"
+                    placeholderTextColor={colors.textMuted}
+                  />
+                </View>
+              </View>
 
-            <View style={styles.skillsChipsWrap}>
-              {skills.map((skill) => (
-                <View key={skill} style={styles.skillChip}>
-                  <Text style={styles.skillChipText}>{skill}</Text>
+              <View style={styles.formGroup}>
+                <Text style={[styles.inputLabel, { color: colors.text }]}>About Company & Project Mission</Text>
+                <TextInput
+                  style={[styles.input, styles.bioInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
+                  value={bio}
+                  onChangeText={setBio}
+                  placeholder="Describe your company and the types of mobile apps or APIs you build..."
+                  placeholderTextColor={colors.textMuted}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={[styles.inputLabel, { color: colors.text }]}>Preferred Tech Stacks for Hiring</Text>
+                <View style={styles.addSkillRow}>
+                  <TextInput
+                    style={[styles.input, { flex: 1, backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
+                    value={newSkill}
+                    onChangeText={setNewSkill}
+                    placeholder="Add technology (e.g. Flutter, Kotlin)..."
+                    placeholderTextColor={colors.textMuted}
+                    onSubmitEditing={handleAddSkill}
+                  />
                   <TouchableOpacity
-                    onPress={() => handleRemoveSkill(skill)}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <Ionicons name="close-circle" size={16} color={Colors.light.textSecondary} />
+                    style={styles.addSkillBtn}
+                    onPress={handleAddSkill}
+                    activeOpacity={0.85}>
+                    <Ionicons name="add" size={20} color="#FFFFFF" />
                   </TouchableOpacity>
                 </View>
-              ))}
-            </View>
-          </View>
 
-          {/* Portfolio & Social Links */}
-          <View style={styles.formGroup}>
-            <Text style={styles.inputLabel}>GitHub Profile</Text>
-            <View style={styles.linkInputWrap}>
-              <Ionicons name="logo-github" size={18} color={Colors.light.text} style={styles.linkIcon} />
-              <TextInput
-                style={[styles.input, styles.linkInput]}
-                value={github}
-                onChangeText={setGithub}
-                placeholder="https://github.com/..."
-                placeholderTextColor={Colors.light.textMuted}
-                autoCapitalize="none"
-              />
-            </View>
-          </View>
+                <View style={styles.skillsChipsWrap}>
+                  {skills.map((skill) => (
+                    <View
+                      key={skill}
+                      style={[
+                        styles.skillChip,
+                        {
+                          backgroundColor: isDark ? '#1E293B' : '#EFF6FF',
+                          borderColor: isDark ? '#334155' : '#BFDBFE',
+                        },
+                      ]}>
+                      <Text style={[styles.skillChipText, { color: colors.primary }]}>{skill}</Text>
+                      <TouchableOpacity
+                        onPress={() => handleRemoveSkill(skill)}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                        <Ionicons name="close-circle" size={16} color={colors.textSecondary} />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            </>
+          ) : (
+            /* ========================================================================= */
+            /* FREELANCER EDIT PROFILE FIELDS                                            */
+            /* ========================================================================= */
+            <>
+              <View style={styles.formGroup}>
+                <Text style={[styles.inputLabel, { color: colors.text }]}>Full Name</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
+                  value={name}
+                  onChangeText={setName}
+                  placeholder="e.g. Kwame Mensah"
+                  placeholderTextColor={colors.textMuted}
+                />
+              </View>
 
-          <View style={styles.formGroup}>
-            <Text style={styles.inputLabel}>Portfolio / Behance / Website</Text>
-            <View style={styles.linkInputWrap}>
-              <Ionicons name="globe-outline" size={18} color="#0F73F7" style={styles.linkIcon} />
-              <TextInput
-                style={[styles.input, styles.linkInput]}
-                value={portfolioUrl}
-                onChangeText={setPortfolioUrl}
-                placeholder="https://..."
-                placeholderTextColor={Colors.light.textMuted}
-                autoCapitalize="none"
-              />
-            </View>
-          </View>
+              <View style={styles.formGroup}>
+                <Text style={[styles.inputLabel, { color: colors.text }]}>Professional Headline</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
+                  value={headline}
+                  onChangeText={setHeadline}
+                  placeholder="e.g. Senior Mobile & React Native Engineer"
+                  placeholderTextColor={colors.textMuted}
+                />
+              </View>
+
+              <View style={styles.rowTwo}>
+                <View style={[styles.formGroup, { flex: 1 }]}>
+                  <Text style={[styles.inputLabel, { color: colors.text }]}>Hourly Rate (GH₵)</Text>
+                  <TextInput
+                    style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
+                    value={rate}
+                    onChangeText={setRate}
+                    placeholder="150"
+                    keyboardType="numeric"
+                    placeholderTextColor={colors.textMuted}
+                  />
+                </View>
+
+                <View style={[styles.formGroup, { flex: 1.2 }]}>
+                  <Text style={[styles.inputLabel, { color: colors.text }]}>Location</Text>
+                  <TextInput
+                    style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
+                    value={location}
+                    onChangeText={setLocation}
+                    placeholder="Accra, Ghana"
+                    placeholderTextColor={colors.textMuted}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={[styles.inputLabel, { color: colors.text }]}>Bio / Professional Summary</Text>
+                <TextInput
+                  style={[styles.input, styles.bioInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
+                  value={bio}
+                  onChangeText={setBio}
+                  placeholder="Describe your expertise, experience, and past deliverables..."
+                  placeholderTextColor={colors.textMuted}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                />
+              </View>
+
+              {/* Skills Management */}
+              <View style={styles.formGroup}>
+                <Text style={[styles.inputLabel, { color: colors.text }]}>Skills & Technologies</Text>
+                <View style={styles.addSkillRow}>
+                  <TextInput
+                    style={[styles.input, { flex: 1, backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
+                    value={newSkill}
+                    onChangeText={setNewSkill}
+                    placeholder="Add skill (e.g. Kotlin, Flutter)..."
+                    placeholderTextColor={colors.textMuted}
+                    onSubmitEditing={handleAddSkill}
+                  />
+                  <TouchableOpacity
+                    style={styles.addSkillBtn}
+                    onPress={handleAddSkill}
+                    activeOpacity={0.85}>
+                    <Ionicons name="add" size={20} color="#FFFFFF" />
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.skillsChipsWrap}>
+                  {skills.map((skill) => (
+                    <View
+                      key={skill}
+                      style={[
+                        styles.skillChip,
+                        {
+                          backgroundColor: isDark ? '#1E293B' : '#EFF6FF',
+                          borderColor: isDark ? '#334155' : '#BFDBFE',
+                        },
+                      ]}>
+                      <Text style={[styles.skillChipText, { color: colors.primary }]}>{skill}</Text>
+                      <TouchableOpacity
+                        onPress={() => handleRemoveSkill(skill)}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                        <Ionicons name="close-circle" size={16} color={colors.textSecondary} />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              </View>
+
+              {/* Portfolio & Social Links */}
+              <View style={styles.formGroup}>
+                <Text style={[styles.inputLabel, { color: colors.text }]}>GitHub Profile</Text>
+                <View style={styles.linkInputWrap}>
+                  <Ionicons name="logo-github" size={18} color={colors.text} style={styles.linkIcon} />
+                  <TextInput
+                    style={[styles.input, styles.linkInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
+                    value={github}
+                    onChangeText={setGithub}
+                    placeholder="https://github.com/..."
+                    placeholderTextColor={colors.textMuted}
+                    autoCapitalize="none"
+                  />
+                </View>
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={[styles.inputLabel, { color: colors.text }]}>Portfolio / Behance / Website</Text>
+                <View style={styles.linkInputWrap}>
+                  <Ionicons name="globe-outline" size={18} color={colors.primary} style={styles.linkIcon} />
+                  <TextInput
+                    style={[styles.input, styles.linkInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
+                    value={portfolioUrl}
+                    onChangeText={setPortfolioUrl}
+                    placeholder="https://..."
+                    placeholderTextColor={colors.textMuted}
+                    autoCapitalize="none"
+                  />
+                </View>
+              </View>
+            </>
+          )}
 
           {/* Primary Save Button */}
           <TouchableOpacity
@@ -289,7 +474,11 @@ export default function EditProfileScreen() {
             disabled={isSaving}
             activeOpacity={0.85}>
             <Text style={styles.primarySaveBtnText}>
-              {isSaving ? 'Updating Profile...' : 'Save & Publish Profile'}
+              {isSaving
+                ? 'Updating Profile...'
+                : isClient
+                ? 'Save & Publish Company Profile'
+                : 'Save & Publish Profile'}
             </Text>
           </TouchableOpacity>
         </ScrollView>
@@ -301,7 +490,6 @@ export default function EditProfileScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
   },
   safeArea: {
     flex: 1,
@@ -313,26 +501,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#EEF3FA',
-    backgroundColor: '#FFFFFF',
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#EEF3FA',
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '800',
-    color: Colors.light.text,
   },
   saveBtn: {
-    backgroundColor: '#EFF6FF',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 16,
@@ -340,7 +522,6 @@ const styles = StyleSheet.create({
   saveBtnText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#0F73F7',
   },
   scrollContent: {
     padding: 20,
@@ -376,7 +557,6 @@ const styles = StyleSheet.create({
   },
   avatarHint: {
     fontSize: 12,
-    color: Colors.light.textMuted,
   },
   formGroup: {
     gap: 6,
@@ -388,18 +568,14 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 13,
     fontWeight: '700',
-    color: Colors.light.text,
     marginLeft: 2,
   },
   input: {
     height: 48,
-    backgroundColor: '#FFFFFF',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#EEF3FA',
     paddingHorizontal: 14,
     fontSize: 14,
-    color: Colors.light.text,
   },
   bioInput: {
     height: 100,
@@ -427,17 +603,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#EFF6FF',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#BFDBFE',
   },
   skillChipText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#0F73F7',
   },
   linkInputWrap: {
     position: 'relative',

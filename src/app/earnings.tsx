@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   Modal,
   ScrollView,
@@ -262,7 +262,7 @@ export default function EarningsScreen() {
               Transaction Ledger
             </Text>
             <Text style={[styles.sectionSub, { color: colors.textSecondary }]}>
-              Immutable Ghana Bank &amp; Mobile Money records
+              Immutable Ghana Bank & Mobile Money records
             </Text>
           </View>
 

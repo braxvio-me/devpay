@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+﻿import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -125,7 +125,7 @@ export default function VerifyOtpScreen() {
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.gradientButton}>
-              <Text style={styles.verifyButtonText}>Verify &amp; Continue</Text>
+              <Text style={styles.verifyButtonText}>Verify & Continue</Text>
             </LinearGradient>
           </TouchableOpacity>
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -327,7 +327,7 @@ export default function PaymentScreen() {
                   router.push('/contracts');
                 }}
                 activeOpacity={0.88}>
-                <Text style={styles.receiptDoneBtnText}>View Contract &amp; Milestones</Text>
+                <Text style={styles.receiptDoneBtnText}>View Contract & Milestones</Text>
               </TouchableOpacity>
             </View>
           </View>

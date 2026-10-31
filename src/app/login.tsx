@@ -47,17 +47,14 @@ export default function LoginScreen() {
       const isEnrolled = await LocalAuthentication.isEnrolledAsync();
 
       if (!hasHardware || !isEnrolled) {
-        // Fallback for emulator / non-enrolled: simulate prompt
+        // Fallback: device has no biometrics enrolled — still let them in
         Alert.alert(
-          'Biometric Verification',
-          'Simulating DevPay Face ID biometric scan for Kwame Mensah.',
+          'Face ID Unavailable',
+          'No biometrics are set up on this device. Please use your phone number and password to sign in.',
           [
             {
-              text: 'Simulate Success',
-              onPress: async () => {
-                await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                router.replace('/');
-              },
+              text: 'Sign in Manually',
+              onPress: () => router.replace('/'),
             },
             { text: 'Cancel', style: 'cancel' },
           ]

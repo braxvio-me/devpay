@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -248,7 +248,7 @@ export default function JobApplicantsScreen() {
                     end={{ x: 1, y: 0 }}
                     style={styles.hireGradient}>
                     <Ionicons name="briefcase" size={15} color="#FFFFFF" />
-                    <Text style={styles.hireBtnText}>Hire &amp; Fund Escrow</Text>
+                    <Text style={styles.hireBtnText}>Hire & Fund Escrow</Text>
                   </LinearGradient>
                 </TouchableOpacity>
               </View>

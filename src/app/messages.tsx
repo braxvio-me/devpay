@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   TextInput,
   Image,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -22,9 +24,17 @@ interface ChatThread {
   avatar: string;
   lastMessage: string;
   time: string;
-  unreadCount: number;
-  isOnline: boolean;
-  project: string;
+  unreadCount?: number;
+  isRead?: boolean;
+  isGroup?: boolean;
+}
+
+interface ChatMessage {
+  id: string;
+  sender: 'them' | 'me';
+  text: string;
+  time: string;
+  reaction?: string;
 }
 
 export default function MessagesScreen() {
@@ -32,285 +42,460 @@ export default function MessagesScreen() {
   const { isDark, colors } = useTheme();
   const { isClient } = useRole();
 
+  const [activeFilter, setActiveFilter] = useState<'All' | 'Unread' | 'Groups'>('All');
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedThread, setSelectedThread] = useState<ChatThread | null>(null);
   const [inputText, setInputText] = useState('');
-  const [messages, setMessages] = useState([
+
+  // Initial messages matching Image 1 (Phone 2)
+  const [conversation, setConversation] = useState<ChatMessage[]>([
     {
-      id: '1',
-      sender: 'client',
-      text: 'Hi Kwame, how is the milestone 2 design tokens implementation coming along?',
-      time: '10:30 AM',
+      id: 'm1',
+      sender: 'them',
+      text: 'vacation?',
+      time: '9:18 AM',
     },
     {
-      id: '2',
+      id: 'm2',
       sender: 'me',
-      text: 'Good morning! Just finalized the color tokens and tested on the 390px baseline grid. Submitting deliverables shortly.',
-      time: '10:34 AM',
+      text: 'Yeah, I was thinking we could explore the West Coast this year.',
+      time: '9:18 AM',
     },
     {
-      id: '3',
-      sender: 'client',
-      text: 'Awesome. Once submitted I will review and release the GH₵ 2,000 milestone funds!',
-      time: '10:35 AM',
+      id: 'm3',
+      sender: 'them',
+      text: 'Hey Olivia! have you thought about our tour plan for the summer vacation?',
+      time: '9:17 AM',
+    },
+    {
+      id: 'm4',
+      sender: 'me',
+      text: 'Yeah, I was thinking we could explore the West Coast this year.',
+      time: '9:17 AM',
+    },
+    {
+      id: 'm5',
+      sender: 'them',
+      text: "That sounds awesome! I've always wanted to see the Golden Gate Bridge",
+      time: '9:17 AM',
+    },
+    {
+      id: 'm6',
+      sender: 'me',
+      text: "Besides the Golden Gate Bridge, we should definitely visit Alcatraz, Fisherman's Wharf.",
+      time: '9:16 AM',
+    },
+    {
+      id: 'm7',
+      sender: 'them',
+      text: 'That sounds perfect. What do you want to do in Sans Fransisco?',
+      time: '9:16 AM',
+      reaction: '❤️',
     },
   ]);
 
+  // Threads list matching Image 1 (Phone 1)
   const threads: ChatThread[] = [
     {
       id: 't_1',
-      name: isClient ? 'Kwame Mensah (Lead Dev)' : 'Google Africa (Hiring Lead)',
-      avatar: isClient
-        ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120'
-        : 'https://images.unsplash.com/photo-1572021335469-31706a17aaef?w=120',
-      lastMessage: 'Awesome. Once submitted I will review and release...',
-      time: '10:35 AM',
-      unreadCount: 1,
-      isOnline: true,
-      project: 'Mobile App UI/UX Redesign',
+      name: 'Friends Tour ✈️',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120',
+      lastMessage: 'Olivia sent a photo',
+      time: '10:42 PM',
+      unreadCount: 6,
+      isGroup: true,
     },
     {
       id: 't_2',
-      name: isClient ? 'Akosua Serwaa (UI Designer)' : 'Telecel Digital Labs',
-      avatar: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=120',
-      lastMessage: 'Milestone 1 Figma prototype is ready for review.',
-      time: 'Yesterday',
-      unreadCount: 0,
-      isOnline: false,
-      project: 'MoMo Payment Checkout',
+      name: 'Wade Warren',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120',
+      lastMessage: 'When you coming home? 🐾',
+      time: '4 hours ago',
+      isRead: true,
     },
     {
       id: 't_3',
-      name: 'Hubtel Escrow Arbitration',
-      avatar: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=120',
-      lastMessage: 'Contract milestone dispute resolution team.',
-      time: 'Oct 19',
-      unreadCount: 0,
-      isOnline: true,
-      project: 'DevPay Escrow Support',
+      name: 'Design Hackathon 2026',
+      avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=120',
+      lastMessage: 'Olivia sent a photo',
+      time: '5 hours ago',
+      isRead: true,
+      isGroup: true,
+    },
+    {
+      id: 't_4',
+      name: 'Cameron Williamson',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120',
+      lastMessage: "Let's meet tomorrow at 09:00 PM",
+      time: 'Yesterday',
+      isRead: true,
+    },
+    {
+      id: 't_5',
+      name: 'Brooklyn Simmons',
+      avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=120',
+      lastMessage: 'Olivia sent a photo',
+      time: '23/05/2024',
+    },
+    {
+      id: 't_6',
+      name: 'Leslie Alexander',
+      avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=120',
+      lastMessage: 'Olivia sent a photo',
+      time: '23/05/2024',
+    },
+    {
+      id: 't_7',
+      name: 'Theresa Webb',
+      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120',
+      lastMessage: 'Olivia sent a photo',
+      time: '2 hours ago',
+      unreadCount: 2,
+    },
+    {
+      id: 't_8',
+      name: 'Floyd Miles',
+      avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=120',
+      lastMessage: 'Olivia sent a photo',
+      time: '2 hours ago',
+      unreadCount: 2,
     },
   ];
 
   const handleSendMessage = () => {
     if (!inputText.trim()) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setMessages((prev) => [
+    const now = new Date();
+    const hours = now.getHours() % 12 || 12;
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const ampm = now.getHours() >= 12 ? 'PM' : 'AM';
+    const timeStr = `${hours}:${minutes} ${ampm}`;
+
+    setConversation((prev) => [
       ...prev,
       {
         id: String(Date.now()),
         sender: 'me',
         text: inputText.trim(),
-        time: 'Just now',
+        time: timeStr,
       },
     ]);
     setInputText('');
   };
 
-  // Detailed Conversation View
+  const filteredThreads = threads.filter((thread) => {
+    const matchesSearch =
+      !searchQuery.trim() ||
+      thread.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      thread.lastMessage.toLowerCase().includes(searchQuery.toLowerCase());
+
+    if (activeFilter === 'Unread') {
+      return matchesSearch && !!thread.unreadCount && thread.unreadCount > 0;
+    }
+    if (activeFilter === 'Groups') {
+      return matchesSearch && !!thread.isGroup;
+    }
+    return matchesSearch;
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // VIEW B: CONVERSATION SCREEN (Right Mockup in Image 1)
+  // ───────────────────────────────────────────────────────────────────────────
   if (selectedThread) {
     return (
-      <View style={[styles.screen, { backgroundColor: colors.background }]}>
-        <SafeAreaView style={styles.safeArea} edges={['top']}>
-          {/* Conversation Header */}
-          <View
-            style={[
-              styles.chatHeader,
-              { backgroundColor: colors.surface, borderBottomColor: colors.border },
-            ]}>
+      <View style={[styles.screen, { backgroundColor: isDark ? '#0F172A' : '#FAFAFA' }]}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+          {/* Header */}
+          <View style={[styles.headerBar, { borderBottomColor: isDark ? '#1E293B' : '#F1F5F9' }]}>
             <TouchableOpacity
-              style={[
-                styles.backButton,
-                { backgroundColor: colors.backgroundElement, borderColor: colors.border },
-              ]}
+              style={styles.backBtnTouch}
               onPress={() => setSelectedThread(null)}
-              activeOpacity={0.8}>
-              <Ionicons name="chevron-back" size={20} color={colors.text} />
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+              <Ionicons name="chevron-back" size={22} color={isDark ? '#F8FAFC' : '#0F172A'} />
             </TouchableOpacity>
-
-            <View style={styles.chatHeaderInfo}>
-              <View style={styles.chatTitleRow}>
-                <Text style={[styles.chatHeaderName, { color: colors.text }]}>
-                  {selectedThread.name}
-                </Text>
-                {selectedThread.isOnline && <View style={styles.onlineDot} />}
-              </View>
-              <Text style={[styles.chatHeaderSub, { color: colors.textSecondary }]}>
-                {selectedThread.project}
-              </Text>
-            </View>
-
-            <TouchableOpacity
-              style={[
-                styles.backButton,
-                { backgroundColor: colors.backgroundElement, borderColor: colors.border },
-              ]}
-              onPress={() => router.push('/contracts')}
-              activeOpacity={0.8}>
-              <Ionicons name="shield-checkmark-outline" size={18} color="#10B981" />
-            </TouchableOpacity>
+            <Text style={[styles.headerTitle, { color: isDark ? '#F8FAFC' : '#0F172A' }]}>
+              Messages
+            </Text>
+            <View style={{ width: 36 }} />
           </View>
 
-          {/* Messages Scroll Area */}
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.messageScroll}>
-            {messages.map((m) => {
-              const isMe = m.sender === 'me';
-              return (
-                <View
-                  key={m.id}
-                  style={[
-                    styles.messageRow,
-                    isMe ? styles.messageRowMe : styles.messageRowThem,
-                  ]}>
-                  <View
-                    style={[
-                      styles.bubble,
-                      isMe
-                        ? styles.bubbleMe
-                        : [
-                            styles.bubbleThem,
-                            {
-                              backgroundColor: colors.surface,
-                              borderColor: colors.border,
-                            },
-                          ],
-                    ]}>
-                    <Text
+          {/* Conversation Stream */}
+          <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.chatScrollContent}>
+              {conversation.map((msg) => {
+                const isMe = msg.sender === 'me';
+                return (
+                  <View key={msg.id} style={styles.bubbleRowContainer}>
+                    <View
                       style={[
-                        styles.bubbleText,
-                        { color: isMe ? '#FFFFFF' : colors.text },
+                        styles.messageRow,
+                        isMe ? styles.messageRowRight : styles.messageRowLeft,
                       ]}>
-                      {m.text}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.bubbleTime,
-                        {
-                          color: isMe
-                            ? 'rgba(255, 255, 255, 0.7)'
-                            : colors.textMuted,
-                        },
-                      ]}>
-                      {m.time}
-                    </Text>
+                      {!isMe && (
+                        <Image
+                          source={{ uri: selectedThread.avatar }}
+                          style={styles.messageAvatar}
+                        />
+                      )}
+                      <View style={{ maxWidth: '78%' }}>
+                        <View
+                          style={[
+                            styles.chatBubble,
+                            isMe
+                              ? styles.chatBubbleMe
+                              : [
+                                  styles.chatBubbleThem,
+                                  {
+                                    backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
+                                    borderColor: isDark ? '#334155' : '#F1F5F9',
+                                  },
+                                ],
+                          ]}>
+                          <Text
+                            style={[
+                              styles.bubbleText,
+                              { color: isMe ? '#FFFFFF' : isDark ? '#F8FAFC' : '#1E293B' },
+                            ]}>
+                            {msg.text}
+                          </Text>
+                          {msg.reaction && (
+                            <View style={styles.reactionBadge}>
+                              <Text style={styles.reactionText}>{msg.reaction}</Text>
+                            </View>
+                          )}
+                        </View>
+                        <Text
+                          style={[
+                            styles.bubbleTimestamp,
+                            isMe ? styles.timestampRight : styles.timestampLeft,
+                            { color: isDark ? '#64748B' : '#94A3B8' },
+                          ]}>
+                          {msg.time}
+                        </Text>
+                      </View>
+                    </View>
                   </View>
-                </View>
-              );
-            })}
-          </ScrollView>
+                );
+              })}
+            </ScrollView>
 
-          {/* Input Bar */}
-          <View
-            style={[
-              styles.inputBar,
-              { backgroundColor: colors.surface, borderTopColor: colors.border },
-            ]}>
-            <TextInput
+            {/* Bottom Input Row matching Image 1 */}
+            <View
               style={[
-                styles.chatInput,
+                styles.bottomInputBar,
                 {
-                  backgroundColor: colors.backgroundElement,
-                  color: colors.text,
-                  borderColor: colors.border,
+                  backgroundColor: isDark ? '#0F172A' : '#FAFAFA',
+                  borderTopColor: isDark ? '#1E293B' : '#F1F5F9',
                 },
-              ]}
-              value={inputText}
-              placeholder="Type message or paste GitHub PR..."
-              placeholderTextColor={colors.textMuted}
-              onChangeText={setInputText}
-            />
-            <TouchableOpacity
-              style={styles.sendButton}
-              onPress={handleSendMessage}
-              activeOpacity={0.85}>
-              <Ionicons name="send" size={16} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
+              ]}>
+              {/* Plus (+) Button */}
+              <TouchableOpacity
+                style={[
+                  styles.plusBtn,
+                  { backgroundColor: isDark ? '#334155' : '#0F172A' },
+                ]}
+                onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+                activeOpacity={0.85}>
+                <Ionicons name="add" size={20} color="#FFFFFF" />
+              </TouchableOpacity>
+
+              {/* Text Input with Microphone */}
+              <View
+                style={[
+                  styles.inputFieldWrap,
+                  {
+                    backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
+                    borderColor: isDark ? '#334155' : '#E2E8F0',
+                  },
+                ]}>
+                <TextInput
+                  style={[styles.chatInput, { color: isDark ? '#FFFFFF' : '#0F172A' }]}
+                  placeholder="Type here..."
+                  placeholderTextColor={isDark ? '#64748B' : '#94A3B8'}
+                  value={inputText}
+                  onChangeText={setInputText}
+                  onSubmitEditing={handleSendMessage}
+                  returnKeyType="send"
+                />
+                <TouchableOpacity
+                  style={styles.micBtn}
+                  onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}>
+                  <Ionicons name="mic-outline" size={18} color={isDark ? '#94A3B8' : '#64748B'} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Send Button */}
+              <TouchableOpacity
+                style={styles.sendBtn}
+                onPress={handleSendMessage}
+                activeOpacity={0.85}>
+                <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+          </KeyboardAvoidingView>
         </SafeAreaView>
       </View>
     );
   }
 
-  // Threads List View
+  // ───────────────────────────────────────────────────────────────────────────
+  // VIEW A: MESSAGES LIST SCREEN (Left Mockup in Image 1)
+  // ───────────────────────────────────────────────────────────────────────────
   return (
-    <View style={[styles.screen, { backgroundColor: colors.background }]}>
+    <View style={[styles.screen, { backgroundColor: isDark ? '#0F172A' : '#FFFFFF' }]}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        {/* Top Header */}
-        <View
-          style={[
-            styles.topHeader,
-            { backgroundColor: colors.surface, borderBottomColor: colors.border },
-          ]}>
+        {/* Header Bar */}
+        <View style={styles.headerBar}>
           <TouchableOpacity
-            style={[
-              styles.backButton,
-              { backgroundColor: colors.backgroundElement, borderColor: colors.border },
-            ]}
+            style={styles.backBtnTouch}
             onPress={() => router.back()}
-            activeOpacity={0.8}>
-            <Ionicons name="chevron-back" size={20} color={colors.text} />
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+            <Ionicons name="chevron-back" size={22} color={isDark ? '#F8FAFC' : '#0F172A'} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Messages</Text>
-          <TouchableOpacity
-            style={[
-              styles.backButton,
-              { backgroundColor: colors.backgroundElement, borderColor: colors.border },
-            ]}
-            onPress={() => router.push('/chat/new')}
-            activeOpacity={0.8}>
-            <Ionicons name="create-outline" size={20} color={colors.primary} />
-          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: isDark ? '#F8FAFC' : '#0F172A' }]}>
+            Messages
+          </Text>
+          <View style={{ width: 36 }} />
         </View>
 
+        {/* Search Bar Pill */}
+        <View style={styles.searchContainer}>
+          <View
+            style={[
+              styles.searchPill,
+              {
+                backgroundColor: isDark ? '#1E293B' : '#F8FAFC',
+                borderColor: isDark ? '#334155' : '#EEF2F6',
+              },
+            ]}>
+            <Ionicons
+              name="search"
+              size={18}
+              color={isDark ? '#64748B' : '#94A3B8'}
+              style={{ marginRight: 8 }}
+            />
+            <TextInput
+              style={[styles.searchInput, { color: isDark ? '#FFFFFF' : '#0F172A' }]}
+              placeholder="Search..."
+              placeholderTextColor={isDark ? '#64748B' : '#94A3B8'}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoCorrect={false}
+              autoCapitalize="none"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <Ionicons name="close-circle" size={16} color={isDark ? '#64748B' : '#94A3B8'} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+
+        {/* Filter Segmented Pills (All, Unread, Groups) */}
+        <View style={styles.filterTabsRow}>
+          {(['All', 'Unread', 'Groups'] as const).map((tab) => {
+            const isActive = activeFilter === tab;
+            return (
+              <TouchableOpacity
+                key={tab}
+                style={[
+                  styles.filterTabPill,
+                  isActive
+                    ? [
+                        styles.filterTabActive,
+                        { backgroundColor: isDark ? '#38BDF8' : '#0F172A' },
+                      ]
+                    : [
+                        styles.filterTabInactive,
+                        { backgroundColor: isDark ? '#1E293B' : '#F8FAFC' },
+                      ],
+                ]}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setActiveFilter(tab);
+                }}
+                activeOpacity={0.8}>
+                <Text
+                  style={[
+                    styles.filterTabText,
+                    {
+                      color: isActive
+                        ? '#FFFFFF'
+                        : isDark
+                        ? '#94A3B8'
+                        : '#64748B',
+                      fontWeight: isActive ? '700' : '500',
+                    },
+                  ]}>
+                  {tab}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* Messages List */}
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.threadsScroll}>
-          {threads.map((thread) => (
+          contentContainerStyle={styles.threadListScroll}>
+          {filteredThreads.map((thread) => (
             <TouchableOpacity
               key={thread.id}
               style={[
-                styles.threadCard,
-                { backgroundColor: colors.surface, borderColor: colors.border },
+                styles.threadRow,
+                { borderBottomColor: isDark ? '#1E293B' : '#F1F5F9' },
               ]}
-              onPress={() => setSelectedThread(thread)}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setSelectedThread(thread);
+              }}
               activeOpacity={0.75}>
+              {/* Avatar Column */}
               <View style={styles.avatarWrap}>
-                <Image source={{ uri: thread.avatar }} style={styles.avatarImg} />
-                {thread.isOnline && <View style={styles.threadOnlineDot} />}
+                <Image source={{ uri: thread.avatar }} style={styles.threadAvatar} />
+                {thread.isGroup && (
+                  <View style={styles.groupBadgeOverlay}>
+                    <Text style={styles.groupBadgeText}>5</Text>
+                  </View>
+                )}
               </View>
 
-              <View style={styles.threadBody}>
-                <View style={styles.threadTopRow}>
-                  <Text style={[styles.threadName, { color: colors.text }]}>
-                    {thread.name}
-                  </Text>
-                  <Text style={[styles.threadTime, { color: colors.textMuted }]}>
-                    {thread.time}
-                  </Text>
-                </View>
-
-                <Text
-                  style={[styles.threadProject, { color: colors.primary }]}
-                  numberOfLines={1}>
-                  {thread.project}
+              {/* Info Column */}
+              <View style={styles.threadContent}>
+                <Text style={[styles.threadName, { color: isDark ? '#F8FAFC' : '#0F172A' }]}>
+                  {thread.name}
                 </Text>
-
                 <Text
-                  style={[styles.threadLastMsg, { color: colors.textSecondary }]}
+                  style={[styles.threadSnippet, { color: isDark ? '#94A3B8' : '#64748B' }]}
                   numberOfLines={1}>
                   {thread.lastMessage}
                 </Text>
               </View>
 
-              {thread.unreadCount > 0 && (
-                <View style={styles.unreadBadge}>
-                  <Text style={styles.unreadBadgeText}>{thread.unreadCount}</Text>
-                </View>
-              )}
+              {/* Status / Timestamp Column */}
+              <View style={styles.threadMeta}>
+                <Text style={[styles.threadTime, { color: isDark ? '#64748B' : '#94A3B8' }]}>
+                  {thread.time}
+                </Text>
+                {thread.unreadCount ? (
+                  <View style={styles.unreadCounter}>
+                    <Text style={styles.unreadCounterText}>{thread.unreadCount}</Text>
+                  </View>
+                ) : thread.isRead ? (
+                  <View style={styles.doubleCheckRow}>
+                    <Ionicons name="checkmark-done" size={17} color="#E11D48" />
+                  </View>
+                ) : null}
+              </View>
             </TouchableOpacity>
           ))}
         </ScrollView>
 
+        {/* Bottom Floating Bar */}
         <FloatingTabBar
           activeTab="chats"
           onSelectTab={(tab) => {
@@ -338,187 +523,264 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  topHeader: {
-    height: 56,
+  headerBar: {
+    height: 52,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     borderBottomWidth: 1,
+    borderBottomColor: 'transparent',
   },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 1,
+  backBtnTouch: {
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 16,
-    fontWeight: '800',
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: -0.2,
   },
-  threadsScroll: {
+  searchContainer: {
     paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 110,
-    gap: 12,
+    marginTop: 8,
+    marginBottom: 12,
   },
-  threadCard: {
+  searchPill: {
+    height: 44,
+    borderRadius: 22,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
-    borderRadius: 18,
+    paddingHorizontal: 16,
     borderWidth: 1,
-    gap: 12,
   },
-  avatarWrap: {
-    position: 'relative',
-  },
-  avatarImg: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#E2E8F0',
-  },
-  threadOnlineDot: {
-    position: 'absolute',
-    bottom: 1,
-    right: 1,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#10B981',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-  },
-  threadBody: {
+  searchInput: {
     flex: 1,
-    gap: 2,
-  },
-  threadTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  threadName: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '500',
   },
-  threadTime: {
-    fontSize: 11,
+  filterTabsRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    gap: 10,
+    marginBottom: 8,
   },
-  threadProject: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  threadLastMsg: {
-    fontSize: 12,
-    marginTop: 1,
-  },
-  unreadBadge: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#0F73F7',
+  filterTabPill: {
+    paddingVertical: 7,
+    paddingHorizontal: 18,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  unreadBadgeText: {
+  filterTabActive: {},
+  filterTabInactive: {},
+  filterTabText: {
+    fontSize: 13,
+  },
+  threadListScroll: {
+    paddingHorizontal: 20,
+    paddingBottom: 110,
+  },
+  threadRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+  },
+  avatarWrap: {
+    position: 'relative',
+    marginRight: 14,
+  },
+  threadAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+  },
+  groupBadgeOverlay: {
+    position: 'absolute',
+    bottom: -2,
+    left: -2,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#E11D48',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
+  groupBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  threadContent: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  threadName: {
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 3,
+  },
+  threadSnippet: {
+    fontSize: 13,
+  },
+  threadMeta: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    gap: 6,
+    minWidth: 70,
+  },
+  threadTime: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  unreadCounter: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#E11D48',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 5,
+  },
+  unreadCounterText: {
     fontSize: 11,
     fontWeight: '800',
     color: '#FFFFFF',
   },
-  // Detailed chat styles
-  chatHeader: {
-    height: 60,
-    flexDirection: 'row',
+  doubleCheckRow: {
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Conversation Screen Styles (Phone 2)
+  chatScrollContent: {
     paddingHorizontal: 16,
-    gap: 12,
-    borderBottomWidth: 1,
+    paddingTop: 16,
+    paddingBottom: 24,
   },
-  chatHeaderInfo: {
-    flex: 1,
-  },
-  chatTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  chatHeaderName: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  onlineDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#10B981',
-  },
-  chatHeaderSub: {
-    fontSize: 11,
-    marginTop: 1,
-  },
-  messageScroll: {
-    padding: 16,
-    gap: 12,
-    paddingBottom: 20,
+  bubbleRowContainer: {
+    marginBottom: 14,
   },
   messageRow: {
     flexDirection: 'row',
+    alignItems: 'flex-end',
   },
-  messageRowMe: {
-    justifyContent: 'flex-end',
-  },
-  messageRowThem: {
+  messageRowLeft: {
     justifyContent: 'flex-start',
   },
-  bubble: {
-    maxWidth: '78%',
+  messageRowRight: {
+    justifyContent: 'flex-end',
+  },
+  messageAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginRight: 8,
+    marginBottom: 16,
+  },
+  chatBubble: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    position: 'relative',
+  },
+  chatBubbleThem: {
     borderRadius: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    gap: 4,
-  },
-  bubbleMe: {
-    backgroundColor: '#0F73F7',
-    borderBottomRightRadius: 4,
-  },
-  bubbleThem: {
     borderBottomLeftRadius: 4,
     borderWidth: 1,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  chatBubbleMe: {
+    borderRadius: 18,
+    borderBottomRightRadius: 4,
+    backgroundColor: '#E11D48',
   },
   bubbleText: {
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '400',
   },
-  bubbleTime: {
+  reactionBadge: {
+    position: 'absolute',
+    bottom: -8,
+    right: 8,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  reactionText: {
+    fontSize: 11,
+  },
+  bubbleTimestamp: {
     fontSize: 10,
-    alignSelf: 'flex-end',
+    marginTop: 4,
   },
-  inputBar: {
-    height: 68,
+  timestampLeft: {
+    textAlign: 'left',
+    marginLeft: 4,
+  },
+  timestampRight: {
+    textAlign: 'right',
+    marginRight: 4,
+  },
+
+  // Bottom Input Bar
+  bottomInputBar: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    gap: 10,
+    paddingVertical: 10,
     borderTopWidth: 1,
+    gap: 10,
   },
-  chatInput: {
-    flex: 1,
-    height: 44,
-    borderRadius: 22,
-    paddingHorizontal: 16,
-    fontSize: 13,
-    borderWidth: 1,
-  },
-  sendButton: {
+  plusBtn: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#0F73F7',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  inputFieldWrap: {
+    flex: 1,
+    height: 44,
+    borderRadius: 22,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    borderWidth: 1,
+  },
+  chatInput: {
+    flex: 1,
+    fontSize: 14,
+  },
+  micBtn: {
+    padding: 4,
+  },
+  sendBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#E11D48',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#E11D48',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
   },
 });

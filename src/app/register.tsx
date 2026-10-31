@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -75,7 +75,7 @@ export default function RegisterScreen() {
               <Text style={[styles.roleTitle, role === 'freelancer' && styles.activeRoleTitle]}>
                 Work as Freelancer
               </Text>
-              <Text style={styles.roleSub}>Find jobs &amp; get paid in MoMo</Text>
+              <Text style={styles.roleSub}>Find jobs & get paid in MoMo</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -92,7 +92,7 @@ export default function RegisterScreen() {
               <Text style={[styles.roleTitle, role === 'client' && styles.activeRoleTitle]}>
                 Hire as Client
               </Text>
-              <Text style={styles.roleSub}>Post jobs &amp; fund milestones</Text>
+              <Text style={styles.roleSub}>Post jobs & fund milestones</Text>
             </TouchableOpacity>
           </View>
 

@@ -311,24 +311,28 @@ export default function ChatDetailScreen() {
               style={styles.attachBtn}
               onPress={() => setActionSheetVisible(true)}
               activeOpacity={0.8}>
-              <Ionicons name="add-circle" size={26} color="#0F73F7" />
+              <Ionicons name="add" size={20} color="#FFFFFF" />
             </TouchableOpacity>
 
-            <TextInput
-              style={styles.textInput}
-              value={inputText}
-              onChangeText={setInputText}
-              placeholder={`Message ${currentThread.name.split(' ')[0]}...`}
-              placeholderTextColor={Colors.light.textMuted}
-              multiline
-            />
+            <View style={styles.inputWrapImage1}>
+              <TextInput
+                style={styles.textInput}
+                value={inputText}
+                onChangeText={setInputText}
+                placeholder="Type here..."
+                placeholderTextColor={Colors.light.textMuted}
+              />
+              <TouchableOpacity style={{ padding: 4 }}>
+                <Ionicons name="mic-outline" size={18} color="#94A3B8" />
+              </TouchableOpacity>
+            </View>
 
             <TouchableOpacity
               style={[styles.sendBtn, !inputText.trim() && styles.sendBtnDisabled]}
               onPress={() => handleSend()}
               disabled={!inputText.trim()}
               activeOpacity={0.85}>
-              <Ionicons name="send" size={16} color="#FFFFFF" />
+              <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
@@ -565,7 +569,7 @@ const styles = StyleSheet.create({
   },
   myBubble: {
     alignSelf: 'flex-end',
-    backgroundColor: '#0F73F7',
+    backgroundColor: '#E11D48',
     borderBottomRightRadius: 4,
   },
   messageText: {
@@ -669,18 +673,26 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   attachBtn: {
-    padding: 2,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#0F172A',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  textInput: {
+  inputWrapImage1: {
     flex: 1,
-    minHeight: 40,
-    maxHeight: 100,
-    backgroundColor: '#F8FAFC',
+    height: 40,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: '#EEF3FA',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+  },
+  textInput: {
+    flex: 1,
     fontSize: 14,
     color: Colors.light.text,
   },
@@ -688,9 +700,14 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: '#0F73F7',
+    backgroundColor: '#E11D48',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#E11D48',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
   },
   sendBtnDisabled: {
     backgroundColor: '#CBD5E1',

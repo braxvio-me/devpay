@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -13,14 +13,13 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useRole } from '@/contexts/RoleContext';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
-  withTiming,
   interpolate,
-  interpolateColor,
-  Easing,
   runOnJS,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -35,6 +34,9 @@ const THRESHOLD = MAX_DRAG * 0.72; // 72% triggers apply
 export default function JobDetailsScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
+  const { colors } = useTheme();
+  const { isClient } = useRole();
+
   const [activeTab, setActiveTab] = useState<'description' | 'company'>('description');
   const [isBookmarked, setIsBookmarked] = useState(true);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -45,9 +47,9 @@ export default function JobDetailsScreen() {
   const isDragging = useSharedValue(false);
   const bookmarkScale = useSharedValue(1);
 
-  const job = {
+  const freelancerJob = {
     id: id || '1',
-    company: 'Google',
+    company: 'Google Africa',
     title: 'Jr. UI/UX Designer',
     salary: 'GH₵ 3,500 - GH₵ 5,500 / Month',
     type: 'Full-Time',
@@ -60,6 +62,24 @@ export default function JobDetailsScreen() {
     description:
       'Looking for a UX/UI Designer to create intuitive, scalable, and user-centered experiences across web and mobile platforms. You will work closely with product managers, engineers, and stakeholders to define DevPay milestone escrow flows, user journeys, wireframes, and design system components.',
   };
+
+  const clientJob = {
+    id: id || 'client_job_1',
+    company: 'TechCorp Africa Ltd (Your Post)',
+    title: 'Senior React Native Engineer (MoMo SDK)',
+    salary: 'GH₵ 4,500.00 Locked in Escrow',
+    type: 'Milestone Escrow',
+    hours: 'Flexible • Milestone Basis',
+    workplace: 'Accra / Remote',
+    experience: '3+ Years',
+    location: 'Accra, Ghana',
+    logo: 'https://images.unsplash.com/photo-1572021335469-31706a17aaef?w=200',
+    isTrusted: true,
+    description:
+      'Milestone Contract Opening: We require an experienced mobile engineer to implement the MTN Mobile Money API webhook processing, build responsive biometric approval components, and deploy the application with Expo SDK 58. Escrow is fully pre-funded and compliant with Bank of Ghana regulations.',
+  };
+
+  const job = isClient ? clientJob : freelancerJob;
 
   // ─── Swipe-to-apply gesture ───────────────────────────────────────────────
   const handleApplied = () => {
@@ -305,45 +325,65 @@ export default function JobDetailsScreen() {
           </View>
         </ScrollView>
 
-        {/* Bottom: Swipe-to-Apply Button */}
-        <View style={styles.bottomBar}>
-          <GestureDetector gesture={panGesture}>
-            <View style={styles.swipeTrack}>
-              {/* Track fill glow */}
-              <Animated.View style={[styles.trackFill, trackFillStyle]} />
+        {/* Bottom Bar: Client Actions vs Freelancer Swipe-to-Apply */}
+        {isClient ? (
+          <View style={styles.clientBottomBar}>
+            <TouchableOpacity
+              style={styles.clientViewApplicantsBtn}
+              onPress={() => router.push('/job/applicants')}
+              activeOpacity={0.88}>
+              <LinearGradient
+                colors={['#0F73F7', '#38BDF8']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.clientApplicantsGradient}>
+                <Ionicons name="people" size={18} color="#FFFFFF" />
+                <Text style={styles.clientApplicantsBtnText}>
+                  View 3 Developer Proposals & Hire
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.bottomBar}>
+            <GestureDetector gesture={panGesture}>
+              <View style={styles.swipeTrack}>
+                {/* Track fill glow */}
+                <Animated.View style={[styles.trackFill, trackFillStyle]} />
 
-              {/* Slide thumb */}
-              <Animated.View style={[styles.thumb, thumbStyle]}>
-                <LinearGradient
-                  colors={applied ? ['#10B981', '#059669'] : ['#38BDF8', '#0F73F7']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.thumbGradient}>
-                  {applied ? (
-                    <Ionicons name="checkmark" size={24} color="#FFF" />
-                  ) : (
-                    <Ionicons name="chevron-forward" size={24} color="#FFF" />
-                  )}
-                </LinearGradient>
-              </Animated.View>
-
-              {/* Track label: "Swipe to Apply" */}
-              <Animated.View style={[styles.trackLabelWrap, labelOpacityStyle]}>
-                <Text style={styles.trackLabel}>Swipe to Apply</Text>
-                <Animated.View style={[styles.chevronGroup, chevronsStyle]}>
-                  <Text style={styles.chevronChar}>›</Text>
-                  <Text style={styles.chevronChar}>›</Text>
-                  <Text style={styles.chevronChar}>›</Text>
+                {/* Slide thumb */}
+                <Animated.View style={[styles.thumb, thumbStyle]}>
+                  <LinearGradient
+                    colors={applied ? ['#10B981', '#059669'] : ['#38BDF8', '#0F73F7']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.thumbGradient}>
+                    {applied ? (
+                      <Ionicons name="checkmark" size={24} color="#FFF" />
+                    ) : (
+                      <Ionicons name="chevron-forward" size={24} color="#FFF" />
+                    )}
+                  </LinearGradient>
                 </Animated.View>
-              </Animated.View>
 
-              {/* Success label */}
-              <Animated.View style={[styles.trackLabelWrap, styles.trackLabelAbsolute, successOpacityStyle]}>
-                <Text style={styles.trackLabelSuccess}>Applied! 🎉</Text>
-              </Animated.View>
-            </View>
-          </GestureDetector>
-        </View>
+                {/* Track label: "Swipe to Apply" */}
+                <Animated.View style={[styles.trackLabelWrap, labelOpacityStyle]}>
+                  <Text style={styles.trackLabel}>Swipe to Apply</Text>
+                  <Animated.View style={[styles.chevronGroup, chevronsStyle]}>
+                    <Text style={styles.chevronChar}>›</Text>
+                    <Text style={styles.chevronChar}>›</Text>
+                    <Text style={styles.chevronChar}>›</Text>
+                  </Animated.View>
+                </Animated.View>
+
+                {/* Success label */}
+                <Animated.View style={[styles.trackLabelWrap, styles.trackLabelAbsolute, successOpacityStyle]}>
+                  <Text style={styles.trackLabelSuccess}>Applied! 🎉</Text>
+                </Animated.View>
+              </View>
+            </GestureDetector>
+          </View>
+        )}
       </SafeAreaView>
     </View>
   );
@@ -689,5 +729,37 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: 'rgba(15, 115, 247, 0.45)',
     lineHeight: 24,
+  },
+  clientBottomBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 20,
+    paddingBottom: 28,
+    paddingTop: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.96)',
+  },
+  clientViewApplicantsBtn: {
+    height: 54,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#0F73F7',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  clientApplicantsGradient: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  clientApplicantsBtnText: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
 });

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -15,13 +15,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useRole } from '@/contexts/RoleContext';
 
 export default function WithdrawScreen() {
   const router = useRouter();
   const { isDark, colors } = useTheme();
+  const { isClient } = useRole();
 
-  const availableBalance = 2450.0;
-  const lockedEscrow = 1800.0;
+  const availableBalance = isClient ? 28500.0 : 2450.0;
+  const lockedEscrow = isClient ? 14300.0 : 1800.0;
 
   const [amount, setAmount] = useState('1000');
   const [selectedMethod, setSelectedMethod] = useState<'momo' | 'telecel' | 'bank'>('momo');
@@ -78,7 +80,9 @@ export default function WithdrawScreen() {
             activeOpacity={0.8}>
             <Ionicons name="chevron-back" size={20} color={colors.text} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Withdraw Payout</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+            {isClient ? 'Refund Unspent Escrow' : 'Withdraw Payout'}
+          </Text>
           <TouchableOpacity
             style={[
               styles.backButton,
@@ -95,15 +99,19 @@ export default function WithdrawScreen() {
           contentContainerStyle={styles.scrollContent}>
           {/* Balance Card */}
           <LinearGradient
-            colors={['#0F73F7', '#38BDF8']}
+            colors={isDark ? ['#1E1B4B', '#0F172A'] : ['#0F73F7', '#38BDF8']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.balanceCard}>
             <View style={styles.balanceHeader}>
-              <Text style={styles.balanceLabel}>Available for Withdrawal</Text>
+              <Text style={styles.balanceLabel}>
+                {isClient ? 'Unallocated Escrow Deposit' : 'Available for Withdrawal'}
+              </Text>
               <View style={styles.verifiedTag}>
                 <Ionicons name="checkmark-circle" size={12} color="#10B981" />
-                <Text style={styles.verifiedTagText}>Instant MoMo</Text>
+                <Text style={styles.verifiedTagText}>
+                  {isClient ? 'BoG Escrow' : 'Instant MoMo'}
+                </Text>
               </View>
             </View>
 
@@ -114,14 +122,18 @@ export default function WithdrawScreen() {
             <View style={styles.lockedRow}>
               <Ionicons name="lock-closed" size={13} color="rgba(255, 255, 255, 0.85)" />
               <Text style={styles.lockedText}>
-                GH₵ {lockedEscrow.toLocaleString('en-US', { minimumFractionDigits: 2 })} in Active Milestone Escrow
+                {isClient
+                  ? `GH₵ ${lockedEscrow.toLocaleString('en-US', { minimumFractionDigits: 2 })} in Active Contract Milestones`
+                  : `GH₵ ${lockedEscrow.toLocaleString('en-US', { minimumFractionDigits: 2 })} in Active Milestone Escrow`}
               </Text>
             </View>
           </LinearGradient>
 
           {/* Amount Input */}
           <View style={styles.sectionBlock}>
-            <Text style={styles.sectionHeading}>Withdrawal Amount</Text>
+            <Text style={styles.sectionHeading}>
+              {isClient ? 'Refund Amount' : 'Withdrawal Amount'}
+            </Text>
             <View style={styles.amountInputRow}>
               <Text style={styles.currencyPrefix}>GH₵</Text>
               <TextInput
@@ -235,7 +247,7 @@ export default function WithdrawScreen() {
 
           {/* Fee Breakdown */}
           <View style={styles.breakdownCard}>
-            <Text style={styles.breakdownTitle}>Payout Summary &amp; Breakdown</Text>
+            <Text style={styles.breakdownTitle}>Payout Summary & Breakdown</Text>
             <View style={styles.breakdownRow}>
               <Text style={styles.breakdownKey}>Requested Amount</Text>
               <Text style={styles.breakdownVal}>GH₵ {numAmount.toFixed(2)}</Text>
@@ -286,7 +298,11 @@ export default function WithdrawScreen() {
               style={styles.withdrawGradient}>
               <Text style={styles.withdrawBtnText}>
                 {isProcessing
-                  ? 'Processing MoMo Payout...'
+                  ? isClient
+                    ? 'Processing Escrow Refund...'
+                    : 'Processing MoMo Payout...'
+                  : isClient
+                  ? `Refund GH₵ ${netAmount.toFixed(2)} to MoMo`
                   : `Withdraw GH₵ ${netAmount.toFixed(2)} Now`}
               </Text>
               <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
@@ -302,10 +318,14 @@ export default function WithdrawScreen() {
                 <Ionicons name="checkmark-done" size={32} color="#10B981" />
               </View>
 
-              <Text style={styles.receiptHeading}>Payout Dispatched!</Text>
+              <Text style={styles.receiptHeading}>
+                {isClient ? 'Escrow Refund Dispatched!' : 'Payout Dispatched!'}
+              </Text>
               <Text style={styles.receiptCash}>GH₵ {netAmount.toFixed(2)}</Text>
               <Text style={styles.receiptSub}>
-                Funds have been sent to your Mobile Money wallet. You will receive an SMS confirmation from MTN shortly.
+                {isClient
+                  ? 'Funds have been refunded directly to your company Mobile Money Business account. An official GRA VAT statement has been sent to your email.'
+                  : 'Funds have been sent to your Mobile Money wallet. You will receive an SMS confirmation from MTN shortly.'}
               </Text>
 
               <View style={styles.receiptBox}>

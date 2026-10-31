@@ -9,7 +9,7 @@ import { RoleProvider } from '@/contexts/RoleContext';
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export const unstable_settings = {
-  initialRouteName: 'splash',
+  anchor: 'splash',
 };
 
 function AppStack() {

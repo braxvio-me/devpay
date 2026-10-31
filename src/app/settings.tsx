@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as Haptics from 'expo-haptics';
@@ -161,7 +162,35 @@ export default function SettingsScreen() {
             </View>
           </View>
 
-          {/* Section 1: Account & KYC */}
+          {/* Premium Upsell Banner */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Subscription</Text>
+            <TouchableOpacity
+              activeOpacity={0.88}
+              onPress={() => router.push('/premium')}>
+              <LinearGradient
+                colors={isDark ? ['#1E1B4B', '#2E1065'] : ['#0F73F7', '#7C3AED']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.premiumBannerGradient}>
+                <View style={styles.premiumBannerLeft}>
+                  <View style={styles.premiumStarBadge}>
+                    <Ionicons name="star" size={14} color="#F59E0B" />
+                    <Text style={styles.premiumBannerBadgeText}>DEVPAY PREMIUM</Text>
+                  </View>
+                  <Text style={styles.premiumBannerTitle}>Upgrade Your Plan</Text>
+                  <Text style={styles.premiumBannerSub}>
+                    0% fees, instant payouts & elite visibility
+                  </Text>
+                </View>
+                <View style={styles.premiumBannerRight}>
+                  <Ionicons name="diamond-outline" size={38} color="rgba(255,255,255,0.25)" />
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+
+
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Account & Verification</Text>
             <View style={[styles.menuBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -655,5 +684,47 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 12,
     marginTop: 10,
+  },
+
+  // Premium Banner
+  premiumBannerGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    overflow: 'hidden',
+  },
+  premiumBannerLeft: { flex: 1, gap: 6 },
+  premiumStarBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    alignSelf: 'flex-start',
+  },
+  premiumBannerBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 1,
+  },
+  premiumBannerTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -0.3,
+  },
+  premiumBannerSub: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.78)',
+  },
+  premiumBannerRight: {
+    paddingLeft: 12,
+    opacity: 0.8,
   },
 });

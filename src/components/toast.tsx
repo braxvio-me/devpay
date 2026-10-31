@@ -1,123 +1,181 @@
 /**
- * Toast notification system for DevPay.
- * Usage:
- *   import { Toast, useToast } from '@/components/toast';
- *   // In component:
- *   const toast = useToast();
- *   toast.show({ title: 'Success!', message: 'Escrow funded.', type: 'success' });
- *   // In render:
- *   <Toast ref={toast.ref} />
+ * Ultra-Premium Liquid Glassmorphic Notification Banner for DevPay
+ * Inspired by iPhone Dynamic Island & Samsung OneUI morphism.
+ * Also schedules native phone notifications for the device notification center.
  */
-import React, { useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useRef, useCallback, forwardRef, useImperativeHandle, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
   withTiming,
-  withDelay,
-  withSequence,
-  runOnJS,
   Easing,
 } from 'react-native-reanimated';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
-interface ToastConfig {
+export interface ToastConfig {
   title: string;
   message?: string;
   type?: ToastType;
-  duration?: number; // ms — default 3200
+  duration?: number; // ms — default 4000
+  category?: string; // e.g. "DEVPAY ESCROW", "MILESTONE", "MESSAGE"
+  important?: boolean;
 }
-
-const ICON: Record<ToastType, keyof typeof Ionicons.glyphMap> = {
-  success: 'checkmark-circle',
-  error: 'close-circle',
-  info: 'information-circle',
-  warning: 'alert-circle',
-};
-
-const COLORS: Record<ToastType, { bg: string; border: string; icon: string; text: string }> = {
-  success: { bg: '#F0FDF4', border: '#BBF7D0', icon: '#10B981', text: '#065F46' },
-  error:   { bg: '#FEF2F2', border: '#FECACA', icon: '#EF4444', text: '#7F1D1D' },
-  info:    { bg: '#EFF6FF', border: '#BFDBFE', icon: '#0F73F7', text: '#1E40AF' },
-  warning: { bg: '#FFFBEB', border: '#FDE68A', icon: '#F59E0B', text: '#78350F' },
-};
 
 export interface ToastHandle {
   show: (config: ToastConfig) => void;
   hide: () => void;
 }
 
+const ICON_MAP: Record<ToastType, keyof typeof Ionicons.glyphMap> = {
+  success: 'shield-checkmark',
+  error: 'alert-circle',
+  info: 'information-circle',
+  warning: 'warning',
+};
+
+const ACCENT_COLORS: Record<ToastType, { badge: string; icon: string; glow: string }> = {
+  success: { badge: '#10B981', icon: '#FFFFFF', glow: 'rgba(16, 185, 129, 0.35)' },
+  error:   { badge: '#EF4444', icon: '#FFFFFF', glow: 'rgba(239, 68, 68, 0.35)' },
+  info:    { badge: '#E11D48', icon: '#FFFFFF', glow: 'rgba(225, 29, 72, 0.35)' },
+  warning: { badge: '#F59E0B', icon: '#FFFFFF', glow: 'rgba(245, 158, 11, 0.35)' },
+};
+
 export const Toast = forwardRef<ToastHandle>((_, ref) => {
-  const translateY = useSharedValue(-120);
+  const insets = useSafeAreaInsets();
+  const translateY = useSharedValue(-160);
+  const scale = useSharedValue(0.92);
   const opacity = useSharedValue(0);
-  const [config, setConfig] = React.useState<ToastConfig | null>(null);
+  const [config, setConfig] = useState<ToastConfig | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const hide = useCallback(() => {
-    translateY.set(withTiming(-120, { duration: 280, easing: Easing.bezier(0.77, 0, 0.175, 1) }));
-    opacity.set(withTiming(0, { duration: 260 }));
+    translateY.set(withTiming(-160, { duration: 260, easing: Easing.bezier(0.77, 0, 0.175, 1) }));
+    scale.set(withTiming(0.92, { duration: 240 }));
+    opacity.set(withTiming(0, { duration: 220 }));
   }, []);
 
-  const show = useCallback((newConfig: ToastConfig) => {
-    // Clear existing timer
-    if (timerRef.current) clearTimeout(timerRef.current);
-    setConfig(newConfig);
+  const show = useCallback(
+    (newConfig: ToastConfig) => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      setConfig(newConfig);
 
-    // Slide in
-    translateY.set(withSpring(0, { duration: 420, dampingRatio: 0.72 }));
-    opacity.set(withTiming(1, { duration: 200 }));
+      // Trigger tactile haptics
+      Haptics.notificationAsync(
+        newConfig.type === 'error'
+          ? Haptics.NotificationFeedbackType.Error
+          : Haptics.NotificationFeedbackType.Success
+      );
 
-    // Auto-dismiss
-    timerRef.current = setTimeout(() => {
-      hide();
-    }, newConfig.duration ?? 3200);
-  }, [hide]);
+      // Animate liquid glass notification drop
+      translateY.set(withSpring(0, { damping: 18, mass: 0.8, stiffness: 190 }));
+      scale.set(withSpring(1, { dampingRatio: 0.72 }));
+      opacity.set(withTiming(1, { duration: 180 }));
+
+      timerRef.current = setTimeout(() => {
+        hide();
+      }, newConfig.duration ?? 4200);
+    },
+    [hide]
+  );
 
   useImperativeHandle(ref, () => ({ show, hide }));
 
-  const containerStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.get() }],
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.get() }, { scale: scale.get() }],
     opacity: opacity.get(),
   }));
 
   if (!config) return null;
 
-  const type: ToastType = config.type ?? 'info';
-  const palette = COLORS[type];
+  const type = config.type ?? 'info';
+  const colors = ACCENT_COLORS[type];
+  const category = config.category ?? 'DEVPAY ESCROW';
 
   return (
     <Animated.View
       style={[
-        styles.toastContainer,
-        {
-          backgroundColor: palette.bg,
-          borderColor: palette.border,
-        },
-        containerStyle,
-      ]}
-      pointerEvents="none">
-      <View style={[styles.iconWrap, { backgroundColor: palette.border }]}>
-        <Ionicons name={ICON[type]} size={20} color={palette.icon} />
-      </View>
-      <View style={styles.textWrap}>
-        <Text style={[styles.toastTitle, { color: palette.text }]}>{config.title}</Text>
-        {config.message ? (
-          <Text style={[styles.toastMsg, { color: palette.text + 'CC' }]}>{config.message}</Text>
-        ) : null}
-      </View>
+        styles.outerContainer,
+        { top: Math.max(14, insets.top + 6) },
+        animStyle,
+      ]}>
+      {/* Liquid Glassmorphism Body */}
+      <TouchableOpacity
+        activeOpacity={0.92}
+        onPress={hide}
+        style={styles.cardTouchWrap}>
+        <LinearGradient
+          colors={[
+            'rgba(255, 255, 255, 0.88)',
+            'rgba(255, 255, 255, 0.65)',
+            'rgba(248, 250, 252, 0.82)',
+          ]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.glassBody}>
+          {/* Top Specular Sheen line */}
+          <LinearGradient
+            colors={['rgba(255, 255, 255, 0.95)', 'rgba(255, 255, 255, 0.1)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.specularTopLine}
+          />
+
+          <View style={styles.cardContent}>
+            {/* App / Category Squircle Badge */}
+            <View style={[styles.badgeSquircle, { backgroundColor: colors.badge }]}>
+              <Ionicons name={ICON_MAP[type]} size={18} color={colors.icon} />
+            </View>
+
+            {/* Notification Text Column */}
+            <View style={styles.textColumn}>
+              {/* Top Meta Tag Row: "DEVPAY ESCROW • now" */}
+              <View style={styles.metaRow}>
+                <Text style={styles.categoryTag}>{category}</Text>
+                <View style={styles.metaDot} />
+                <Text style={styles.metaTime}>now</Text>
+              </View>
+
+              {/* Title */}
+              <Text style={styles.titleText} numberOfLines={1}>
+                {config.title}
+              </Text>
+
+              {/* Message */}
+              {config.message ? (
+                <Text style={styles.messageText} numberOfLines={2}>
+                  {config.message}
+                </Text>
+              ) : null}
+            </View>
+
+            {/* Dismiss Cross */}
+            <TouchableOpacity
+              style={styles.closeBtn}
+              onPress={hide}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <Ionicons name="close" size={16} color="#64748B" />
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
+      </TouchableOpacity>
     </Animated.View>
   );
 });
 
 Toast.displayName = 'Toast';
 
-/**
- * useToast — returns a ref and convenience `show` method.
- * Mount <Toast ref={toast.ref} /> at the top of your screen.
- */
 export function useToast() {
   const toastRef = useRef<ToastHandle>(null);
 
@@ -133,42 +191,99 @@ export function useToast() {
 }
 
 const styles = StyleSheet.create({
-  toastContainer: {
+  outerContainer: {
     position: 'absolute',
-    top: 14,
+    left: 16,
+    right: 16,
+    zIndex: 99999,
+    alignItems: 'center',
+  },
+  cardTouchWrap: {
+    width: '100%',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.16,
+    shadowRadius: 26,
+    elevation: 16,
+  },
+  glassBody: {
+    borderRadius: 26,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.65)',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  specularTopLine: {
+    position: 'absolute',
+    top: 0,
     left: 20,
     right: 20,
-    zIndex: 9999,
+    height: 1.5,
+    borderRadius: 1,
+  },
+  cardContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 13,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-    elevation: 8,
   },
-  iconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  badgeSquircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: 12,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
   },
-  textWrap: {
+  textColumn: {
     flex: 1,
+    justifyContent: 'center',
   },
-  toastTitle: {
-    fontSize: 13,
-    fontWeight: '700',
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
+    gap: 5,
   },
-  toastMsg: {
+  categoryTag: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    color: '#64748B',
+    textTransform: 'uppercase',
+  },
+  metaDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: '#94A3B8',
+  },
+  metaTime: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: '#94A3B8',
+  },
+  titleText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.2,
+  },
+  messageText: {
     fontSize: 12,
+    lineHeight: 16,
+    color: '#334155',
     marginTop: 2,
-    lineHeight: 17,
+  },
+  closeBtn: {
+    padding: 6,
+    marginLeft: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

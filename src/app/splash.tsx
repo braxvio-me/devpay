@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+﻿import React, { useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import Animated, {
@@ -71,14 +71,14 @@ export default function SplashScreen() {
           </View>
 
           <Text style={styles.title}>DevPay Africa</Text>
-          <Text style={styles.tagline}>Trust &amp; Milestone Payments for African Talent</Text>
+          <Text style={styles.tagline}>Trust & Milestone Payments for African Talent</Text>
         </Animated.View>
 
         {/* Subtle Bottom Trust Pill */}
         <View style={styles.footer}>
           <View style={styles.trustBadge}>
             <Ionicons name="lock-closed" size={12} color="#38BDF8" />
-            <Text style={styles.trustText}>Secured by Escrow &amp; Mobile Money</Text>
+            <Text style={styles.trustText}>Secured by Escrow & Mobile Money</Text>
           </View>
         </View>
       </LinearGradient>
