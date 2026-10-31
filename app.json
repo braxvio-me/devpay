@@ -55,7 +55,9 @@
           "photosPermission": "DevPay lets you choose photos to send in chat and to use as your profile picture.",
           "cameraPermission": "DevPay uses your camera to take photos you send in chat and for identity verification."
         }
-      ]
+      ],
+      "expo-image",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
