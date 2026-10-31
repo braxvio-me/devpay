@@ -1,314 +1,161 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Colors } from '@/constants/theme';
+import { Ionicons } from '@expo/vector-icons';
+import Animated, { useSharedValue, useAnimatedStyle, withDelay, withTiming, Easing } from 'react-native-reanimated';
+import { useTheme } from '@/contexts/ThemeContext';
+import { Button } from '@/components/ds';
+import { WelcomeFaces } from '@/constants/media';
+import { Layout, Radius, Shadows } from '@/constants/theme';
+import { DevPayMark } from '@/components/devpay-mark';
+
+/** Arc of portrait frames, as fractions of screen width (x, y, w); h = w * 1.42. */
+const ARC = [
+  { x: -0.07, y: 0.0, w: 0.19 },
+  { x: 0.07, y: 0.08, w: 0.21 },
+  { x: 0.24, y: 0.2, w: 0.22 },
+  { x: 0.53, y: 0.2, w: 0.21 },
+  { x: 0.72, y: 0.08, w: 0.21 },
+  { x: 0.88, y: 0.0, w: 0.19 },
+];
+
+function Portrait({ uri, i, width }: { uri: string; i: number; width: number }) {
+  const a = ARC[i];
+  const w = a.w * width;
+  const h = w * 1.42;
+  const t = useSharedValue(0);
+
+  useEffect(() => {
+    t.set(withDelay(80 * Math.abs(i - 2.5), withTiming(1, { duration: 700, easing: Easing.out(Easing.exp) })));
+  }, [i, t]);
+
+  const style = useAnimatedStyle(() => ({
+    opacity: t.get(),
+    transform: [{ translateY: (1 - t.get()) * 18 }],
+  }));
+
+  return (
+    <Animated.View
+      style={[
+        styles.frame,
+        Shadows.soft,
+        { left: a.x * width, top: a.y * width, width: w, height: h, borderRadius: w / 2 },
+        style,
+      ]}>
+      <Image source={{ uri }} contentFit="cover" transition={250} style={{ flex: 1, borderRadius: w / 2 }} />
+    </Animated.View>
+  );
+}
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
+  const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const [heroSpace, setHeroSpace] = useState(0);
+  // The arc is ~0.6× its width tall; shrink it on short screens so it never overlaps the brand.
+  const arcW = heroSpace > 0 ? Math.min(width, (heroSpace - 36) / 0.6) : width;
+  const heroH = arcW * 0.6;
 
   return (
-    <View style={styles.screen}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <LinearGradient
-        colors={['#BFDBFE', '#E0F2FE', '#F8FAFC']}
+        colors={isDark ? ['#163444', '#0F202A', colors.background] : ['#BFE0F5', '#DCEEF9', '#EEF6FB']}
         start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 0.7 }}
-        style={styles.ambientGradient}>
-        <SafeAreaView style={styles.safeArea} edges={['top']}>
-          {/* Top Brand Logo */}
-          <View style={styles.brandRow}>
-            <Ionicons name="shield-checkmark" size={24} color="#0F73F7" />
-            <Text style={styles.brandName}>DevPay Africa</Text>
-          </View>
+        end={{ x: 0.5, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+      <SafeAreaView edges={['top']} style={{ flex: 1 }}>
+        <View style={styles.brand}>
+          <DevPayMark size={30} />
+          <Text style={[styles.brandText, { color: colors.text }]}>DevPay</Text>
+        </View>
 
-          {/* Semicircle Curved Arc of Avatars matching Screenshot 2026-10-23 165026.png */}
-          <View style={styles.arcContainer}>
-            {/* Avatar 1 (Far Left) */}
-            <View style={[styles.avatarFrame, styles.avatar1]}>
-              <Image
-                source={{ uri: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120' }}
-                style={styles.avatarImg}
-              />
-            </View>
-
-            {/* Avatar 2 (Mid Left) */}
-            <View style={[styles.avatarFrame, styles.avatar2]}>
-              <Image
-                source={{ uri: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150' }}
-                style={styles.avatarImg}
-              />
-            </View>
-
-            {/* Avatar 3 (Center Lower) */}
-            <View style={[styles.avatarFrame, styles.avatar3]}>
-              <Image
-                source={{ uri: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=160' }}
-                style={styles.avatarImg}
-              />
-            </View>
-
-            {/* Avatar 4 (Mid Right) */}
-            <View style={[styles.avatarFrame, styles.avatar4]}>
-              <Image
-                source={{ uri: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150' }}
-                style={styles.avatarImg}
-              />
-            </View>
-
-            {/* Avatar 5 (Far Right) */}
-            <View style={[styles.avatarFrame, styles.avatar5]}>
-              <Image
-                source={{ uri: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120' }}
-                style={styles.avatarImg}
-              />
-            </View>
-
-            {/* Center Plus Button */}
-            <View style={styles.plusCircleWrapper}>
-              <View style={styles.plusCircle}>
-                <Ionicons name="add" size={16} color="#0F172A" />
-              </View>
+        <View
+          style={styles.heroWrap}
+          onLayout={(e) => setHeroSpace(e.nativeEvent.layout.height)}
+          accessible
+          accessibilityLabel="Freelancers and clients on DevPay">
+          <View style={{ width: arcW, height: heroH, alignSelf: 'center' }}>
+            {WelcomeFaces.arc.map((uri, i) => (
+              <Portrait key={uri} uri={uri} i={i} width={arcW} />
+            ))}
+            <View
+              style={[
+                styles.plus,
+                Shadows.button,
+                { top: 0.2 * arcW + 0.215 * arcW * 1.42 - 6, left: arcW / 2 - 14, backgroundColor: colors.surface },
+              ]}>
+              <Ionicons name="add" size={18} color={colors.text} />
             </View>
           </View>
+        </View>
+      </SafeAreaView>
 
-          {/* Bottom Card Sheet */}
-          <View style={styles.bottomCard}>
-            <Text style={styles.headline}>
-              {"Connect with Africa's top freelancers and get paid securely."}
-            </Text>
+      <View style={[styles.sheet, { backgroundColor: colors.surface, paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
+        <Text style={[styles.headline, { color: colors.text }]} accessibilityRole="header">
+          {"Connect with Africa's top freelancers and get paid securely."}
+        </Text>
+        <Text style={[styles.sub, { color: colors.textSecondary }]}>
+          Discover verified talent, protect milestones with escrow, and receive instant Mobile Money payouts.
+        </Text>
 
-            <Text style={styles.subheadline}>
-              Discover verified talent, protect milestones with escrow, and receive instant Mobile Money payouts.
-            </Text>
+        <View style={styles.socialRow}>
+          <Button
+            label="Google"
+            variant="light"
+            size="md"
+            style={{ flex: 1, height: 52 }}
+            icon={<Ionicons name="logo-google" size={18} color="#EA4335" />}
+            onPress={() => router.push('/register')}
+          />
+          <Button
+            label="Apple"
+            variant="light"
+            size="md"
+            style={{ flex: 1, height: 52 }}
+            icon={<Ionicons name="logo-apple" size={19} color={colors.text} />}
+            onPress={() => router.push('/register')}
+          />
+        </View>
 
-            {/* Social Auth Buttons Row */}
-            <View style={styles.socialButtonsRow}>
-              <TouchableOpacity style={styles.socialButton} activeOpacity={0.85}>
-                <Ionicons name="logo-google" size={18} color="#EA4335" />
-                <Text style={styles.socialButtonText}>Google</Text>
-              </TouchableOpacity>
+        <Button label="Get Started" variant="dark" onPress={() => router.push('/choose-role')} style={{ marginTop: 14 }} />
 
-              <TouchableOpacity style={styles.socialButton} activeOpacity={0.85}>
-                <Ionicons name="logo-apple" size={18} color="#000000" />
-                <Text style={styles.socialButtonText}>Apple</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Primary CTA Button: Get Started */}
-            <TouchableOpacity
-              style={styles.getStartedButton}
-              onPress={() => router.push('/choose-role')}
-              activeOpacity={0.88}>
-              <Text style={styles.getStartedText}>Get Started</Text>
-            </TouchableOpacity>
-
-            {/* Footer */}
-            <TouchableOpacity
-              style={styles.footerRow}
-              onPress={() => router.push('/login')}
-              activeOpacity={0.8}>
-              <Text style={styles.footerText}>
-                Already have an account? <Text style={styles.signInText}>Sign In</Text>
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </SafeAreaView>
-      </LinearGradient>
+        <Pressable onPress={() => router.push('/login')} accessibilityRole="link" style={styles.footer} hitSlop={8}>
+          <Text style={[styles.footerText, { color: colors.textSecondary }]}>
+            Already have an account? <Text style={{ color: colors.text, fontWeight: '600' }}>Sign In</Text>
+          </Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  ambientGradient: {
-    flex: 1,
-  },
-  safeArea: {
-    flex: 1,
-    justifyContent: 'space-between',
-  },
-  brandRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: 12,
-  },
-  brandName: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#0F172A',
-    letterSpacing: -0.5,
-  },
-  arcContainer: {
-    height: 240,
-    position: 'relative',
-    marginTop: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarFrame: {
+  brand: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: 10 },
+  brandText: { fontSize: 22, fontWeight: '600', letterSpacing: -0.5 },
+  heroWrap: { flex: 1, justifyContent: 'flex-end', paddingBottom: 20, overflow: 'hidden' },
+  frame: { position: 'absolute', borderWidth: 3, borderColor: '#FFFFFF', backgroundColor: '#DCEEF9' },
+  plus: {
     position: 'absolute',
-    borderRadius: 999,
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    elevation: 4,
-  },
-  avatarImg: {
-    width: '100%',
-    height: '100%',
-  },
-  avatar1: {
-    width: 60,
-    height: 80,
-    left: 10,
-    top: 40,
-  },
-  avatar2: {
-    width: 72,
-    height: 96,
-    left: 60,
-    top: 60,
-  },
-  avatar3: {
-    width: 84,
-    height: 110,
-    alignSelf: 'center',
-    top: 80,
-    zIndex: 10,
-  },
-  avatar4: {
-    width: 72,
-    height: 96,
-    right: 60,
-    top: 60,
-  },
-  avatar5: {
-    width: 60,
-    height: 80,
-    right: 10,
-    top: 40,
-  },
-  plusCircleWrapper: {
-    position: 'absolute',
-    bottom: 25,
-    zIndex: 20,
-  },
-  plusCircle: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
-  bottomCard: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 36,
-    borderTopRightRadius: 36,
-    paddingHorizontal: 24,
-    paddingTop: 32,
-    paddingBottom: 28,
-    shadowColor: '#0F73F7',
-    shadowOffset: { width: 0, height: -8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
-    elevation: 8,
+  sheet: {
+    borderTopLeftRadius: Radius.xxl,
+    borderTopRightRadius: Radius.xxl,
+    paddingHorizontal: Layout.margin + 4,
+    paddingTop: 28,
   },
-  headline: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#0F172A',
-    textAlign: 'center',
-    lineHeight: 30,
-    letterSpacing: -0.5,
-  },
-  subheadline: {
-    fontSize: 13,
-    lineHeight: 19,
-    color: Colors.light.textSecondary,
-    textAlign: 'center',
-    marginTop: 10,
-    paddingHorizontal: 10,
-  },
-  socialButtonsRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 24,
-  },
-  socialButton: {
-    flex: 1,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 1,
-  },
-  socialButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-  getStartedButton: {
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: '#0F172A',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  getStartedText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  footerRow: {
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  footerText: {
-    fontSize: 13,
-    color: Colors.light.textSecondary,
-  },
-  signInText: {
-    color: '#0F172A',
-    fontWeight: '800',
-  },
+  headline: { fontSize: 22, fontWeight: '600', letterSpacing: -0.5, textAlign: 'center', lineHeight: 28 },
+  sub: { fontSize: 14, lineHeight: 20, textAlign: 'center', marginTop: 10, paddingHorizontal: 8 },
+  socialRow: { flexDirection: 'row', gap: 12, marginTop: 24 },
+  footer: { alignItems: 'center', paddingVertical: 16 },
+  footerText: { fontSize: 13 },
 });

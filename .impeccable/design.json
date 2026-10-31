@@ -1,0 +1,750 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-31T17:24:45+00:00",
+  "title": "Design System: DevPay",
+  "extensions": {
+    "colorMeta": {
+      "sky-primary": {
+        "role": "primary",
+        "displayName": "Sky Blue",
+        "canonical": "#3AA6DB",
+        "tonalRamp": [
+          "#0C2F41",
+          "#155574",
+          "#1F7BA8",
+          "#2CA0D8",
+          "#5FB7E2",
+          "#93CEEB",
+          "#C3E4F4",
+          "#E9F5FB"
+        ]
+      },
+      "sky-light": {
+        "role": "primary",
+        "displayName": "Sky Light",
+        "canonical": "#6CC7F1",
+        "tonalRamp": [
+          "#073246",
+          "#0C5A7E",
+          "#1182B6",
+          "#1BA8E9",
+          "#53BDEF",
+          "#8BD3F4",
+          "#BEE6F9",
+          "#E8F6FD"
+        ]
+      },
+      "sky-deep": {
+        "role": "primary",
+        "displayName": "Sky Deep",
+        "canonical": "#2C88B4",
+        "tonalRamp": [
+          "#0F2E3D",
+          "#1B546F",
+          "#2779A0",
+          "#369DCE",
+          "#67B5DA",
+          "#99CDE6",
+          "#C6E3F1",
+          "#EBF5FA"
+        ]
+      },
+      "sky-ink": {
+        "role": "primary",
+        "displayName": "Sky Ink",
+        "canonical": "#2479A6",
+        "tonalRamp": [
+          "#0E2E3F",
+          "#195271",
+          "#2377A3",
+          "#329BD2",
+          "#64B3DD",
+          "#96CCE8",
+          "#C4E2F2",
+          "#EAF5FA"
+        ]
+      },
+      "sky-soft": {
+        "role": "primary",
+        "displayName": "Sky Soft",
+        "canonical": "#E3F2FA",
+        "tonalRamp": [
+          "#0C2E41",
+          "#155375",
+          "#1E79A9",
+          "#2B9DD9",
+          "#5FB5E2",
+          "#93CDEC",
+          "#C2E3F4",
+          "#E9F5FB"
+        ]
+      },
+      "sky-wash": {
+        "role": "primary",
+        "displayName": "Sky Wash",
+        "canonical": "#EEF7FC",
+        "tonalRamp": [
+          "#0B2E41",
+          "#155375",
+          "#1E77A9",
+          "#2B9BDA",
+          "#5FB4E3",
+          "#93CCEC",
+          "#C2E2F4",
+          "#E9F5FB"
+        ]
+      },
+      "harbour-blue": {
+        "role": "primary",
+        "displayName": "Harbour Blue",
+        "canonical": "#3B7493",
+        "tonalRamp": [
+          "#162B37",
+          "#274E62",
+          "#39708E",
+          "#4D92B7",
+          "#78ADC9",
+          "#A4C7DA",
+          "#CCE0EB",
+          "#EDF4F8"
+        ]
+      },
+      "bookmark-coral": {
+        "role": "secondary",
+        "displayName": "Bookmark Coral",
+        "canonical": "#E5484D",
+        "tonalRamp": [
+          "#430A0B",
+          "#791114",
+          "#AE191E",
+          "#E0242A",
+          "#E85A5E",
+          "#EF8F92",
+          "#F6C0C2",
+          "#FCE9E9"
+        ]
+      },
+      "coral-soft": {
+        "role": "secondary",
+        "displayName": "Coral Soft",
+        "canonical": "#FCEBEC",
+        "tonalRamp": [
+          "#430A0D",
+          "#781218",
+          "#AD1A23",
+          "#DE2631",
+          "#E65B63",
+          "#EE9096",
+          "#F6C1C4",
+          "#FCE9EA"
+        ]
+      },
+      "trust-green": {
+        "role": "tertiary",
+        "displayName": "Trust Green",
+        "canonical": "#1FAE7A",
+        "tonalRamp": [
+          "#0C412E",
+          "#157552",
+          "#1EA976",
+          "#2BD99A",
+          "#5FE2B3",
+          "#93ECCB",
+          "#C2F4E2",
+          "#E9FBF5"
+        ]
+      },
+      "green-soft": {
+        "role": "tertiary",
+        "displayName": "Green Soft",
+        "canonical": "#E5F6EF",
+        "tonalRamp": [
+          "#14392A",
+          "#23664B",
+          "#33946C",
+          "#45BF8D",
+          "#73CEA9",
+          "#A0DEC5",
+          "#CAEDDE",
+          "#ECF8F3"
+        ]
+      },
+      "pending-amber": {
+        "role": "tertiary",
+        "displayName": "Pending Amber",
+        "canonical": "#D98A12",
+        "tonalRamp": [
+          "#472D06",
+          "#7F510B",
+          "#B8750F",
+          "#EC9818",
+          "#F1B151",
+          "#F5CA89",
+          "#FAE2BD",
+          "#FDF4E7"
+        ]
+      },
+      "amber-soft": {
+        "role": "tertiary",
+        "displayName": "Amber Soft",
+        "canonical": "#FDF3E1",
+        "tonalRamp": [
+          "#483005",
+          "#815609",
+          "#BA7C0C",
+          "#EFA115",
+          "#F3B84E",
+          "#F7CF87",
+          "#FBE4BC",
+          "#FDF5E7"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#17191C",
+        "tonalRamp": [
+          "#22252A",
+          "#3E444C",
+          "#5A626D",
+          "#76808E",
+          "#979FAA",
+          "#B9BEC6",
+          "#D8DBDF",
+          "#F1F2F4"
+        ]
+      },
+      "slate-secondary": {
+        "role": "neutral",
+        "displayName": "Slate Secondary",
+        "canonical": "#6B7378",
+        "tonalRamp": [
+          "#242728",
+          "#414649",
+          "#5E6569",
+          "#7B8489",
+          "#9BA2A6",
+          "#BCC0C3",
+          "#D9DCDD",
+          "#F2F2F3"
+        ]
+      },
+      "slate-muted": {
+        "role": "neutral",
+        "displayName": "Slate Muted",
+        "canonical": "#8E979D",
+        "tonalRamp": [
+          "#242729",
+          "#40464A",
+          "#5C656B",
+          "#79848B",
+          "#9AA2A7",
+          "#BBC0C4",
+          "#D9DCDE",
+          "#F1F2F3"
+        ]
+      },
+      "mist-canvas": {
+        "role": "neutral",
+        "displayName": "Mist Canvas",
+        "canonical": "#F3F6F9",
+        "tonalRamp": [
+          "#192633",
+          "#2E455C",
+          "#426385",
+          "#5882AC",
+          "#81A1C0",
+          "#AABFD5",
+          "#CFDBE7",
+          "#EEF2F7"
+        ]
+      },
+      "mist-element": {
+        "role": "neutral",
+        "displayName": "Mist Element",
+        "canonical": "#E9EEF2",
+        "tonalRamp": [
+          "#1C2730",
+          "#334757",
+          "#4A667D",
+          "#6286A2",
+          "#88A3B9",
+          "#AFC1D0",
+          "#D2DCE4",
+          "#EFF3F6"
+        ]
+      },
+      "mist-selected": {
+        "role": "neutral",
+        "displayName": "Mist Selected",
+        "canonical": "#DDE4E9",
+        "tonalRamp": [
+          "#1E282E",
+          "#364754",
+          "#4E6779",
+          "#67879D",
+          "#8CA4B5",
+          "#B2C2CD",
+          "#D4DDE3",
+          "#F0F3F5"
+        ]
+      },
+      "cloud-surface": {
+        "role": "neutral",
+        "displayName": "Cloud Surface",
+        "canonical": "#FFFFFF",
+        "tonalRamp": [
+          "#262626",
+          "#454545",
+          "#636363",
+          "#828282",
+          "#A1A1A1",
+          "#BFBFBF",
+          "#DBDBDB",
+          "#F2F2F2"
+        ]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#EAEEF1",
+        "tonalRamp": [
+          "#1F272E",
+          "#374753",
+          "#506677",
+          "#69869B",
+          "#8EA3B4",
+          "#B3C1CC",
+          "#D4DCE2",
+          "#F0F3F5"
+        ]
+      },
+      "shadow-blue-grey": {
+        "role": "neutral",
+        "displayName": "Blue-Grey Shadow",
+        "canonical": "#7FA6BD",
+        "tonalRamp": [
+          "#1A2932",
+          "#2F4B5B",
+          "#446C83",
+          "#5A8CAA",
+          "#82A8BF",
+          "#ABC5D4",
+          "#D0DEE7",
+          "#EEF3F6"
+        ]
+      },
+      "night-canvas": {
+        "role": "neutral",
+        "displayName": "Night Canvas",
+        "canonical": "#0C1317",
+        "tonalRamp": [
+          "#1A2A32",
+          "#2F4B5A",
+          "#446C83",
+          "#5B8DA9",
+          "#83A9BE",
+          "#ABC5D3",
+          "#D0DEE7",
+          "#EEF3F6"
+        ]
+      },
+      "night-surface": {
+        "role": "neutral",
+        "displayName": "Night Surface",
+        "canonical": "#131C22",
+        "tonalRamp": [
+          "#1B2831",
+          "#314958",
+          "#476980",
+          "#5F89A5",
+          "#86A6BB",
+          "#ADC3D1",
+          "#D1DDE5",
+          "#EFF3F6"
+        ]
+      },
+      "night-element": {
+        "role": "neutral",
+        "displayName": "Night Element",
+        "canonical": "#1A252C",
+        "tonalRamp": [
+          "#1C2830",
+          "#334957",
+          "#4A697D",
+          "#6289A2",
+          "#88A6B9",
+          "#AFC3D0",
+          "#D2DDE4",
+          "#EFF3F6"
+        ]
+      },
+      "night-border": {
+        "role": "neutral",
+        "displayName": "Night Border",
+        "canonical": "#1F2B32",
+        "tonalRamp": [
+          "#1D292F",
+          "#354955",
+          "#4C6A7B",
+          "#658A9F",
+          "#8BA6B7",
+          "#B0C3CE",
+          "#D3DEE4",
+          "#EFF3F5"
+        ]
+      },
+      "night-text": {
+        "role": "neutral",
+        "displayName": "Night Text",
+        "canonical": "#EEF3F6",
+        "tonalRamp": [
+          "#1A2932",
+          "#304A5A",
+          "#456B82",
+          "#5C8CA8",
+          "#84A8BE",
+          "#ACC4D3",
+          "#D0DEE6",
+          "#EEF3F6"
+        ]
+      },
+      "night-primary": {
+        "role": "primary",
+        "displayName": "Night Sky",
+        "canonical": "#4DB4E4",
+        "tonalRamp": [
+          "#0A3142",
+          "#125778",
+          "#1A7EAD",
+          "#26A4DE",
+          "#5BBAE6",
+          "#90D0EE",
+          "#C1E5F6",
+          "#E9F6FC"
+        ]
+      },
+      "night-sky-ink": {
+        "role": "primary",
+        "displayName": "Night Sky Ink",
+        "canonical": "#7CCDF2",
+        "tonalRamp": [
+          "#073246",
+          "#0C5A7D",
+          "#1282B5",
+          "#1CA8E8",
+          "#53BDEE",
+          "#8BD3F3",
+          "#BEE6F9",
+          "#E8F6FD"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Money figures (30-34px, tabular): escrow, withdrawal, contract totals, amount entry."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Top-level tab titles and auth titles (26-28px)."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Top bar, sheet and job-card titles (16-17px); 22px in-content screen titles."
+      },
+      "section": {
+        "displayName": "Section",
+        "purpose": "Section headers beside See all."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Chips, list rows, inputs, descriptions."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Field labels, salary lines; company names at 15px/500."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "City, Trusted, subtitles, timestamps."
+      },
+      "micro": {
+        "displayName": "Micro",
+        "purpose": "Bottom-nav labels (400 inactive, 600 active)."
+      }
+    },
+    "gradients": [
+      {
+        "name": "sky-card",
+        "value": "linear-gradient(135deg,#5FBDEA,#3399CF)",
+        "purpose": "Featured card, centre squircle, brand mark, Pro plan."
+      },
+      {
+        "name": "cta",
+        "value": "linear-gradient(135deg,#3A9DCB,#2A82AE)",
+        "purpose": "Primary button, slide-to-confirm, CTA segmented."
+      },
+      {
+        "name": "cta-dark",
+        "value": "linear-gradient(135deg,#2F8FBE,#1F6F97)",
+        "purpose": "CTA in dark mode."
+      },
+      {
+        "name": "apply-fade",
+        "value": "linear-gradient(90deg,rgba(214,238,248,0),rgba(206,234,247,1))",
+        "purpose": "Apply corner on white cards."
+      },
+      {
+        "name": "apply-fade-dark",
+        "value": "linear-gradient(90deg,rgba(22,48,61,0),rgba(30,64,82,1))",
+        "purpose": "Apply corner in dark mode."
+      },
+      {
+        "name": "screen-wash",
+        "value": "linear-gradient(170deg,#E6F2F9,#F3F6F9)",
+        "purpose": "Top ~360px of every screen."
+      },
+      {
+        "name": "screen-wash-dark",
+        "value": "linear-gradient(170deg,#10212A,#0C1317)",
+        "purpose": "Screen wash in dark mode."
+      }
+    ],
+    "shadows": [
+      {
+        "name": "soft",
+        "value": "0 6px 18px rgba(127,166,189,0.14)",
+        "purpose": "Resting white cards (light mode only)."
+      },
+      {
+        "name": "button",
+        "value": "0 3px 8px rgba(91,124,143,0.14)",
+        "purpose": "Icon buttons, fields, search, light buttons, segmented thumb."
+      },
+      {
+        "name": "lifted",
+        "value": "0 12px 22px rgba(63,167,218,0.28)",
+        "purpose": "Sky-gradient elements only."
+      },
+      {
+        "name": "nav",
+        "value": "0 -6px 20px rgba(127,166,189,0.12)",
+        "purpose": "Bottom nav, cast upward."
+      },
+      {
+        "name": "squircle-glow",
+        "value": "0 8px 14px rgba(63,167,218,0.38)",
+        "purpose": "Centre action and brand mark."
+      },
+      {
+        "name": "dark-border",
+        "value": "0 0 0 1px #1F2B32",
+        "purpose": "Dark mode replaces all shadows with a 1px night border."
+      }
+    ],
+    "motion": [
+      {
+        "name": "press-in",
+        "value": "scale(0.97) over 110ms timing",
+        "purpose": "Default press; cards 0.985, chips 0.94, icon buttons 0.92, bookmark 0.88, tabs 0.88."
+      },
+      {
+        "name": "press-out",
+        "value": "spring 260ms, dampingRatio 0.8",
+        "purpose": "Release back to 1."
+      },
+      {
+        "name": "segmented-thumb",
+        "value": "spring 300ms, dampingRatio 0.9",
+        "purpose": "Thumb slide."
+      },
+      {
+        "name": "slider-return",
+        "value": "spring 320ms, dampingRatio 0.85",
+        "purpose": "Slide-to-confirm snap back below 72% threshold."
+      },
+      {
+        "name": "centre-action",
+        "value": "scale 0.9 in 100ms; spring 320ms, dampingRatio 0.6",
+        "purpose": "Nav centre squircle; medium impact haptic."
+      },
+      {
+        "name": "haptics",
+        "value": "selection on press; success on confirm",
+        "purpose": "Every press pairs with a haptic."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "max-content",
+        "value": "800px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single strongest action on a screen: CTA-gradient pill with a blue lifted shadow.",
+      "html": "<button class=\"ds-btn-primary\">Submit proposal</button>",
+      "css": ".ds-btn-primary{font-family:system-ui,-apple-system,Roboto,sans-serif;height:56px;padding:0 28px;border:none;border-radius:999px;background:linear-gradient(135deg,#3A9DCB,#2A82AE);color:#fff;font-size:16px;font-weight:600;box-shadow:0 12px 22px rgba(63,167,218,.28);cursor:pointer;transition:transform .11s ease-out,box-shadow .2s;} .ds-btn-primary:hover{box-shadow:0 14px 26px rgba(63,167,218,.36);} .ds-btn-primary:active{transform:scale(.97);} .ds-btn-primary:focus-visible{outline:2px solid #3AA6DB;outline-offset:3px;}"
+    },
+    {
+      "name": "Soft Button",
+      "kind": "button",
+      "refersTo": "button-soft",
+      "description": "Secondary action: sky-soft pill with sky-ink label.",
+      "html": "<button class=\"ds-btn-soft\">Message client</button>",
+      "css": ".ds-btn-soft{font-family:system-ui,-apple-system,Roboto,sans-serif;height:56px;padding:0 28px;border:none;border-radius:999px;background:#E3F2FA;color:#2479A6;font-size:16px;font-weight:600;cursor:pointer;transition:transform .11s ease-out,background .2s;} .ds-btn-soft:hover{background:#D6ECF8;} .ds-btn-soft:active{transform:scale(.97);} .ds-btn-soft:focus-visible{outline:2px solid #3AA6DB;outline-offset:3px;}"
+    },
+    {
+      "name": "Danger Button",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Destructive action: coral-soft pill with coral label.",
+      "html": "<button class=\"ds-btn-danger\">Delete account</button>",
+      "css": ".ds-btn-danger{font-family:system-ui,-apple-system,Roboto,sans-serif;height:56px;padding:0 28px;border:none;border-radius:999px;background:#FCEBEC;color:#E5484D;font-size:16px;font-weight:600;cursor:pointer;transition:transform .11s ease-out;} .ds-btn-danger:active{transform:scale(.97);} .ds-btn-danger:focus-visible{outline:2px solid #E5484D;outline-offset:3px;}"
+    },
+    {
+      "name": "Category Chips",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Pill filters; selected fills sky blue.",
+      "html": "<div class=\"ds-chips\"><button class=\"ds-chip ds-chip-on\">See All</button><button class=\"ds-chip\">Full Time</button><button class=\"ds-chip\">Part Time</button><span class=\"ds-chip-sm\">On-Site</span></div>",
+      "css": ".ds-chips{display:flex;gap:8px;align-items:center;flex-wrap:wrap;} .ds-chip{font-family:system-ui,-apple-system,Roboto,sans-serif;height:38px;padding:0 16px;border:none;border-radius:999px;background:#E9EEF2;color:#17191C;font-size:14px;cursor:pointer;transition:transform .11s ease-out,background .2s;} .ds-chip:hover{background:#DDE4E9;} .ds-chip:active{transform:scale(.94);} .ds-chip:focus-visible{outline:2px solid #3AA6DB;outline-offset:2px;} .ds-chip-on,.ds-chip-on:hover{background:#3AA6DB;color:#fff;} .ds-chip-sm{font-family:system-ui,-apple-system,Roboto,sans-serif;display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:999px;background:#E9EEF2;color:#6B7378;font-size:12px;}"
+    },
+    {
+      "name": "Search Bar",
+      "kind": "input",
+      "refersTo": "search-bar",
+      "description": "White pill search with a sky-soft filter tile.",
+      "html": "<label class=\"ds-search\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#17191C\" stroke-width=\"2\" stroke-linecap=\"round\"><circle cx=\"11\" cy=\"11\" r=\"7\"/><line x1=\"21\" y1=\"21\" x2=\"16.5\" y2=\"16.5\"/></svg><input placeholder=\"Search Here...\"/><button class=\"ds-search-filter\" aria-label=\"Filters\"><svg width=\"19\" height=\"19\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#3AA6DB\" stroke-width=\"2\" stroke-linecap=\"round\"><line x1=\"4\" y1=\"7\" x2=\"20\" y2=\"7\"/><line x1=\"4\" y1=\"17\" x2=\"20\" y2=\"17\"/><circle cx=\"9\" cy=\"7\" r=\"2\" fill=\"#E3F2FA\"/><circle cx=\"15\" cy=\"17\" r=\"2\" fill=\"#E3F2FA\"/></svg></button></label>",
+      "css": ".ds-search{font-family:system-ui,-apple-system,Roboto,sans-serif;display:flex;align-items:center;gap:10px;height:52px;padding:0 6px 0 16px;border-radius:999px;background:#fff;box-shadow:0 3px 8px rgba(91,124,143,.14);border:1px solid transparent;transition:border-color .2s;} .ds-search:focus-within{border-color:#3AA6DB;} .ds-search input{flex:1;border:none;outline:none;background:transparent;font:inherit;font-size:14px;color:#17191C;} .ds-search input::placeholder{color:#8E979D;} .ds-search-filter{width:40px;height:40px;border:none;border-radius:12px;background:#E3F2FA;display:grid;place-items:center;cursor:pointer;} .ds-search-filter:hover{background:#D6ECF8;} .ds-search-filter:focus-visible{outline:2px solid #3AA6DB;outline-offset:2px;}"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Labelled pill field; sky border on focus, coral on error.",
+      "html": "<div class=\"ds-field\"><label class=\"ds-field-label\">Mobile number</label><input class=\"ds-field-input\" placeholder=\"24 123 4567\"/></div>",
+      "css": ".ds-field{font-family:system-ui,-apple-system,Roboto,sans-serif;display:flex;flex-direction:column;gap:8px;} .ds-field-label{font-size:13px;font-weight:500;color:#6B7378;} .ds-field-input{height:54px;padding:0 18px;border-radius:999px;border:1px solid transparent;background:#fff;box-shadow:0 3px 8px rgba(91,124,143,.14);font:inherit;font-size:15px;color:#17191C;outline:none;transition:border-color .2s;} .ds-field-input::placeholder{color:#8E979D;} .ds-field-input:hover{border-color:#DDE4E9;} .ds-field-input:focus-visible,.ds-field-input:focus{border-color:#3AA6DB;}"
+    },
+    {
+      "name": "Featured Job Card",
+      "kind": "card",
+      "refersTo": "card-featured",
+      "description": "The one sky-gradient card per group, with translucent Apply tab.",
+      "html": "<article class=\"ds-feat\"><div class=\"ds-feat-top\"><div class=\"ds-co\"><span class=\"ds-logo\">K</span><div><div class=\"ds-co-name\">Kente Labs</div><div class=\"ds-co-sub\">Accra · <span class=\"ds-trust\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"#fff\"><path d=\"M12 2 4 5v6c0 5 3.4 9.6 8 11 4.6-1.4 8-6 8-11V5l-8-3zm-1.2 14.2-3.5-3.5 1.4-1.4 2.1 2.1 4.9-4.9 1.4 1.4-6.3 6.3z\"/></svg> Trusted</span></div></div></div><button class=\"ds-bm-glass\" aria-label=\"Save job\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"#fff\"><path d=\"M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z\"/></svg></button></div><div><div class=\"ds-feat-title\">Jr. UI/UX Designer</div><div class=\"ds-feat-pay\">GH₵ 4,500 – 6,000 <span>/ Month</span></div></div><div class=\"ds-feat-bottom\"><span class=\"ds-feat-count\">+12 applied</span><button class=\"ds-feat-apply\">Apply <svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><line x1=\"7\" y1=\"17\" x2=\"17\" y2=\"7\"/><polyline points=\"7 7 17 7 17 17\"/></svg></button></div></article>",
+      "css": ".ds-feat{font-family:system-ui,-apple-system,Roboto,sans-serif;width:262px;height:200px;box-sizing:border-box;border-radius:24px;padding:16px 0 0 16px;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(135deg,#5FBDEA,#3399CF);color:#fff;box-shadow:0 12px 22px rgba(63,167,218,.28);overflow:hidden;transition:transform .11s ease-out;} .ds-feat:active{transform:scale(.98);} .ds-feat-top{display:flex;justify-content:space-between;align-items:flex-start;padding-right:16px;} .ds-co{display:flex;gap:10px;align-items:center;} .ds-logo{width:40px;height:40px;border-radius:50%;background:#fff;color:#2C88B4;display:grid;place-items:center;font-weight:700;font-size:19px;} .ds-co-name{font-size:15px;font-weight:500;} .ds-co-sub{font-size:12px;opacity:.9;display:flex;gap:4px;align-items:center;} .ds-trust{display:inline-flex;gap:3px;align-items:center;} .ds-bm-glass{width:34px;height:34px;border:none;border-radius:50%;background:rgba(255,255,255,.35);display:grid;place-items:center;cursor:pointer;} .ds-bm-glass:focus-visible{outline:2px solid #fff;outline-offset:2px;} .ds-feat-title{font-size:17px;font-weight:600;letter-spacing:-.3px;} .ds-feat-pay{font-size:13px;font-weight:500;opacity:.9;margin-top:4px;} .ds-feat-pay span{font-weight:400;} .ds-feat-bottom{display:flex;justify-content:space-between;align-items:center;} .ds-feat-count{font-size:12px;opacity:.9;} .ds-feat-apply{display:flex;gap:6px;align-items:center;height:48px;padding:0 20px 0 30px;border:none;border-top-left-radius:20px;background:rgba(255,255,255,.2);color:#fff;font:inherit;font-size:15px;font-weight:500;cursor:pointer;} .ds-feat-apply:hover{background:rgba(255,255,255,.3);} .ds-feat-apply:focus-visible{outline:2px solid #fff;outline-offset:-3px;}"
+    },
+    {
+      "name": "Job Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "White 20px card with soft blue-grey shadow, active coral bookmark and pale Apply fade corner.",
+      "html": "<article class=\"ds-card\"><div class=\"ds-card-top\"><div class=\"ds-co\"><span class=\"ds-logo2\">A</span><div><div class=\"ds-co-name2\">Asante Digital</div><div class=\"ds-co-sub2\">Kumasi · <span class=\"ds-trust\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"#1FAE7A\"><path d=\"M12 2 4 5v6c0 5 3.4 9.6 8 11 4.6-1.4 8-6 8-11V5l-8-3zm-1.2 14.2-3.5-3.5 1.4-1.4 2.1 2.1 4.9-4.9 1.4 1.4-6.3 6.3z\"/></svg> Trusted</span></div></div></div><button class=\"ds-bm\" aria-label=\"Remove from saved\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"#E5484D\"><path d=\"M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z\"/></svg></button></div><div class=\"ds-card-title\">Senior React Native Dev</div><div class=\"ds-card-pay\">GH₵ 9,000 <span>/ Month</span></div><button class=\"ds-apply-corner\">Apply <svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><line x1=\"7\" y1=\"17\" x2=\"17\" y2=\"7\"/><polyline points=\"7 7 17 7 17 17\"/></svg></button></article>",
+      "css": ".ds-card{font-family:system-ui,-apple-system,Roboto,sans-serif;position:relative;width:340px;box-sizing:border-box;padding:16px 16px 60px;border-radius:20px;background:#fff;box-shadow:0 6px 18px rgba(127,166,189,.14);overflow:hidden;transition:transform .11s ease-out;} .ds-card:active{transform:scale(.985);} .ds-card-top{display:flex;justify-content:space-between;align-items:flex-start;} .ds-co{display:flex;gap:10px;align-items:center;} .ds-logo2{width:40px;height:40px;border-radius:50%;background:#fff;border:1px solid #EEF1F3;color:#D98A12;display:grid;place-items:center;font-weight:700;font-size:19px;} .ds-co-name2{font-size:15px;font-weight:500;color:#17191C;} .ds-co-sub2{font-size:12px;color:#6B7378;display:flex;gap:4px;align-items:center;} .ds-trust{display:inline-flex;gap:3px;align-items:center;} .ds-bm{width:34px;height:34px;border:none;border-radius:50%;background:#FCEBEC;display:grid;place-items:center;cursor:pointer;transition:transform .11s;} .ds-bm:active{transform:scale(.88);} .ds-bm:focus-visible{outline:2px solid #E5484D;outline-offset:2px;} .ds-card-title{margin-top:14px;font-size:16px;font-weight:600;letter-spacing:-.2px;color:#17191C;} .ds-card-pay{margin-top:4px;font-size:13px;font-weight:500;color:#17191C;} .ds-card-pay span{font-weight:400;color:#6B7378;} .ds-apply-corner{position:absolute;right:0;bottom:0;width:52%;height:44px;border:none;display:flex;gap:6px;align-items:center;justify-content:flex-end;padding-right:18px;background:linear-gradient(90deg,rgba(214,238,248,0),rgba(206,234,247,1));color:#2479A6;font:inherit;font-size:14px;font-weight:500;cursor:pointer;} .ds-apply-corner:hover{background:linear-gradient(90deg,rgba(214,238,248,0),rgba(190,226,244,1));} .ds-apply-corner:focus-visible{outline:2px solid #3AA6DB;outline-offset:-3px;}"
+    },
+    {
+      "name": "Segmented Control",
+      "kind": "custom",
+      "refersTo": "segmented",
+      "description": "Pill track with a sliding white thumb.",
+      "html": "<div class=\"ds-seg\" role=\"tablist\"><button class=\"ds-seg-item ds-seg-on\" role=\"tab\">Freelancer</button><button class=\"ds-seg-item\" role=\"tab\">Client</button></div>",
+      "css": ".ds-seg{font-family:system-ui,-apple-system,Roboto,sans-serif;display:flex;width:320px;height:48px;padding:4px;box-sizing:border-box;border-radius:999px;background:#E9EEF2;} .ds-seg-item{flex:1;border:none;border-radius:999px;background:transparent;color:#6B7378;font:inherit;font-size:14px;font-weight:500;cursor:pointer;transition:background .3s,color .3s,box-shadow .3s;} .ds-seg-item:hover{color:#17191C;} .ds-seg-item:focus-visible{outline:2px solid #3AA6DB;outline-offset:-2px;} .ds-seg-on{background:#fff;color:#17191C;box-shadow:0 3px 8px rgba(91,124,143,.14);}"
+    },
+    {
+      "name": "Slide to Confirm",
+      "kind": "custom",
+      "refersTo": "slide-to-confirm",
+      "description": "CTA-gradient pill with a pale thumb and fading chevrons; tap also confirms.",
+      "html": "<div class=\"ds-slide\"><button class=\"ds-slide-thumb\">Apply Now</button><span class=\"ds-slide-chev\"><svg style=\"opacity:.35;margin-left:-5px\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#fff\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"9 6 15 12 9 18\"/></svg><svg style=\"opacity:.5;margin-left:-5px\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#fff\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"9 6 15 12 9 18\"/></svg><svg style=\"opacity:.65;margin-left:-5px\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#fff\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"9 6 15 12 9 18\"/></svg><svg style=\"opacity:.82;margin-left:-5px\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#fff\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"9 6 15 12 9 18\"/></svg><svg style=\"opacity:1;margin-left:-5px\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#fff\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"9 6 15 12 9 18\"/></svg></span></div>",
+      "css": ".ds-slide{font-family:system-ui,-apple-system,Roboto,sans-serif;position:relative;width:340px;height:58px;padding:4px;box-sizing:border-box;border-radius:999px;background:linear-gradient(135deg,#3A9DCB,#2A82AE);box-shadow:0 12px 22px rgba(63,167,218,.28);display:flex;align-items:center;} .ds-slide-thumb{width:120px;height:50px;border:none;border-radius:999px;background:#F2F9FD;color:#17191C;font:inherit;font-size:15px;font-weight:500;cursor:grab;transition:transform .32s cubic-bezier(.2,.8,.2,1);} .ds-slide-thumb:hover{transform:translateX(8px);} .ds-slide-thumb:focus-visible{outline:2px solid #fff;outline-offset:2px;} .ds-slide-chev{position:absolute;right:22px;display:flex;align-items:center;}"
+    },
+    {
+      "name": "Floating Bottom Nav",
+      "kind": "nav",
+      "refersTo": "bottom-nav",
+      "description": "Frosted 32px-top nav with haloed, rotated sky squircle centre action.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-tab ds-tab-on\" href=\"#\"><svg width=\"23\" height=\"23\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M12 3 3 10v10a1 1 0 0 0 1 1h5v-6h6v6h5a1 1 0 0 0 1-1V10l-9-7z\"/></svg><span>Home</span></a><a class=\"ds-tab\" href=\"#\"><svg width=\"23\" height=\"23\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M9 4h6a2 2 0 0 1 2 2v1h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h3V6a2 2 0 0 1 2-2zm0 3h6V6H9v1z\"/></svg><span>Jobs</span></a><a class=\"ds-centre\" href=\"#\" aria-label=\"Find work\"><span class=\"ds-halo\"></span><span class=\"ds-sq\"><span class=\"ds-sq-icon\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#fff\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16\"/></svg></span></span></a><a class=\"ds-tab\" href=\"#\"><svg width=\"23\" height=\"23\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M4 4h16a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H9l-5 4V5a1 1 0 0 1 1-1z\"/></svg><span>Chats</span><b class=\"ds-dot\"></b></a><a class=\"ds-tab\" href=\"#\"><svg width=\"23\" height=\"23\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><circle cx=\"12\" cy=\"8\" r=\"4\"/><path d=\"M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7z\"/></svg><span>Profile</span></a></nav>",
+      "css": ".ds-nav{font-family:system-ui,-apple-system,Roboto,sans-serif;position:relative;width:375px;height:84px;box-sizing:border-box;padding:0 12px 14px;display:flex;align-items:center;justify-content:space-around;border-radius:32px 32px 0 0;border-top:1px solid rgba(255,255,255,.95);background:linear-gradient(180deg,#ECF6FC,#FAFCFE);box-shadow:0 -6px 20px rgba(127,166,189,.12);} .ds-tab{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:#8E979D;text-decoration:none;font-size:11px;transition:transform .1s;} .ds-tab:hover{color:#6B7378;} .ds-tab:active{transform:scale(.88);} .ds-tab:focus-visible{outline:2px solid #3AA6DB;outline-offset:2px;border-radius:12px;} .ds-tab-on,.ds-tab-on:hover{color:#3B7493;font-weight:600;} .ds-dot{position:absolute;top:-1px;left:calc(50% + 6px);width:9px;height:9px;border-radius:50%;background:#E5484D;border:1.5px solid #fff;} .ds-centre{position:relative;width:84px;height:84px;margin-top:-34px;display:grid;place-items:center;} .ds-centre:focus-visible{outline:2px solid #3AA6DB;border-radius:50%;} .ds-halo{position:absolute;inset:0;border-radius:50%;background:rgba(150,210,240,.35);border:1px solid rgba(255,255,255,.9);} .ds-sq{position:relative;width:54px;height:54px;border-radius:18px;transform:rotate(45deg);background:linear-gradient(135deg,#5FBDEA,#3399CF);box-shadow:0 8px 14px rgba(63,167,218,.38);display:grid;place-items:center;transition:transform .32s cubic-bezier(.3,1.4,.5,1);} .ds-centre:hover .ds-sq{transform:rotate(45deg) scale(1.04);} .ds-centre:active .ds-sq{transform:rotate(45deg) scale(.9);} .ds-sq-icon{transform:rotate(-45deg);display:grid;}"
+    },
+    {
+      "name": "Status Pills",
+      "kind": "chip",
+      "refersTo": "status-pill",
+      "description": "Five semantic tones as soft-fill pills.",
+      "html": "<div class=\"ds-pills\"><span class=\"ds-pill\" style=\"background:#E3F2FA;color:#2479A6\">Active</span><span class=\"ds-pill\" style=\"background:#E5F6EF;color:#1FAE7A\">Paid</span><span class=\"ds-pill\" style=\"background:#FDF3E1;color:#D98A12\">Pending</span><span class=\"ds-pill\" style=\"background:#FCEBEC;color:#E5484D\">Disputed</span><span class=\"ds-pill\" style=\"background:#E9EEF2;color:#6B7378\">Draft</span></div>",
+      "css": ".ds-pills{display:flex;gap:8px;flex-wrap:wrap;} .ds-pill{font-family:system-ui,-apple-system,Roboto,sans-serif;display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:500;}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Clear Morning Sky",
+    "overview": "**Creative North Star: \"The Clear Morning Sky\"**\n\nDevPay lives in a pale, frosted sky. Every screen opens on a sky wash that fades into a misty canvas, and work floats on it as white cards lifted by soft blue-grey shadow. Blue is the only voice with volume: one featured job card per group, the primary CTA, the slider, and the haloed centre action wear the sky gradient; everything else is white, mist, and ink. Small, precise accents carry meaning: coral for what you saved or what is at risk, green for what is trusted or paid.\n\nThe density is that of a well-made consumer job finder: generous 20px margins, 24px between sections, compact 12-15px text, and a lot of air between rounded shapes. Interactive controls are pills; containers are softly rounded rectangles (20/24px); sheets and the nav round to 32px. Motion is physical and short: a press scales down (0.97 default) and springs back, with a selection haptic.\n\nLight mode is the reference. Dark mode derives from the same hues: a deep blue-black canvas, the sky blue brightened for contrast, and shadows replaced by a one-pixel border.",
+    "keyCharacteristics": [
+      "Sky wash backgrounds (sky tint at top fading to mist canvas over ~360px).",
+      "White cards, 20px radius, soft blue-grey shadow; featured cards 24px radius on the sky gradient.",
+      "Pills for every control: chips, buttons, fields, search, segmented, slide-to-confirm.",
+      "Pale \"Apply ↗\" fade corner on white cards; translucent \"Apply ↗\" tab on the featured card.",
+      "Coral bookmark, green shield \"Trusted\", monogram/tile company logos in white rings.",
+      "Floating frosted bottom nav with a haloed, 45°-rotated sky squircle as the centre action.",
+      "System font only, hierarchy carried by 500/600 weights and tight negative tracking."
+    ],
+    "rules": [
+      {
+        "name": "The Sky Gradient Rule",
+        "body": "Gradients come only from the sky family (card, CTA, screen wash, apply fade). Coral, green, and amber are always flat tints, never gradients.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Featured Rule",
+        "body": "In any group of peers, at most one item wears the sky gradient (the first Recommended card, the Pro plan). The rest are white.",
+        "section": "colors"
+      },
+      {
+        "name": "The Semantic Accent Rule",
+        "body": "Coral means saved, unread, or destructive; green means trusted, online, or paid; amber means pending. None of them decorate.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two-Weight Rule",
+        "body": "500 and 600 carry all hierarchy; 400 is reading text. 700 appears only inside monogram logos.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tight Tracking Rule",
+        "body": "Tracking is zero or negative and tightens as size grows (-0.1px at 15px to -1px at 34px). Nothing in the system tracks positive.",
+        "section": "typography"
+      },
+      {
+        "name": "The Shadow-in-Light, Border-in-Dark Rule",
+        "body": "Light mode separates surfaces with blue-grey shadow; dark mode removes the shadow and draws a 1px night-border. Never both.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Blue Lift Rule",
+        "body": "Only sky-gradient elements get the blue lifted shadow; white elements never glow blue.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do start every screen with the sky wash fading into the mist canvas.",
+      "Do make every interactive control a full pill and every container a 20px (or 24px featured) rounded rectangle.",
+      "Do give exactly one item per peer group the sky gradient and lifted blue shadow.",
+      "Do show company identity as a monogram or tile mark in a white ring, followed by \"City · Trusted\" with the green shield icon when verified.",
+      "Do set money in GH₵ with tabular numerals and negative tracking.",
+      "Do swap shadows for a 1px night border in dark mode.",
+      "Do pair every press with the scale-and-spring response and a selection haptic."
+    ],
+    "donts": [
+      "Don't introduce a second typeface or weights outside 400/500/600.",
+      "Don't track text positively or set labels in tracked uppercase.",
+      "Don't use coral, green, or amber as decoration or as gradients.",
+      "Don't put black or neutral-grey shadows on light surfaces; shadows are blue-grey or sky-tinted.",
+      "Don't use real-brand logos for companies.",
+      "Don't use square-cornered buttons, chips, or inputs."
+    ]
+  }
+}

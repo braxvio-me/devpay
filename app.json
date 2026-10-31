@@ -8,7 +8,10 @@
     "scheme": "devpay",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "DevPay uses Face ID to sign you in securely."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -31,6 +34,26 @@
           "backgroundColor": "#208AEF",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "DevPay uses your camera to scan your face when you sign in with Face ID and to take photos you send in chat.",
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "DevPay uses your microphone to record voice notes in chat."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "DevPay lets you choose photos to send in chat and to use as your profile picture.",
+          "cameraPermission": "DevPay uses your camera to take photos you send in chat and for identity verification."
         }
       ]
     ],

@@ -1,550 +1,195 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  Image,
-  Alert,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Colors } from '@/constants/theme';
 import * as Haptics from 'expo-haptics';
+import { useTheme } from '@/contexts/ThemeContext';
+import { Button, CompanyRow, Field, GlassCard, ScreenBackground, SectionHeader, TopBar } from '@/components/ds';
 import { SuccessOverlay } from '@/components/success-overlay';
+import { getJob } from '@/constants/jobs';
+import { Layout, Radius } from '@/constants/theme';
 
-interface MilestoneItem {
+interface Milestone {
   id: string;
   title: string;
   amount: string;
-  duration: string;
+  days: string;
 }
+
+const cedis = (n: number) => `GH₵ ${n.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
 
 export default function JobApplyScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const { jobId } = useLocalSearchParams<{ jobId: string }>();
+  const job = getJob(jobId);
 
-  const [coverLetter, setCoverLetter] = useState(
-    'Hi Google Africa team, I have 6+ years specializing in React Native and mobile fintech design tokens. I recently engineered the MoMo checkout flow for DevPay and can deliver pixel-perfect baseline grids adhering to your African regional guidelines.'
-  );
-
-  const [milestones, setMilestones] = useState<MilestoneItem[]>([
-    {
-      id: 'm1',
-      title: 'Milestone 1: Design Tokens & Component Library',
-      amount: '2000',
-      duration: '4 Days',
-    },
-    {
-      id: 'm2',
-      title: 'Milestone 2: Interactive High-Fidelity Prototype',
-      amount: '2500',
-      duration: '6 Days',
-    },
+  const [cover, setCover] = useState('');
+  const [milestones, setMilestones] = useState<Milestone[]>([
+    { id: 'm1', title: 'Design tokens & component library', amount: '2000', days: '4' },
+    { id: 'm2', title: 'Interactive prototype', amount: '2500', days: '6' },
   ]);
-
+  const [adding, setAdding] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newAmount, setNewAmount] = useState('');
-  const [showAddMilestone, setShowAddMilestone] = useState(false);
-  const [portfolioLink, setPortfolioLink] = useState('https://github.com/kwamemensah/devpay');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
+  const [newDays, setNewDays] = useState('');
+  const [addError, setAddError] = useState<string>();
+  const [link, setLink] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [coverError, setCoverError] = useState<string>();
+  const [done, setDone] = useState(false);
 
-  const totalBid = milestones.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+  const total = milestones.reduce((s, m) => s + (parseFloat(m.amount) || 0), 0);
 
-  const handleAddMilestone = () => {
-    if (!newTitle.trim() || !newAmount.trim()) {
-      Alert.alert('Incomplete Milestone', 'Please enter a milestone title and amount in GH₵.');
-      return;
-    }
-
-    setMilestones([
-      ...milestones,
-      {
-        id: `m_${Date.now()}`,
-        title: newTitle.trim(),
-        amount: newAmount.trim(),
-        duration: '5 Days',
-      },
-    ]);
+  const addMilestone = () => {
+    if (!newTitle.trim() || !newAmount.trim()) return setAddError('Add a title and an amount.');
+    setMilestones([...milestones, { id: `m_${Date.now()}`, title: newTitle.trim(), amount: newAmount, days: newDays || '5' }]);
     setNewTitle('');
     setNewAmount('');
-    setShowAddMilestone(false);
+    setNewDays('');
+    setAddError(undefined);
+    setAdding(false);
   };
 
-  const handleRemoveMilestone = (id: string) => {
-    if (milestones.length <= 1) {
-      Alert.alert('Required', 'A proposal must include at least one escrow milestone.');
-      return;
-    }
-    setMilestones(milestones.filter((m) => m.id !== id));
-  };
-
-  const handleSubmitProposal = async () => {
-    if (!coverLetter.trim()) {
-      Alert.alert('Required', 'Please write a brief pitch or cover letter.');
-      return;
-    }
-
-    setIsSubmitting(true);
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
-    setTimeout(async () => {
-      setIsSubmitting(false);
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setShowSuccessOverlay(true);
+  const submit = () => {
+    if (!cover.trim()) return setCoverError('Write a short pitch so the client knows why you.');
+    setSubmitting(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    setTimeout(() => {
+      setSubmitting(false);
+      setDone(true);
     }, 800);
   };
 
   return (
-    <View style={styles.screen}>
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-            activeOpacity={0.8}>
-            <Ionicons name="chevron-back" size={20} color={Colors.light.text} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Submit Milestone Proposal</Text>
-          <View style={{ width: 40 }} />
-        </View>
+    <View style={{ flex: 1 }}>
+      <ScreenBackground />
+      <SafeAreaView edges={['top']} style={{ flex: 1 }}>
+        <TopBar title="Send proposal" />
+        <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+          <GlassCard>
+            <CompanyRow company={job.company} />
+            <Text style={[styles.jobTitle, { color: colors.text }]}>{job.title}</Text>
+            <Text style={[styles.jobBudget, { color: colors.textSecondary }]}>
+              Budget {job.budget} / {job.period}
+            </Text>
+          </GlassCard>
 
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}>
-          {/* Job Summary Banner */}
-          <View style={styles.jobSummaryCard}>
-            <Image
-              source={{
-                uri: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/240px-Google_%22G%22_logo.svg.png',
-              }}
-              style={styles.companyLogo}
-            />
-            <View style={styles.jobSummaryDetails}>
-              <View style={styles.companyRow}>
-                <Text style={styles.companyName}>Google Africa</Text>
-                <Ionicons name="checkmark-circle" size={14} color="#0F73F7" />
-              </View>
-              <Text style={styles.jobTitle}>Jr. UI/UX Designer</Text>
-              <Text style={styles.clientBudget}>Client Budget: GH₵ 3,500 - 5,500</Text>
-            </View>
-          </View>
+          <SectionHeader title="Your pitch" style={styles.gap} />
+          <Field
+            placeholder={`Hi ${job.company.name} team, here’s how I’d approach this…`}
+            multiline
+            value={cover}
+            onChangeText={(t) => {
+              setCover(t);
+              setCoverError(undefined);
+            }}
+            error={coverError}
+          />
 
-          {/* Proposal Bid Summary Card */}
-          <View style={styles.bidSummaryCard}>
-            <View>
-              <Text style={styles.bidLabel}>Total Proposed Bid (Escrow Total)</Text>
-              <Text style={styles.bidAmount}>GH₵ {totalBid.toLocaleString()}.00</Text>
-            </View>
-            <View style={styles.milestoneCountBadge}>
-              <Text style={styles.milestoneCountText}>{milestones.length} Milestones</Text>
-            </View>
-          </View>
-
-          {/* Milestone Breakdown Section */}
-          <View style={styles.sectionBlock}>
-            <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionHeading}>Escrow Milestones</Text>
-              <TouchableOpacity
-                onPress={() => setShowAddMilestone(!showAddMilestone)}
-                activeOpacity={0.7}>
-                <Text style={styles.addMilestoneText}>
-                  {showAddMilestone ? 'Close' : '+ Add Milestone'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {milestones.map((milestone, idx) => (
-              <View key={milestone.id} style={styles.milestoneCard}>
-                <View style={styles.milestoneIndexBox}>
-                  <Text style={styles.milestoneIndexText}>{idx + 1}</Text>
+          <SectionHeader title="Milestones" style={styles.gap} />
+          <GlassCard padded={false} style={{ paddingHorizontal: 16 }}>
+            {milestones.map((m, i) => (
+              <View key={m.id} style={[styles.ms, { borderBottomColor: colors.border }, i < milestones.length - 1 && styles.msBorder]}>
+                <View style={[styles.msNum, { backgroundColor: colors.primaryWash }]}>
+                  <Text style={[styles.msNumText, { color: colors.primaryText }]}>{i + 1}</Text>
                 </View>
-                <View style={styles.milestoneDetails}>
-                  <Text style={styles.milestoneTitle}>{milestone.title}</Text>
-                  <Text style={styles.milestoneMeta}>
-                    GH₵ {parseFloat(milestone.amount).toLocaleString()} • {milestone.duration}
-                  </Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.msTitle, { color: colors.text }]}>{m.title}</Text>
+                  <Text style={[styles.msSub, { color: colors.textSecondary }]}>{m.days} days</Text>
                 </View>
-                <TouchableOpacity
-                  onPress={() => handleRemoveMilestone(milestone.id)}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <Ionicons name="trash-outline" size={18} color={Colors.light.textMuted} />
-                </TouchableOpacity>
+                <Text style={[styles.msAmount, { color: colors.text }]}>GH₵ {Number(m.amount).toLocaleString()}</Text>
+                {milestones.length > 1 && (
+                  <Pressable
+                    onPress={() => setMilestones(milestones.filter((x) => x.id !== m.id))}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Remove ${m.title}`}>
+                    <Ionicons name="close-circle" size={20} color={colors.textMuted} />
+                  </Pressable>
+                )}
               </View>
             ))}
+          </GlassCard>
 
-            {showAddMilestone && (
-              <View style={styles.addMilestoneForm}>
-                <Text style={styles.formMiniTitle}>New Milestone Details</Text>
-                <TextInput
-                  style={styles.miniInput}
-                  placeholder="Milestone Title (e.g. QA & Polish)"
-                  placeholderTextColor={Colors.light.textMuted}
-                  value={newTitle}
-                  onChangeText={setNewTitle}
-                />
-                <TextInput
-                  style={styles.miniInput}
-                  placeholder="Amount in GH₵ (e.g. 1500)"
-                  placeholderTextColor={Colors.light.textMuted}
-                  value={newAmount}
-                  onChangeText={setNewAmount}
-                  keyboardType="numeric"
-                />
-                <TouchableOpacity
-                  style={styles.miniAddBtn}
-                  onPress={handleAddMilestone}
-                  activeOpacity={0.85}>
-                  <Text style={styles.miniAddBtnText}>Add to Proposal</Text>
-                </TouchableOpacity>
+          {adding ? (
+            <GlassCard style={{ marginTop: 12, gap: 12 }}>
+              <Field placeholder="Milestone title" value={newTitle} onChangeText={setNewTitle} />
+              <View style={styles.two}>
+                <Field placeholder="Amount (GH₵)" keyboardType="number-pad" value={newAmount} onChangeText={(t) => setNewAmount(t.replace(/\D/g, ''))} style={{ flex: 1 }} />
+                <Field placeholder="Days" keyboardType="number-pad" value={newDays} onChangeText={(t) => setNewDays(t.replace(/\D/g, ''))} style={{ width: 100 }} />
               </View>
-            )}
-          </View>
-
-          {/* Cover Letter / Pitch */}
-          <View style={styles.sectionBlock}>
-            <Text style={styles.sectionHeading}>Cover Letter & Pitch</Text>
-            <TextInput
-              style={styles.coverLetterInput}
-              value={coverLetter}
-              onChangeText={setCoverLetter}
-              placeholder="Introduce yourself and outline why you are ideal for this project..."
-              placeholderTextColor={Colors.light.textMuted}
-              multiline
-              numberOfLines={6}
-              textAlignVertical="top"
+              {addError && <Text style={[styles.err, { color: colors.accentCoral }]}>{addError}</Text>}
+              <View style={styles.two}>
+                <Button label="Cancel" variant="ghost" size="md" style={{ flex: 1 }} onPress={() => setAdding(false)} />
+                <Button label="Add" variant="soft" size="md" style={{ flex: 1 }} onPress={addMilestone} />
+              </View>
+            </GlassCard>
+          ) : (
+            <Button
+              label="Add milestone"
+              variant="soft"
+              size="md"
+              style={{ marginTop: 12 }}
+              icon={<Ionicons name="add" size={18} color={colors.primaryText} />}
+              onPress={() => setAdding(true)}
             />
-          </View>
+          )}
 
-          {/* Relevant Link */}
-          <View style={styles.sectionBlock}>
-            <Text style={styles.sectionHeading}>Relevant Portfolio / Deliverable Link</Text>
-            <TextInput
-              style={styles.singleInput}
-              value={portfolioLink}
-              onChangeText={setPortfolioLink}
-              placeholder="https://github.com/..."
-              placeholderTextColor={Colors.light.textMuted}
-              autoCapitalize="none"
-            />
-          </View>
+          <SectionHeader title="Relevant work" style={styles.gap} />
+          <Field icon="link-outline" placeholder="https://" autoCapitalize="none" keyboardType="url" value={link} onChangeText={setLink} />
 
-          {/* Escrow Guarantee Callout */}
-          <View style={styles.guaranteeBox}>
-            <Ionicons name="shield-checkmark" size={22} color="#0F73F7" />
-            <View style={styles.guaranteeTextWrap}>
-              <Text style={styles.guaranteeTitle}>DevPay Escrow Protection</Text>
-              <Text style={styles.guaranteeDesc}>
-                Before you begin any milestone, the client must pre-fund the full amount into DevPay secure escrow.
-              </Text>
-            </View>
+          <View style={[styles.note, { backgroundColor: colors.primaryWash }]}>
+            <Ionicons name="shield-checkmark" size={16} color={colors.primaryText} />
+            <Text style={[styles.noteText, { color: colors.textSecondary }]}>
+              The client funds each milestone into escrow before you start it.
+            </Text>
           </View>
-
-          {/* Submit CTA */}
-          <TouchableOpacity
-            style={styles.submitBtnWrapper}
-            onPress={handleSubmitProposal}
-            disabled={isSubmitting}
-            activeOpacity={0.9}>
-            <LinearGradient
-              colors={['#178BF9', '#0866D6']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.submitGradient}>
-              <Text style={styles.submitBtnText}>
-                {isSubmitting ? 'Submitting Proposal...' : `Submit Proposal (GH₵ ${totalBid.toLocaleString()})`}
-              </Text>
-              <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
-            </LinearGradient>
-          </TouchableOpacity>
         </ScrollView>
 
-        {/* Success Modal with Confetti & Animation */}
-        <SuccessOverlay
-          visible={showSuccessOverlay}
-          type="success"
-          title="Proposal Submitted! 🚀"
-          subtitle="Your milestone proposal has been delivered to Google Africa. You will receive an instant notification once they fund Milestone 1 into escrow."
-          onDismiss={() => {
-            setShowSuccessOverlay(false);
-            router.push('/contracts');
-          }}
-          dismissLabel="View My Contracts"
-        />
+        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+          <View style={styles.totalRow}>
+            <Text style={[styles.totalLabel, { color: colors.textSecondary }]}>Total bid</Text>
+            <Text style={[styles.total, { color: colors.text }]}>{cedis(total)}</Text>
+          </View>
+          <Button label="Send Proposal" loading={submitting} onPress={submit} />
+        </View>
       </SafeAreaView>
+
+      <SuccessOverlay
+        visible={done}
+        title="Proposal sent"
+        subtitle={`${job.company.name} will review your ${milestones.length}-milestone proposal. We’ll notify you when they reply.`}
+        onDismiss={() => {
+          setDone(false);
+          router.replace('/');
+        }}
+        dismissLabel="Back to Home"
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
-  safeArea: {
-    flex: 1,
-  },
-  header: {
-    height: 56,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEF3FA',
-    backgroundColor: '#FFFFFF',
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#EEF3FA',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: Colors.light.text,
-  },
-  scrollContent: {
-    padding: 20,
-    gap: 18,
-    paddingBottom: 40,
-  },
-  jobSummaryCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#EEF3FA',
-    gap: 14,
-  },
-  companyLogo: {
-    width: 48,
-    height: 48,
-    resizeMode: 'contain',
-  },
-  jobSummaryDetails: {
-    flex: 1,
-  },
-  companyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  companyName: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.light.textSecondary,
-  },
-  jobTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: Colors.light.text,
-    marginTop: 2,
-  },
-  clientBudget: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#0F73F7',
-    marginTop: 2,
-  },
-  bidSummaryCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#EFF6FF',
-    borderRadius: 18,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-  },
-  bidLabel: {
-    fontSize: 12,
-    color: '#1E40AF',
-    fontWeight: '600',
-  },
-  bidAmount: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: '#0F73F7',
-    marginTop: 2,
-  },
-  milestoneCountBadge: {
-    backgroundColor: '#DBEAFE',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-  },
-  milestoneCountText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#0F73F7',
-  },
-  sectionBlock: {
-    gap: 10,
-  },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  sectionHeading: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.light.text,
-  },
-  addMilestoneText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#0F73F7',
-  },
-  milestoneCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#EEF3FA',
-    gap: 12,
-  },
-  milestoneIndexBox: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#EFF6FF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  milestoneIndexText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#0F73F7',
-  },
-  milestoneDetails: {
-    flex: 1,
-  },
-  milestoneTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.light.text,
-  },
-  milestoneMeta: {
-    fontSize: 12,
-    color: Colors.light.textSecondary,
-    marginTop: 2,
-  },
-  addMilestoneForm: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    gap: 10,
-  },
-  formMiniTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#0F73F7',
-  },
-  miniInput: {
-    height: 44,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    paddingHorizontal: 12,
-    fontSize: 13,
-    color: Colors.light.text,
-    backgroundColor: '#F8FAFC',
-  },
-  miniAddBtn: {
-    height: 42,
-    borderRadius: 12,
-    backgroundColor: '#0F73F7',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  miniAddBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  coverLetterInput: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#EEF3FA',
-    padding: 14,
-    fontSize: 14,
-    lineHeight: 20,
-    color: Colors.light.text,
-    minHeight: 120,
-  },
-  singleInput: {
-    height: 48,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#EEF3FA',
-    paddingHorizontal: 14,
-    fontSize: 14,
-    color: Colors.light.text,
-  },
-  guaranteeBox: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    backgroundColor: '#EFF6FF',
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-  },
-  guaranteeTextWrap: {
-    flex: 1,
-  },
-  guaranteeTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#0F73F7',
-  },
-  guaranteeDesc: {
-    fontSize: 12,
-    color: '#1E40AF',
-    lineHeight: 17,
-    marginTop: 2,
-  },
-  submitBtnWrapper: {
-    borderRadius: 26,
-    overflow: 'hidden',
-    marginTop: 8,
-    shadowColor: '#0F73F7',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  submitGradient: {
-    height: 52,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  submitBtnText: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
+  content: { paddingHorizontal: Layout.margin, paddingTop: 8, paddingBottom: 32 },
+  jobTitle: { fontSize: 17, fontWeight: '600', marginTop: 14 },
+  jobBudget: { fontSize: 13, marginTop: 4 },
+  gap: { marginTop: Layout.sectionGap },
+  ms: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 },
+  msBorder: { borderBottomWidth: StyleSheet.hairlineWidth },
+  msNum: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+  msNumText: { fontSize: 13, fontWeight: '600' },
+  msTitle: { fontSize: 14, fontWeight: '500' },
+  msSub: { fontSize: 12, marginTop: 2 },
+  msAmount: { fontSize: 14, fontWeight: '600', fontVariant: ['tabular-nums'] },
+  two: { flexDirection: 'row', gap: 10 },
+  err: { fontSize: 12, marginLeft: 6 },
+  note: { flexDirection: 'row', gap: 10, padding: 14, borderRadius: Radius.md, marginTop: 20, alignItems: 'center' },
+  noteText: { flex: 1, fontSize: 12, lineHeight: 18 },
+  footer: { paddingHorizontal: Layout.margin, paddingTop: 10, gap: 10 },
+  totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
+  totalLabel: { fontSize: 13 },
+  total: { fontSize: 20, fontWeight: '600', letterSpacing: -0.4, fontVariant: ['tabular-nums'] },
 });

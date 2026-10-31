@@ -46,10 +46,10 @@ const ICON_MAP: Record<ToastType, keyof typeof Ionicons.glyphMap> = {
 };
 
 const ACCENT_COLORS: Record<ToastType, { badge: string; icon: string; glow: string }> = {
-  success: { badge: '#10B981', icon: '#FFFFFF', glow: 'rgba(16, 185, 129, 0.35)' },
-  error:   { badge: '#EF4444', icon: '#FFFFFF', glow: 'rgba(239, 68, 68, 0.35)' },
-  info:    { badge: '#E11D48', icon: '#FFFFFF', glow: 'rgba(225, 29, 72, 0.35)' },
-  warning: { badge: '#F59E0B', icon: '#FFFFFF', glow: 'rgba(245, 158, 11, 0.35)' },
+  success: { badge: '#1FAE7A', icon: '#FFFFFF', glow: 'rgba(16, 185, 129, 0.35)' },
+  error:   { badge: '#E5484D', icon: '#FFFFFF', glow: 'rgba(239, 68, 68, 0.35)' },
+  info:    { badge: '#E5484D', icon: '#FFFFFF', glow: 'rgba(225, 29, 72, 0.35)' },
+  warning: { badge: '#E9A23B', icon: '#FFFFFF', glow: 'rgba(245, 158, 11, 0.35)' },
 };
 
 export const Toast = forwardRef<ToastHandle>((_, ref) => {
@@ -165,7 +165,7 @@ export const Toast = forwardRef<ToastHandle>((_, ref) => {
               style={styles.closeBtn}
               onPress={hide}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <Ionicons name="close" size={16} color="#64748B" />
+              <Ionicons name="close" size={16} color="#6B7378" />
             </TouchableOpacity>
           </View>
         </LinearGradient>
@@ -251,33 +251,31 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   categoryTag: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-    color: '#64748B',
-    textTransform: 'uppercase',
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#6B7378',
   },
   metaDot: {
     width: 3,
     height: 3,
     borderRadius: 1.5,
-    backgroundColor: '#94A3B8',
+    backgroundColor: '#8E979D',
   },
   metaTime: {
     fontSize: 10,
     fontWeight: '500',
-    color: '#94A3B8',
+    color: '#8E979D',
   },
   titleText: {
     fontSize: 14,
-    fontWeight: '800',
-    color: '#0F172A',
+    fontWeight: '600',
+    color: '#17191C',
     letterSpacing: -0.2,
   },
   messageText: {
     fontSize: 12,
     lineHeight: 16,
-    color: '#334155',
+    color: '#24323A',
     marginTop: 2,
   },
   closeBtn: {

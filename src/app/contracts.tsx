@@ -1,701 +1,308 @@
-﻿import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Modal,
-  TextInput,
-  Alert,
-} from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRole } from '@/contexts/RoleContext';
-import { FloatingTabBar } from '@/components/floating-tab-bar';
+import { FloatingTabBar, TabType } from '@/components/floating-tab-bar';
 import { SuccessOverlay } from '@/components/success-overlay';
-import * as Haptics from 'expo-haptics';
+import {
+  Appear,
+  Avatar,
+  Button,
+  CompanyLogo,
+  Field,
+  GlassCard,
+  IconButton,
+  ScreenBackground,
+  Segmented,
+  Sheet,
+  StatusPill,
+  useNavClearance,
+} from '@/components/ds';
+import { SummaryRow } from '@/components/payments';
+import { Companies, Company } from '@/constants/companies';
+import { Portraits } from '@/constants/media';
+import { Layout, Radius } from '@/constants/theme';
 
-interface Milestone {
-  id: string;
-  title: string;
-  amount: string;
-  status: 'In Progress' | 'In Review' | 'Completed';
-  deadline: string;
-  revisionsUsed: number;
-}
+type Status = 'In Progress' | 'In Review' | 'Released';
 
 interface Contract {
   id: string;
-  party: string; // client name or freelancer name depending on role
+  company?: Company;
+  person?: { name: string; avatar: string };
   title: string;
-  totalBudget: string;
-  activeMilestone: Milestone;
+  total: string;
+  milestone: { index: number; count: number; title: string; amount: string; status: Status; due: string; revisions: number };
 }
 
 export default function ContractsScreen() {
   const router = useRouter();
-  const { isDark, colors } = useTheme();
+  const { colors } = useTheme();
   const { isClient } = useRole();
+  const navClearance = useNavClearance();
+  const [segment, setSegment] = useState<'active' | 'completed'>('active');
+  const [submitFor, setSubmitFor] = useState<Contract | null>(null);
+  const [notes, setNotes] = useState('');
+  const [link, setLink] = useState('');
+  const [notesError, setNotesError] = useState<string>();
+  const [submitted, setSubmitted] = useState(false);
+  const [receiptFor, setReceiptFor] = useState<Contract | null>(null);
 
-  const [activeSegment, setActiveSegment] = useState<'active' | 'completed'>('active');
-  const [submissionModal, setSubmissionModal] = useState(false);
-  const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
-  const [deliverableNotes, setDeliverableNotes] = useState('');
-  const [githubUrl, setGithubUrl] = useState('');
-  const [showSubmitSuccess, setShowSubmitSuccess] = useState(false);
+  const party = (c: Company, name: string, avatar: string) =>
+    isClient ? { person: { name, avatar } } : { company: c };
 
-  const contracts: Contract[] = [
+  const active: Contract[] = [
     {
       id: 'c_1',
-      party: isClient ? 'Kwame Mensah (Lead Dev)' : 'Google Africa',
-      title: 'Mobile App UI/UX Redesign & MoMo SDK',
-      totalBudget: 'GH₵ 4,500.00',
-      activeMilestone: {
-        id: 'm_2',
-        title: 'Milestone 2: Design System & Mobile Tokens',
-        amount: 'GH₵ 2,000.00',
-        status: isClient ? 'In Review' : 'In Progress',
-        deadline: '3 Days Remaining',
-        revisionsUsed: 0,
-      },
+      ...party(Companies.volta, 'Kwame Mensah', Portraits.kwame),
+      title: 'MoMo checkout redesign',
+      total: 'GH₵ 4,500',
+      milestone: { index: 2, count: 3, title: 'Design system & tokens', amount: 'GH₵ 2,000', status: isClient ? 'In Review' : 'In Progress', due: '3 days left', revisions: 0 },
     },
     {
       id: 'c_2',
-      party: isClient ? 'Akosua Serwaa (UI Designer)' : 'Telecel Digital Labs',
-      title: 'MoMo Payment Checkout Screen',
-      totalBudget: 'GH₵ 3,200.00',
-      activeMilestone: {
-        id: 'm_1',
-        title: 'Milestone 1: Prototype & Checkout Flow',
-        amount: 'GH₵ 1,600.00',
-        status: 'In Review',
-        deadline: 'Review expires in 4 days (Auto-approves)',
-        revisionsUsed: 1,
-      },
+      ...party(Companies.sankofa, 'Akosua Serwaa', Portraits.akosua),
+      title: 'Booking app checkout',
+      total: 'GH₵ 3,200',
+      milestone: { index: 1, count: 2, title: 'Prototype & checkout flow', amount: 'GH₵ 1,600', status: 'In Review', due: 'Auto-approves in 4 days', revisions: 1 },
     },
   ];
+  const completed: Contract[] = [
+    {
+      id: 'c_3',
+      ...party(Companies.kente, 'Kofi Darko', Portraits.kofi),
+      title: 'Learning dashboard',
+      total: 'GH₵ 5,000',
+      milestone: { index: 3, count: 3, title: 'Final handoff', amount: 'GH₵ 1,500', status: 'Released', due: 'Paid 12 Oct', revisions: 1 },
+    },
+  ];
+  const list = segment === 'active' ? active : completed;
 
-  const handleOpenSubmission = (c: Contract) => {
-    setSelectedContract(c);
-    setSubmissionModal(true);
+  const submit = () => {
+    if (!notes.trim()) return setNotesError('Add a short summary so the client knows what to check.');
+    setSubmitFor(null);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    setSubmitted(true);
+    setNotes('');
+    setLink('');
+    setNotesError(undefined);
   };
 
-  const handleSubmitDeliverable = () => {
-    if (!deliverableNotes.trim()) {
-      Alert.alert('Notes Required', 'Please provide a brief summary of the work.');
-      return;
-    }
-    setSubmissionModal(false);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setShowSubmitSuccess(true);
-    setDeliverableNotes('');
-    setGithubUrl('');
+  const onTab = (tab: TabType) => {
+    if (tab === 'home') router.replace('/');
+    if (tab === 'chats') router.push('/messages');
+    if (tab === 'profile') router.push('/profile');
   };
 
   return (
-    <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
-        {/* Header */}
-        <View
-          style={[
-            styles.topHeader,
-            { backgroundColor: colors.surface, borderBottomColor: colors.border },
-          ]}>
-          <TouchableOpacity
-            style={[
-              styles.backButton,
-              { backgroundColor: colors.backgroundElement, borderColor: colors.border },
-            ]}
-            onPress={() => router.back()}
-            activeOpacity={0.8}>
-            <Ionicons name="chevron-back" size={20} color={colors.text} />
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>
-            {isClient ? 'Managed Contracts & Escrow' : 'My Contracts & Milestones'}
-          </Text>
-          <TouchableOpacity
-            style={[
-              styles.backButton,
-              { backgroundColor: colors.backgroundElement, borderColor: colors.border },
-            ]}
-            onPress={() => router.push('/notifications')}
-            activeOpacity={0.8}>
-            <Ionicons name="notifications-outline" size={20} color={colors.text} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Segmented Control: Active vs Completed */}
-        <View style={styles.segmentWrapper}>
-          <TouchableOpacity
-            style={[
-              styles.segmentBtn,
-              {
-                backgroundColor:
-                  activeSegment === 'active'
-                    ? colors.primary
-                    : colors.backgroundElement,
-                borderColor:
-                  activeSegment === 'active' ? colors.primary : colors.border,
-              },
-            ]}
-            onPress={() => setActiveSegment('active')}>
-            <Text
-              style={[
-                styles.segmentText,
-                { color: activeSegment === 'active' ? '#FFFFFF' : colors.text },
-              ]}>
-              Active Contracts (2)
+    <View style={{ flex: 1 }}>
+      <ScreenBackground />
+      <SafeAreaView edges={['top']} style={{ flex: 1 }}>
+        <View style={styles.header}>
+          <View style={styles.titleRow}>
+            <IconButton
+              icon="chevron-back"
+              accessibilityLabel="Go back"
+              onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+            />
+            <Text style={[styles.title, { color: colors.text }]} accessibilityRole="header">
+              Contracts
             </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.segmentBtn,
-              {
-                backgroundColor:
-                  activeSegment === 'completed'
-                    ? colors.primary
-                    : colors.backgroundElement,
-                borderColor:
-                  activeSegment === 'completed' ? colors.primary : colors.border,
-              },
-            ]}
-            onPress={() => setActiveSegment('completed')}>
-            <Text
-              style={[
-                styles.segmentText,
-                { color: activeSegment === 'completed' ? '#FFFFFF' : colors.text },
-              ]}>
-              Completed (8)
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}>
-          {contracts.map((c) => (
-            <View
-              key={c.id}
-              style={[
-                styles.contractCard,
-                { backgroundColor: colors.surface, borderColor: colors.border },
-              ]}>
-              {/* Contract Top Row */}
-              <View style={styles.cardHeader}>
-                <View style={{ flex: 1, marginRight: 10 }}>
-                  <Text style={[styles.clientName, { color: colors.primary }]}>
-                    {c.party}
-                  </Text>
-                  <Text style={[styles.projectTitle, { color: colors.text }]}>
-                    {c.title}
-                  </Text>
-                </View>
-                <View
-                  style={[
-                    styles.budgetPill,
-                    { backgroundColor: isDark ? '#1E293B' : '#EFF6FF' },
-                  ]}>
-                  <Text style={[styles.budgetText, { color: colors.primary }]}>
-                    {c.totalBudget}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={[styles.divider, { backgroundColor: colors.border }]} />
-
-              {/* Active Milestone Box */}
-              <View
-                style={[
-                  styles.milestoneBox,
-                  { backgroundColor: colors.backgroundElement, borderColor: colors.border },
-                ]}>
-                <View style={styles.milestoneHeader}>
-                  <Text style={[styles.milestoneTag, { color: colors.textSecondary }]}>
-                    ACTIVE MILESTONE
-                  </Text>
-                  <View
-                    style={[
-                      styles.statusPill,
-                      c.activeMilestone.status === 'In Progress'
-                        ? styles.statusInProgress
-                        : styles.statusInReview,
-                    ]}>
-                    <Text
-                      style={[
-                        styles.statusText,
-                        c.activeMilestone.status === 'In Progress'
-                          ? styles.statusInProgressText
-                          : styles.statusInReviewText,
-                      ]}>
-                      {c.activeMilestone.status}
-                    </Text>
-                  </View>
-                </View>
-
-                <Text style={[styles.milestoneTitle, { color: colors.text }]}>
-                  {c.activeMilestone.title}
-                </Text>
-                <Text style={[styles.milestoneAmount, { color: colors.text }]}>
-                  {c.activeMilestone.amount}
-                </Text>
-
-                {/* Deadlines & Revision Counts */}
-                <View style={styles.metaRow}>
-                  <View style={styles.metaItem}>
-                    <Ionicons name="time-outline" size={13} color="#0F73F7" />
-                    <Text style={[styles.metaText, { color: colors.textSecondary }]}>
-                      {c.activeMilestone.deadline}
-                    </Text>
-                  </View>
-                  <View style={styles.metaItem}>
-                    <Ionicons name="refresh-outline" size={13} color="#D97706" />
-                    <Text style={[styles.metaText, { color: colors.textSecondary }]}>
-                      Revisions: {c.activeMilestone.revisionsUsed}/2
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Actions: Client vs Freelancer */}
-                {isClient ? (
-                  c.activeMilestone.status === 'In Review' ? (
-                    <TouchableOpacity
-                      style={styles.reviewBtnWrap}
-                      onPress={() => router.push('/contracts/review')}
-                      activeOpacity={0.88}>
-                      <LinearGradient
-                        colors={['#10B981', '#059669']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={styles.actionBtnGradient}>
-                        <Ionicons name="shield-checkmark" size={16} color="#FFFFFF" />
-                        <Text style={styles.actionBtnText}>
-                          Review Deliverable & Release Escrow
-                        </Text>
-                      </LinearGradient>
-                    </TouchableOpacity>
-                  ) : (
-                    <View style={styles.clientWaitingBox}>
-                      <Ionicons name="hourglass-outline" size={16} color="#0F73F7" />
-                      <Text style={[styles.clientWaitingText, { color: colors.textSecondary }]}>
-                        Developer is working on deliverable. Funds locked in escrow.
-                      </Text>
-                    </View>
-                  )
-                ) : (
-                  c.activeMilestone.status === 'In Progress' ? (
-                    <TouchableOpacity
-                      style={styles.submitBtnWrap}
-                      onPress={() => handleOpenSubmission(c)}
-                      activeOpacity={0.88}>
-                      <LinearGradient
-                        colors={['#0F73F7', '#38BDF8']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={styles.actionBtnGradient}>
-                        <Ionicons name="cloud-upload" size={16} color="#FFFFFF" />
-                        <Text style={styles.actionBtnText}>
-                          Submit Work & Request Release
-                        </Text>
-                      </LinearGradient>
-                    </TouchableOpacity>
-                  ) : (
-                    <View style={styles.waitingReviewBox}>
-                      <Ionicons name="time" size={15} color="#D97706" />
-                      <Text style={styles.waitingReviewText}>
-                        Client is currently reviewing your submission (7-day window)
-                      </Text>
-                    </View>
-                  )
-                )}
-              </View>
-            </View>
-          ))}
-        </ScrollView>
-
-        <FloatingTabBar
-          activeTab="jobs"
-          onSelectTab={(tab) => {
-            if (tab === 'home') router.push('/');
-            if (tab === 'chats') router.push('/messages');
-            if (tab === 'profile') router.push('/profile');
-          }}
-          onCenterActionPress={() => {
-            if (isClient) {
-              router.push('/job/create');
-            } else {
-              router.push('/explore');
-            }
-          }}
-        />
-
-        {/* Deliverable Submission Modal */}
-        <Modal visible={submissionModal} transparent animationType="slide">
-          <View style={styles.modalBackdrop}>
-            <View
-              style={[
-                styles.modalCard,
-                { backgroundColor: colors.surface, borderColor: colors.border },
-              ]}>
-              <View style={styles.modalTopRow}>
-                <Text style={[styles.modalTitle, { color: colors.text }]}>
-                  Submit Milestone Work
-                </Text>
-                <TouchableOpacity onPress={() => setSubmissionModal(false)}>
-                  <Ionicons name="close" size={22} color={colors.textMuted} />
-                </TouchableOpacity>
-              </View>
-
-              <Text style={[styles.modalSub, { color: colors.textSecondary }]}>
-                {selectedContract?.activeMilestone.title} ({selectedContract?.activeMilestone.amount})
-              </Text>
-
-              <View style={styles.modalInputGroup}>
-                <Text style={[styles.modalLabel, { color: colors.text }]}>
-                  GitHub PR or Repository URL
-                </Text>
-                <TextInput
-                  style={[
-                    styles.modalInput,
-                    {
-                      backgroundColor: colors.backgroundElement,
-                      color: colors.text,
-                      borderColor: colors.border,
-                    },
-                  ]}
-                  placeholder="https://github.com/..."
-                  placeholderTextColor={colors.textMuted}
-                  value={githubUrl}
-                  onChangeText={setGithubUrl}
-                />
-              </View>
-
-              <View style={styles.modalInputGroup}>
-                <Text style={[styles.modalLabel, { color: colors.text }]}>
-                  Deliverable Notes
-                </Text>
-                <TextInput
-                  style={[
-                    styles.modalTextArea,
-                    {
-                      backgroundColor: colors.backgroundElement,
-                      color: colors.text,
-                      borderColor: colors.border,
-                    },
-                  ]}
-                  placeholder="Describe your delivery, setup instructions, or test accounts..."
-                  placeholderTextColor={colors.textMuted}
-                  multiline
-                  numberOfLines={4}
-                  value={deliverableNotes}
-                  onChangeText={setDeliverableNotes}
-                />
-              </View>
-
-              <View style={styles.modalBtnRow}>
-                <TouchableOpacity
-                  style={[
-                    styles.cancelBtn,
-                    { backgroundColor: colors.backgroundElement },
-                  ]}
-                  onPress={() => setSubmissionModal(false)}>
-                  <Text style={[styles.cancelBtnText, { color: colors.text }]}>
-                    Cancel
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.submitModalBtn}
-                  onPress={handleSubmitDeliverable}>
-                  <Text style={styles.submitModalBtnText}>Submit to Client</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
           </View>
-        </Modal>
+          <IconButton icon="notifications-outline" accessibilityLabel="Notifications" badge onPress={() => router.push('/notifications')} />
+        </View>
 
-        <SuccessOverlay
-          visible={showSubmitSuccess}
-          type="verified"
-          title="Deliverable Submitted!"
-          subtitle="Your work has been submitted to the client. The 7-day review window has started."
-          dismissLabel="Done"
-          onDismiss={() => setShowSubmitSuccess(false)}
-        />
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: Layout.margin, paddingBottom: navClearance }}>
+          <Segmented
+            value={segment}
+            onChange={setSegment}
+            options={[
+              { value: 'active', label: `Active (${active.length})` },
+              { value: 'completed', label: `Completed (${completed.length})` },
+            ]}
+          />
+
+          <View style={{ gap: 14, marginTop: 18 }}>
+            {list.map((c, i) => (
+              <Appear key={`${segment}-${c.id}`} index={i}>
+              <ContractCard
+                contract={c}
+                isClient={isClient}
+                onReview={() => router.push('/contracts/review')}
+                onSubmit={() => setSubmitFor(c)}
+                onChat={() => router.push('/chat/t_1' as any)}
+                onReceipt={() => setReceiptFor(c)}
+              />
+              </Appear>
+            ))}
+          </View>
+        </ScrollView>
       </SafeAreaView>
+
+      <FloatingTabBar activeTab="jobs" onSelectTab={onTab} onCenterActionPress={() => router.push(isClient ? '/job/create' : '/explore')} />
+
+      <Sheet visible={!!submitFor} onClose={() => setSubmitFor(null)} title="Submit work">
+        <Text style={[styles.sheetSub, { color: colors.textSecondary }]}>
+          {submitFor?.milestone.title} · {submitFor?.milestone.amount}. The client gets 7 days to review before funds auto-release.
+        </Text>
+        <View style={{ gap: 14, marginTop: 14 }}>
+          <Field label="Link (GitHub, Figma, Drive)" icon="link-outline" placeholder="https://" autoCapitalize="none" value={link} onChangeText={setLink} />
+          <Field
+            label="What did you deliver?"
+            placeholder="Summary, setup steps, test accounts…"
+            multiline
+            value={notes}
+            onChangeText={(t) => {
+              setNotes(t);
+              if (notesError) setNotesError(undefined);
+            }}
+            error={notesError}
+          />
+          <Button label="Submit to Client" onPress={submit} />
+        </View>
+      </Sheet>
+
+      <Sheet visible={!!receiptFor} onClose={() => setReceiptFor(null)} title="Payment receipt">
+        {receiptFor && (
+          <GlassCard style={{ marginTop: 4 }}>
+            <SummaryRow label="Contract" value={receiptFor.title} />
+            <SummaryRow label="Milestone" value={receiptFor.milestone.title} />
+            <SummaryRow label="Released" value={receiptFor.milestone.due.replace('Paid ', '')} />
+            <SummaryRow label="Paid to" value="MTN MoMo · 024 123 4567" />
+            <SummaryRow label="Reference" value={`ESC-REL-${receiptFor.id.toUpperCase()}`} />
+            <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 6 }} />
+            <SummaryRow label="Amount" value={receiptFor.milestone.amount} strong />
+          </GlassCard>
+        )}
+        <Button label="Close" variant="soft" style={{ marginTop: 14 }} onPress={() => setReceiptFor(null)} />
+      </Sheet>
+
+      <SuccessOverlay
+        visible={submitted}
+        title="Work submitted"
+        subtitle="The client has been notified. Their 7-day review window starts now."
+        onDismiss={() => setSubmitted(false)}
+      />
     </View>
   );
 }
 
+function ContractCard({
+  contract: c,
+  isClient,
+  onReview,
+  onSubmit,
+  onChat,
+  onReceipt,
+}: {
+  contract: Contract;
+  isClient: boolean;
+  onReview: () => void;
+  onSubmit: () => void;
+  onChat: () => void;
+  onReceipt: () => void;
+}) {
+  const { colors } = useTheme();
+  const m = c.milestone;
+  const tone = m.status === 'In Progress' ? 'blue' : m.status === 'In Review' ? 'amber' : 'green';
+  const name = c.company?.name ?? c.person?.name ?? '';
+
+  return (
+    <GlassCard>
+      <View style={styles.top}>
+        {c.company ? <CompanyLogo mark={c.company.mark} size={42} /> : <Avatar uri={c.person!.avatar} size={42} ring={false} />}
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.party, { color: colors.textSecondary }]}>{name}</Text>
+          <Text style={[styles.cTitle, { color: colors.text }]} numberOfLines={2}>
+            {c.title}
+          </Text>
+        </View>
+        <Text style={[styles.total, { color: colors.text }]}>{c.total}</Text>
+      </View>
+
+      <View style={styles.progress} accessibilityLabel={`Milestone ${m.index} of ${m.count}`}>
+        {Array.from({ length: m.count }).map((_, i) => (
+          <View
+            key={i}
+            style={[
+              styles.seg,
+              { backgroundColor: i < m.index - 1 || m.status === 'Released' ? colors.accentGreen : i === m.index - 1 ? colors.primary : colors.backgroundSelected },
+            ]}
+          />
+        ))}
+      </View>
+
+      <View style={[styles.milestone, { backgroundColor: colors.backgroundElement }]}>
+        <View style={styles.mTop}>
+          <Text style={[styles.mLabel, { color: colors.textSecondary }]}>
+            Milestone {m.index} of {m.count}
+          </Text>
+          <StatusPill label={m.status} tone={tone} />
+        </View>
+        <View style={styles.mTop}>
+          <Text style={[styles.mTitle, { color: colors.text }]}>{m.title}</Text>
+          <Text style={[styles.mAmount, { color: colors.text }]}>{m.amount}</Text>
+        </View>
+        <View style={styles.meta}>
+          <View style={styles.metaItem}>
+            <Ionicons name="time-outline" size={14} color={colors.textSecondary} />
+            <Text style={[styles.metaText, { color: colors.textSecondary }]}>{m.due}</Text>
+          </View>
+          <View style={styles.metaItem}>
+            <Ionicons name="refresh-outline" size={14} color={colors.textSecondary} />
+            <Text style={[styles.metaText, { color: colors.textSecondary }]}>{m.revisions}/2 revisions</Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.actions}>
+        <Button label="Chat" variant="soft" size="md" style={{ width: 96 }} onPress={onChat} />
+        {m.status === 'Released' ? (
+          <Button label="Paid · View receipt" variant="light" size="md" style={{ flex: 1 }} onPress={onReceipt} />
+        ) : isClient ? (
+          m.status === 'In Review' ? (
+            <Button label="Review & release" size="md" style={{ flex: 1 }} onPress={onReview} />
+          ) : (
+            <Button label="Work in progress" variant="light" size="md" disabled style={{ flex: 1 }} />
+          )
+        ) : m.status === 'In Progress' ? (
+          <Button label="Submit work" size="md" style={{ flex: 1 }} onPress={onSubmit} />
+        ) : (
+          <Button label="Client is reviewing" variant="light" size="md" disabled style={{ flex: 1 }} />
+        )}
+      </View>
+    </GlassCard>
+  );
+}
+
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-  },
-  safeArea: {
-    flex: 1,
-  },
-  topHeader: {
-    height: 56,
+  header: {
+    height: Layout.headerHeight,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
+    paddingHorizontal: Layout.margin,
+    marginBottom: 6,
   },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  segmentWrapper: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    gap: 10,
-  },
-  segmentBtn: {
-    flex: 1,
-    height: 40,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
-  segmentText: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 4,
-    paddingBottom: 110,
-    gap: 16,
-  },
-  contractCard: {
-    borderRadius: 20,
-    padding: 18,
-    borderWidth: 1,
-    gap: 12,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-  },
-  clientName: {
-    fontSize: 12,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  projectTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    marginTop: 2,
-  },
-  budgetPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 10,
-  },
-  budgetText: {
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  divider: {
-    height: 1,
-  },
-  milestoneBox: {
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    gap: 8,
-  },
-  milestoneHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  milestoneTag: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.6,
-  },
-  statusPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  statusInProgress: {
-    backgroundColor: '#EFF6FF',
-  },
-  statusInReview: {
-    backgroundColor: '#FEF3C7',
-  },
-  statusText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  statusInProgressText: {
-    color: '#0F73F7',
-  },
-  statusInReviewText: {
-    color: '#D97706',
-  },
-  milestoneTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  milestoneAmount: {
-    fontSize: 18,
-    fontWeight: '900',
-  },
-  metaRow: {
-    flexDirection: 'row',
-    gap: 14,
-    marginTop: 2,
-  },
-  metaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  metaText: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  submitBtnWrap: {
-    borderRadius: 14,
-    overflow: 'hidden',
-    marginTop: 6,
-  },
-  reviewBtnWrap: {
-    borderRadius: 14,
-    overflow: 'hidden',
-    marginTop: 6,
-  },
-  actionBtnGradient: {
-    height: 44,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  actionBtnText: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-  clientWaitingBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 6,
-    paddingVertical: 6,
-  },
-  clientWaitingText: {
-    fontSize: 12,
-    flex: 1,
-  },
-  waitingReviewBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 6,
-    paddingVertical: 6,
-  },
-  waitingReviewText: {
-    fontSize: 12,
-    color: '#D97706',
-    fontWeight: '600',
-    flex: 1,
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalCard: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    borderWidth: 1,
-    gap: 14,
-  },
-  modalTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-  },
-  modalSub: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  modalInputGroup: {
-    gap: 6,
-  },
-  modalLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  modalInput: {
-    height: 46,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    fontSize: 13,
-    borderWidth: 1,
-  },
-  modalTextArea: {
-    minHeight: 90,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 13,
-    borderWidth: 1,
-    textAlignVertical: 'top',
-  },
-  modalBtnRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 6,
-  },
-  cancelBtn: {
-    flex: 1,
-    height: 46,
-    borderRadius: 23,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelBtnText: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  submitModalBtn: {
-    flex: 2,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: '#0F73F7',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  submitModalBtnText: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  title: { fontSize: 26, fontWeight: '600', letterSpacing: -0.6 },
+  top: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  party: { fontSize: 12 },
+  cTitle: { fontSize: 16, fontWeight: '600', marginTop: 2 },
+  total: { fontSize: 15, fontWeight: '600', fontVariant: ['tabular-nums'] },
+  progress: { flexDirection: 'row', gap: 6, marginTop: 16 },
+  seg: { flex: 1, height: 5, borderRadius: 3 },
+  milestone: { borderRadius: Radius.md, padding: 14, marginTop: 14, gap: 8 },
+  mTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  mLabel: { fontSize: 12, fontWeight: '500' },
+  mTitle: { flex: 1, fontSize: 14, fontWeight: '600' },
+  mAmount: { fontSize: 14, fontWeight: '600', fontVariant: ['tabular-nums'] },
+  meta: { flexDirection: 'row', gap: 16 },
+  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  metaText: { fontSize: 12 },
+  actions: { flexDirection: 'row', gap: 10, marginTop: 14 },
+  sheetSub: { fontSize: 13, lineHeight: 19 },
 });

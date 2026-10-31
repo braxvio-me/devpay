@@ -6,7 +6,7 @@
  *     visible={showSuccess}
  *     type="success"
  *     title="Application Sent!"
- *     subtitle="Google Africa will review your proposal within 48 hours."
+ *     subtitle="Volta Pay will review your proposal within 48 hours."
  *     onDismiss={() => router.push('/contracts')}
  *     dismissLabel="View My Applications"
  *   />
@@ -52,23 +52,23 @@ const CONFIG: Record<
 > = {
   success: {
     icon: 'checkmark-circle',
-    colors: ['#10B981', '#059669'],
-    bg: '#ECFDF5',
+    colors: ['#1FAE7A', '#178F64'],
+    bg: '#E5F6EF',
   },
   error: {
     icon: 'close-circle',
-    colors: ['#EF4444', '#DC2626'],
+    colors: ['#E5484D', '#D93E43'],
     bg: '#FEF2F2',
   },
   pending: {
     icon: 'time',
-    colors: ['#F59E0B', '#D97706'],
+    colors: ['#E9A23B', '#C27A0E'],
     bg: '#FFFBEB',
   },
   verified: {
     icon: 'shield-checkmark',
-    colors: ['#38BDF8', '#0F73F7'],
-    bg: '#EFF6FF',
+    colors: ['#6CC7F1', '#2C88B4'],
+    bg: '#E3F2FA',
   },
 };
 
@@ -181,7 +181,7 @@ export function SuccessOverlay({
     opacity: cardOpacity.get(),
   }));
 
-  const confettiColors = ['#10B981', '#0F73F7', '#F59E0B', '#EF4444', '#8B5CF6', '#38BDF8'];
+  const confettiColors = ['#1FAE7A', '#2C88B4', '#E9A23B', '#E5484D', '#8B5CF6', '#6CC7F1'];
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onDismiss}>
@@ -276,15 +276,15 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 22,
-    fontWeight: '800',
-    color: '#0F172A',
+    fontWeight: '600',
+    color: '#17191C',
     textAlign: 'center',
     letterSpacing: -0.4,
     marginBottom: 10,
   },
   subtitle: {
     fontSize: 14,
-    color: '#64748B',
+    color: '#6B7378',
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 28,

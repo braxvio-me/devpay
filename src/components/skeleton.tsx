@@ -47,10 +47,10 @@ export function Skeleton({ width = '100%', height, radius = 10, style }: Skeleto
     opacity: interpolate(shimmer.get(), [0, 1], [0.35, 0.8]),
   }));
 
-  const baseBg = isDark ? '#1E293B' : '#E2E8F0';
-  const shimmerStart = isDark ? '#1E293B' : '#E2E8F0';
-  const shimmerMid = isDark ? '#334155' : '#F1F5F9';
-  const shimmerEnd = isDark ? '#1E293B' : '#E2E8F0';
+  const baseBg = isDark ? '#1A252C' : '#E4EAEE';
+  const shimmerStart = isDark ? '#1A252C' : '#E4EAEE';
+  const shimmerMid = isDark ? '#24323A' : '#F0F3F5';
+  const shimmerEnd = isDark ? '#1A252C' : '#E4EAEE';
 
   return (
     <View
@@ -125,7 +125,7 @@ const skStyles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#EEF3FA',
+    borderColor: '#EAEEF1',
   },
   topRow: {
     flexDirection: 'row',

@@ -1,780 +1,324 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  Image,
-  Modal,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, KeyboardAvoidingView, Platform, Modal, Alert, Linking } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '@/constants/theme';
+import { Image } from 'expo-image';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import * as Haptics from 'expo-haptics';
+import Animated, { FadeIn, FadeInDown, FadeOut, LinearTransition } from 'react-native-reanimated';
+import { useTheme } from '@/contexts/ThemeContext';
+import { Avatar, CompanyLogo, ListRow, Sheet } from '@/components/ds';
+import { ChatWallpaper } from '@/components/chat/wallpaper';
+import {
+  ChatMessage,
+  DayPill,
+  EventPill,
+  FileBubble,
+  ImageBubble,
+  TextBubble,
+  TypingBubble,
+  VoiceBubble,
+} from '@/components/chat/bubbles';
+import { Composer } from '@/components/chat/composer';
+import { getThread } from '@/constants/threads';
+import { Layout } from '@/constants/theme';
 
-interface ChatMessage {
-  id: string;
-  sender: 'me' | 'client';
-  text: string;
-  time: string;
-  type?: 'text' | 'milestone_funded' | 'deliverable' | 'payment_released';
-  amount?: string;
-  attachmentName?: string;
-}
+type AttachId = 'camera' | 'gallery' | 'deliverable' | 'release';
+
+const ATTACH: { id: AttachId; icon: keyof typeof Ionicons.glyphMap; label: string; bg: string }[] = [
+  { id: 'camera', icon: 'camera', label: 'Camera', bg: '#E5484D' },
+  { id: 'gallery', icon: 'images', label: 'Gallery', bg: '#7A5AF8' },
+  { id: 'deliverable', icon: 'cloud-upload', label: 'Deliverable', bg: '#2C88B4' },
+  { id: 'release', icon: 'cash', label: 'Request pay', bg: '#1FAE7A' },
+];
+
+const REPLIES = [
+  'Got it, thanks! I’ll take a look now.',
+  'Looks good. Can you also share the mobile version?',
+  'Perfect. I’ll approve the milestone after our review.',
+  'Thanks for the quick update!',
+  'Received. Give me an hour to go through it.',
+];
+
+const now = () => {
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+};
 
 export default function ChatDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-
-  // Mock thread lookup based on id
-  const threadMap: Record<
-    string,
-    { name: string; avatar: string; project: string; escrowStatus: string; escrowAmount: string }
-  > = {
-    t_1: {
-      name: 'Google Africa (Hiring Lead)',
-      avatar: 'https://images.unsplash.com/photo-1572021335469-31706a17aaef?w=120',
-      project: 'Mobile App UI/UX Redesign',
-      escrowStatus: 'Milestone 2 Funded in Escrow',
-      escrowAmount: 'GH₵ 2,000.00',
-    },
-    t_2: {
-      name: 'Telecel Digital Labs',
-      avatar: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=120',
-      project: 'MoMo Payment Checkout Flow',
-      escrowStatus: 'Milestone 1 In Client Review',
-      escrowAmount: 'GH₵ 1,600.00',
-    },
-    t_3: {
-      name: 'Paystack Partner Team',
-      avatar: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=120',
-      project: 'Payment Webhook Architecture',
-      escrowStatus: 'Contract Proposal Pre-funded',
-      escrowAmount: 'GH₵ 5,000.00',
-    },
-  };
-
-  const currentThread = threadMap[String(id)] || {
-    name: 'Google Africa (Hiring Lead)',
-    avatar: 'https://images.unsplash.com/photo-1572021335469-31706a17aaef?w=120',
-    project: 'Mobile App UI/UX Redesign',
-    escrowStatus: 'Milestone 2 Funded in Escrow',
-    escrowAmount: 'GH₵ 2,000.00',
-  };
+  const { colors, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
+  const thread = getThread(id);
+  const scroll = useRef<React.ComponentRef<typeof ScrollView>>(null);
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const replyIndex = useRef(0);
 
   const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'm_1',
-      sender: 'client',
-      text: 'Hi Kwame, we funded Milestone 2 in escrow today! Looking forward to reviewing the mobile design tokens and Figma prototype.',
-      time: '10:15 AM',
-      type: 'text',
-    },
-    {
-      id: 'm_2',
-      sender: 'client',
-      text: 'Milestone 2 Escrow Deposit Confirmed: GH₵ 2,000.00',
-      time: '10:16 AM',
-      type: 'milestone_funded',
-      amount: 'GH₵ 2,000.00',
-    },
-    {
-      id: 'm_3',
-      sender: 'me',
-      text: 'Good morning! Thank you. I have finalized the color tokens on the 390px baseline grid and integrated the MoMo breakdown screen.',
-      time: '10:28 AM',
-      type: 'text',
-    },
-    {
-      id: 'm_4',
-      sender: 'me',
-      text: 'Deliverable submitted: devpay-design-tokens-v2.fig',
-      time: '10:30 AM',
-      type: 'deliverable',
-      attachmentName: 'devpay-design-tokens-v2.fig',
-    },
-    {
-      id: 'm_5',
-      sender: 'client',
-      text: 'Reviewing the prototype now. Looks super clean and matches our Ghana brand specs! Will authorize release shortly.',
-      time: '10:35 AM',
-      type: 'text',
-    },
+    { id: 'm1', sender: 'them', kind: 'text', text: `Hi Kwame, we funded ${thread.escrowStatus.split(' ').slice(0, 2).join(' ')} today. Looking forward to the prototype.`, time: '10:15' },
+    { id: 'm2', sender: 'system', kind: 'event', text: `Client funded escrow · ${thread.escrowAmount}`, time: '10:16' },
+    { id: 'm3', sender: 'me', kind: 'text', text: 'Thank you! Colour tokens are final and the MoMo breakdown screen is in.', time: '10:28', status: 'read' },
+    { id: 'm4', sender: 'me', kind: 'file', text: 'Deliverable submitted', fileName: 'checkout-prototype-v2.fig', time: '10:30', status: 'read' },
+    { id: 'm5', sender: 'them', kind: 'text', text: thread.lastMessage.replace(/^You: /, ''), time: '10:35' },
   ]);
+  const [typing, setTyping] = useState(false);
+  const [sheet, setSheet] = useState(false);
+  const [viewer, setViewer] = useState<string | null>(null);
 
-  const [inputText, setInputText] = useState('');
-  const [actionSheetVisible, setActionSheetVisible] = useState(false);
+  useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
-  const handleSend = (textToSend?: string) => {
-    const text = textToSend || inputText;
-    if (!text.trim()) return;
-
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: String(Date.now()),
-        sender: 'me',
-        text: text.trim(),
-        time: 'Just now',
-        type: 'text',
-      },
-    ]);
-    setInputText('');
+  const later = (fn: () => void, ms: number) => {
+    timers.current.push(setTimeout(fn, ms));
   };
 
-  const handleAttachDeliverable = () => {
-    setActionSheetVisible(false);
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: String(Date.now()),
-        sender: 'me',
-        text: 'Submitted Deliverable Package: milestone2-deliverables.zip',
-        time: 'Just now',
-        type: 'deliverable',
-        attachmentName: 'milestone2-deliverables.zip',
-      },
+  const scrollEnd = () => later(() => scroll.current?.scrollToEnd({ animated: true }), 60);
+
+  /** Simulated client: delivered → typing… → reply → read. */
+  const simulateReply = () => {
+    later(() => setMessages((prev) => prev.map((m) => (m.sender === 'me' && m.status === 'sent' ? { ...m, status: 'delivered' } : m))), 500);
+    later(() => {
+      setTyping(true);
+      scrollEnd();
+    }, 1100);
+    later(() => {
+      setTyping(false);
+      const text = REPLIES[replyIndex.current++ % REPLIES.length];
+      setMessages((prev) => [
+        ...prev.map((m) => (m.sender === 'me' ? { ...m, status: 'read' as const } : m)),
+        { id: `r${Date.now()}`, sender: 'them', kind: 'text', text, time: now(), fresh: true },
+      ]);
+      Haptics.selectionAsync().catch(() => {});
+      scrollEnd();
+    }, 2900);
+  };
+
+  const push = (m: Omit<ChatMessage, 'id' | 'time' | 'sender' | 'status' | 'fresh'>) => {
+    setMessages((prev) => [...prev, { ...m, id: `m${Date.now()}${Math.random()}`, sender: 'me', time: now(), status: 'sent', fresh: true }]);
+    scrollEnd();
+    simulateReply();
+  };
+
+  const openCamera = async () => {
+    setSheet(false);
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert('Camera access needed', 'Allow camera access to take photos in chat.', [
+        { text: 'Not now', style: 'cancel' },
+        ...(Platform.OS !== 'web' ? [{ text: 'Open Settings', onPress: () => Linking.openSettings() }] : []),
+      ]);
+      return;
+    }
+    const r = await ImagePicker.launchCameraAsync({ quality: 0.8 });
+    const a = !r.canceled ? r.assets?.[0] : undefined;
+    if (a) push({ kind: 'image', uri: a.uri, width: a.width, height: a.height });
+  };
+
+  const openGallery = async () => {
+    setSheet(false);
+    const r = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsMultipleSelection: true,
+      selectionLimit: 5,
+      quality: 0.8,
+    });
+    if (r.canceled) return;
+    r.assets.forEach((a) => push({ kind: 'image', uri: a.uri, width: a.width, height: a.height }));
+  };
+
+  const onAttach = (id: AttachId) => {
+    if (id === 'camera') return openCamera();
+    if (id === 'gallery') return openGallery();
+    setSheet(false);
+    if (id === 'deliverable') push({ kind: 'file', text: 'Deliverable submitted', fileName: 'milestone-deliverables.zip' });
+    else push({ kind: 'text', text: `Requesting release of ${thread.escrowAmount} for ${thread.escrowStatus.toLowerCase()}.` });
+  };
+
+  const confirmDelete = (m: ChatMessage) =>
+    m.sender === 'me' &&
+    Alert.alert('Delete message?', 'It will be removed for you.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => setMessages((prev) => prev.filter((x) => x.id !== m.id)) },
     ]);
-    Alert.alert('Deliverable Sent', 'Client has been notified to review your deliverable.');
+
+  const renderMessage = (m: ChatMessage, i: number) => {
+    if (m.kind === 'event') return <EventPill msg={m} />;
+    const next = messages[i + 1];
+    const tail = !next || next.sender !== m.sender || next.kind === 'event';
+    switch (m.kind) {
+      case 'image':
+        return <ImageBubble msg={m} tail={tail} onOpen={setViewer} />;
+      case 'voice':
+        return <VoiceBubble msg={m} tail={tail} />;
+      case 'file':
+        return <FileBubble msg={m} tail={tail} />;
+      default:
+        return <TextBubble msg={m} tail={tail} onLongPress={() => confirmDelete(m)} />;
+    }
   };
 
   return (
-    <View style={styles.screen}>
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
-        {/* Chat Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-            activeOpacity={0.8}>
-            <Ionicons name="chevron-back" size={20} color={Colors.light.text} />
-          </TouchableOpacity>
-
-          <View style={styles.headerInfo}>
-            <View style={styles.avatarWrap}>
-              <Image source={{ uri: currentThread.avatar }} style={styles.headerAvatar} />
-              <View style={styles.onlineBadge} />
-            </View>
-            <View style={styles.headerTextWrap}>
-              <View style={styles.nameRow}>
-                <Text style={styles.headerName} numberOfLines={1}>
-                  {currentThread.name}
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <SafeAreaView edges={['top']} style={{ backgroundColor: colors.surface }}>
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+          <Pressable onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel="Go back" style={styles.back}>
+            <Ionicons name="chevron-back" size={26} color={colors.primaryText} />
+          </Pressable>
+          <Pressable style={styles.who} accessibilityRole="button" accessibilityLabel={`${thread.name} details`} onPress={() => router.push('/contracts')}>
+            {thread.company ? <CompanyLogo mark={thread.company.mark} size={40} /> : <Avatar uri={thread.avatar!} size={40} ring={false} online={thread.online} />}
+            <View style={{ flexShrink: 1 }}>
+              <View style={styles.row4}>
+                <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>
+                  {thread.name}
                 </Text>
-                <Ionicons name="checkmark-circle" size={14} color="#0F73F7" />
+                <MaterialCommunityIcons name="check-decagram" size={14} color={colors.primary} />
               </View>
-              <Text style={styles.headerProject} numberOfLines={1}>
-                {currentThread.project}
-              </Text>
+              {typing ? (
+                <Animated.Text key="typing" entering={FadeIn.duration(150)} style={[styles.sub, { color: colors.primaryText }]}>
+                  typing…
+                </Animated.Text>
+              ) : (
+                <Animated.Text key="status" entering={FadeIn.duration(150)} style={[styles.sub, { color: colors.textSecondary }]} numberOfLines={1}>
+                  {thread.online ? 'online' : 'last seen recently'}
+                </Animated.Text>
+              )}
             </View>
-          </View>
-
-          <TouchableOpacity
-            style={styles.headerOptionBtn}
-            onPress={() => router.push('/contracts')}
-            activeOpacity={0.8}>
-            <Ionicons name="briefcase-outline" size={20} color="#0F73F7" />
-          </TouchableOpacity>
+          </Pressable>
+          <Pressable onPress={() => router.push('/contracts')} hitSlop={8} accessibilityRole="button" accessibilityLabel="Open contract" style={styles.headerIcon}>
+            <Ionicons name="briefcase-outline" size={22} color={colors.primaryText} />
+          </Pressable>
         </View>
 
-        {/* Escrow Milestone Live Banner */}
-        <View style={styles.escrowBanner}>
-          <View style={styles.escrowIconCircle}>
-            <Ionicons name="shield-checkmark" size={16} color="#0F73F7" />
+        <Pressable
+          onPress={() => router.push('/contracts')}
+          accessibilityRole="button"
+          style={[styles.pinned, { borderBottomColor: colors.border, backgroundColor: colors.surface }]}>
+          <View style={[styles.pinIcon, { backgroundColor: colors.greenSoft }]}>
+            <Ionicons name="lock-closed" size={15} color={colors.accentGreen} />
           </View>
-          <View style={styles.escrowBannerTextWrap}>
-            <Text style={styles.escrowBannerTitle}>{currentThread.escrowStatus}</Text>
-            <Text style={styles.escrowBannerDesc}>
-              {currentThread.escrowAmount} secured. Protected by DevPay arbitration.
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.pinTitle, { color: colors.primaryText }]}>Pinned · {thread.escrowStatus}</Text>
+            <Text style={[styles.pinSub, { color: colors.text }]} numberOfLines={1}>
+              {thread.escrowAmount} held in escrow · {thread.project}
             </Text>
           </View>
-          <TouchableOpacity
-            style={styles.escrowActionBtn}
-            onPress={() => router.push('/contracts')}
-            activeOpacity={0.85}>
-            <Text style={styles.escrowActionText}>Contract</Text>
-          </TouchableOpacity>
-        </View>
+          <Ionicons name="pin-outline" size={18} color={colors.textMuted} />
+        </Pressable>
+      </SafeAreaView>
 
-        {/* Quick Suggestion Pills */}
-        <View style={styles.quickPillsRow}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickPillsScroll}>
-            {[
-              'Deliverable submitted!',
-              'Working on review comments.',
-              'Updated Figma file.',
-              'Ready for milestone release.',
-            ].map((pill, i) => (
-              <TouchableOpacity
-                key={i}
-                style={styles.quickPill}
-                onPress={() => handleSend(pill)}
-                activeOpacity={0.8}>
-                <Text style={styles.quickPillText}>{pill}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
-        {/* Message Stream */}
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={{ flex: 1 }}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={{ flex: 1 }}>
+          <ChatWallpaper />
           <ScrollView
+            ref={scroll}
+            keyboardDismissMode="interactive"
+            keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.messagesScroll}>
-            {messages.map((m) => {
-              const isMe = m.sender === 'me';
-
-              if (m.type === 'milestone_funded') {
-                return (
-                  <View key={m.id} style={styles.milestoneEventCard}>
-                    <View style={styles.milestoneEventIconBox}>
-                      <Ionicons name="shield-checkmark" size={18} color="#10B981" />
-                    </View>
-                    <View style={styles.milestoneEventContent}>
-                      <Text style={styles.milestoneEventTitle}>Escrow Funded by Client</Text>
-                      <Text style={styles.milestoneEventAmount}>{m.amount}</Text>
-                      <Text style={styles.milestoneEventTime}>{m.time}</Text>
-                    </View>
-                  </View>
-                );
-              }
-
-              if (m.type === 'deliverable') {
-                return (
-                  <View
-                    key={m.id}
-                    style={[
-                      styles.deliverableBubble,
-                      isMe ? styles.myDeliverable : styles.theirDeliverable,
-                    ]}>
-                    <View style={styles.deliverableHeader}>
-                      <Ionicons name="document-attach-outline" size={20} color={isMe ? '#FFFFFF' : '#0F73F7'} />
-                      <Text
-                        style={[
-                          styles.deliverableTitle,
-                          isMe && { color: '#FFFFFF' },
-                        ]}>
-                        Deliverable Submitted
-                      </Text>
-                    </View>
-                    <Text
-                      style={[
-                        styles.deliverableFile,
-                        isMe && { color: '#E0F2FE' },
-                      ]}>
-                      {m.attachmentName}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.bubbleTime,
-                        isMe && styles.myBubbleTime,
-                        { marginTop: 6 },
-                      ]}>
-                      {m.time} • In Client Review
-                    </Text>
-                  </View>
-                );
-              }
-
+            contentContainerStyle={styles.stream}
+            onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: false })}>
+            <DayPill label="Today" />
+            {messages.map((m, i) => {
+              const prev = messages[i - 1];
+              const grouped = prev && prev.sender === m.sender && prev.kind !== 'event' && m.kind !== 'event';
               return (
-                <View
+                <Animated.View
                   key={m.id}
-                  style={[
-                    styles.messageBubble,
-                    isMe ? styles.myBubble : styles.theirBubble,
-                  ]}>
-                  <Text style={[styles.messageText, isMe && styles.myMessageText]}>
-                    {m.text}
-                  </Text>
-                  <View style={styles.bubbleFooter}>
-                    <Text style={[styles.bubbleTime, isMe && styles.myBubbleTime]}>
-                      {m.time}
-                    </Text>
-                    {isMe && (
-                      <Ionicons name="checkmark-done" size={14} color="#BFDBFE" />
-                    )}
-                  </View>
-                </View>
+                  layout={LinearTransition.duration(200)}
+                  entering={m.fresh ? FadeInDown.duration(240) : undefined}
+                  style={{ marginTop: grouped ? 2 : 8 }}>
+                  {renderMessage(m, i)}
+                </Animated.View>
               );
             })}
+            {typing && (
+              <Animated.View entering={FadeInDown.duration(200)} exiting={FadeOut.duration(150)} style={{ marginTop: 8 }}>
+                <TypingBubble />
+              </Animated.View>
+            )}
           </ScrollView>
+        </View>
 
-          {/* Bottom Chat Input Bar */}
-          <View style={styles.inputContainer}>
-            <TouchableOpacity
-              style={styles.attachBtn}
-              onPress={() => setActionSheetVisible(true)}
-              activeOpacity={0.8}>
-              <Ionicons name="add" size={20} color="#FFFFFF" />
-            </TouchableOpacity>
+        <View style={{ backgroundColor: isDark ? 'rgba(12,19,23,0.6)' : 'rgba(255,255,255,0.35)' }}>
+          <Composer
+            bottomInset={insets.bottom}
+            onSendText={(text) => push({ kind: 'text', text })}
+            onSendVoice={(uri, durationMs) => push({ kind: 'voice', uri, durationMs })}
+            onAttach={() => setSheet(true)}
+            onCamera={openCamera}
+          />
+        </View>
+      </KeyboardAvoidingView>
 
-            <View style={styles.inputWrapImage1}>
-              <TextInput
-                style={styles.textInput}
-                value={inputText}
-                onChangeText={setInputText}
-                placeholder="Type here..."
-                placeholderTextColor={Colors.light.textMuted}
-              />
-              <TouchableOpacity style={{ padding: 4 }}>
-                <Ionicons name="mic-outline" size={18} color="#94A3B8" />
-              </TouchableOpacity>
-            </View>
+      <Sheet visible={sheet} onClose={() => setSheet(false)} title="Share">
+        <View style={styles.attachGrid}>
+          {ATTACH.map((a) => (
+            <Pressable key={a.id} onPress={() => onAttach(a.id)} style={styles.attachItem} accessibilityRole="button" accessibilityLabel={a.label}>
+              <View style={[styles.attachIcon, { backgroundColor: a.bg }]}>
+                <Ionicons name={a.icon} size={24} color="#FFFFFF" />
+              </View>
+              <Text style={[styles.attachLabel, { color: colors.text }]}>{a.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+        <ListRow icon="information-circle-outline" label="Files you share here are kept with the contract" last />
+      </Sheet>
 
-            <TouchableOpacity
-              style={[styles.sendBtn, !inputText.trim() && styles.sendBtnDisabled]}
-              onPress={() => handleSend()}
-              disabled={!inputText.trim()}
-              activeOpacity={0.85}>
-              <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
-
-        {/* Action Sheet Modal for Deliverables & Invoices */}
-        <Modal
-          visible={actionSheetVisible}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setActionSheetVisible(false)}>
-          <View style={styles.modalOverlay}>
-            <View style={styles.sheetModal}>
-              <View style={styles.sheetHandle} />
-              <Text style={styles.sheetTitle}>Escrow Actions & Attachments</Text>
-
-              <TouchableOpacity
-                style={styles.sheetItem}
-                onPress={handleAttachDeliverable}
-                activeOpacity={0.75}>
-                <View style={[styles.sheetIconWrap, { backgroundColor: '#EFF6FF' }]}>
-                  <Ionicons name="cloud-upload-outline" size={20} color="#0F73F7" />
-                </View>
-                <View style={styles.sheetItemText}>
-                  <Text style={styles.sheetItemTitle}>Submit Milestone Deliverables</Text>
-                  <Text style={styles.sheetItemSub}>Upload zip, link, or prototype for client review</Text>
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.sheetItem}
-                onPress={() => {
-                  setActionSheetVisible(false);
-                  router.push('/contracts');
-                }}
-                activeOpacity={0.75}>
-                <View style={[styles.sheetIconWrap, { backgroundColor: '#ECFDF5' }]}>
-                  <Ionicons name="cash-outline" size={20} color="#10B981" />
-                </View>
-                <View style={styles.sheetItemText}>
-                  <Text style={styles.sheetItemTitle}>Request Milestone Payout Release</Text>
-                  <Text style={styles.sheetItemSub}>Notify client to authorize GH₵ 2,000 release</Text>
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.sheetItem}
-                onPress={() => {
-                  setActionSheetVisible(false);
-                  Alert.alert('Attach Document', 'Choose deliverable specification document or invoice PDF.');
-                }}
-                activeOpacity={0.75}>
-                <View style={[styles.sheetIconWrap, { backgroundColor: '#FEF3C7' }]}>
-                  <Ionicons name="document-text-outline" size={20} color="#D97706" />
-                </View>
-                <View style={styles.sheetItemText}>
-                  <Text style={styles.sheetItemTitle}>Attach PDF / Contract Addendum</Text>
-                  <Text style={styles.sheetItemSub}>Share documentation securely inside escrow chat</Text>
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.closeSheetBtn}
-                onPress={() => setActionSheetVisible(false)}
-                activeOpacity={0.8}>
-                <Text style={styles.closeSheetBtnText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-      </SafeAreaView>
+      <Modal visible={!!viewer} transparent animationType="fade" onRequestClose={() => setViewer(null)} statusBarTranslucent>
+        <View style={styles.viewer}>
+          {viewer && <Image source={{ uri: viewer }} contentFit="contain" style={StyleSheet.absoluteFill} />}
+          <Pressable
+            onPress={() => setViewer(null)}
+            accessibilityRole="button"
+            accessibilityLabel="Close photo"
+            style={[styles.viewerClose, { top: insets.top + 12 }]}>
+            <Ionicons name="close" size={24} color="#FFFFFF" />
+          </Pressable>
+        </View>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
-  safeArea: {
-    flex: 1,
-  },
   header: {
-    height: 60,
+    height: 58,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEF3FA',
-    backgroundColor: '#FFFFFF',
+    paddingRight: Layout.margin - 6,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  backButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#EEF3FA',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerInfo: {
+  back: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  who: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  row4: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  name: { fontSize: 16, fontWeight: '600', flexShrink: 1 },
+  sub: { fontSize: 12, marginTop: 1 },
+  headerIcon: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  pinned: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    flex: 1,
-    marginLeft: 10,
-  },
-  avatarWrap: {
-    position: 'relative',
-  },
-  headerAvatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#E2E8F0',
-  },
-  onlineBadge: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#10B981',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-  },
-  headerTextWrap: {
-    flex: 1,
-  },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  headerName: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: Colors.light.text,
-  },
-  headerProject: {
-    fontSize: 11,
-    color: Colors.light.textSecondary,
-  },
-  headerOptionBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#EFF6FF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  escrowBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#DBEAFE',
-    gap: 10,
-  },
-  escrowIconCircle: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: '#DBEAFE',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  escrowBannerTextWrap: {
-    flex: 1,
-  },
-  escrowBannerTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#0F73F7',
-  },
-  escrowBannerDesc: {
-    fontSize: 11,
-    color: '#1E40AF',
-  },
-  escrowActionBtn: {
-    backgroundColor: '#0F73F7',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 12,
-  },
-  escrowActionText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  quickPillsRow: {
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEF3FA',
-  },
-  quickPillsScroll: {
-    paddingHorizontal: 16,
+    paddingHorizontal: Layout.margin - 4,
     paddingVertical: 8,
-    gap: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  quickPill: {
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  quickPillText: {
-    fontSize: 12,
-    color: Colors.light.textSecondary,
-    fontWeight: '500',
-  },
-  messagesScroll: {
-    padding: 16,
-    gap: 12,
-    paddingBottom: 24,
-  },
-  messageBubble: {
-    maxWidth: '82%',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 18,
-  },
-  theirBubble: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#EEF3FA',
-    borderBottomLeftRadius: 4,
-  },
-  myBubble: {
-    alignSelf: 'flex-end',
-    backgroundColor: '#E11D48',
-    borderBottomRightRadius: 4,
-  },
-  messageText: {
-    fontSize: 14,
-    color: Colors.light.text,
-    lineHeight: 20,
-  },
-  myMessageText: {
-    color: '#FFFFFF',
-  },
-  bubbleFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: 4,
-    marginTop: 4,
-  },
-  bubbleTime: {
-    fontSize: 11,
-    color: Colors.light.textMuted,
-  },
-  myBubbleTime: {
-    color: '#BFDBFE',
-  },
-  milestoneEventCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ECFDF5',
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
-    borderRadius: 16,
-    padding: 12,
-    gap: 12,
-    marginVertical: 4,
-  },
-  milestoneEventIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#D1FAE5',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  milestoneEventContent: {
-    flex: 1,
-  },
-  milestoneEventTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#065F46',
-  },
-  milestoneEventAmount: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#059669',
-  },
-  milestoneEventTime: {
-    fontSize: 10,
-    color: '#047857',
-    marginTop: 2,
-  },
-  deliverableBubble: {
-    maxWidth: '82%',
-    padding: 14,
-    borderRadius: 18,
-  },
-  theirDeliverable: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-  },
-  myDeliverable: {
-    alignSelf: 'flex-end',
-    backgroundColor: '#1E40AF',
-  },
-  deliverableHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
-  },
-  deliverableTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#0F73F7',
-  },
-  deliverableFile: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.light.text,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#EEF3FA',
-    gap: 10,
-  },
-  attachBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#0F172A',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  inputWrapImage1: {
-    flex: 1,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#EEF3FA',
-    backgroundColor: '#FFFFFF',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-  },
-  textInput: {
-    flex: 1,
-    fontSize: 14,
-    color: Colors.light.text,
-  },
-  sendBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#E11D48',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#E11D48',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  sendBtnDisabled: {
-    backgroundColor: '#CBD5E1',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.4)',
-    justifyContent: 'flex-end',
-  },
-  sheetModal: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    gap: 14,
-  },
-  sheetHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#E2E8F0',
-    alignSelf: 'center',
-    marginBottom: 8,
-  },
-  sheetTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: Colors.light.text,
-    marginBottom: 4,
-  },
-  sheetItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    paddingVertical: 10,
-  },
-  sheetIconWrap: {
+  pinIcon: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+  pinTitle: { fontSize: 12, fontWeight: '600' },
+  pinSub: { fontSize: 13, marginTop: 1 },
+  stream: { paddingHorizontal: 14, paddingTop: 8, paddingBottom: 12 },
+  attachGrid: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, marginBottom: 6 },
+  attachItem: { alignItems: 'center', gap: 8, width: 76 },
+  attachIcon: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
+  attachLabel: { fontSize: 12 },
+  viewer: { flex: 1, backgroundColor: '#000000' },
+  viewerClose: {
+    position: 'absolute',
+    right: 16,
     width: 44,
     height: 44,
-    borderRadius: 14,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  sheetItemText: {
-    flex: 1,
-  },
-  sheetItemTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.light.text,
-  },
-  sheetItemSub: {
-    fontSize: 12,
-    color: Colors.light.textSecondary,
-    marginTop: 2,
-  },
-  closeSheetBtn: {
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 8,
-  },
-  closeSheetBtnText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.light.textSecondary,
   },
 });

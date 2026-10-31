@@ -1,19 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '@/constants/theme';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRole } from '@/contexts/RoleContext';
-import * as Haptics from 'expo-haptics';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  withTiming,
-  interpolate,
-} from 'react-native-reanimated';
+import { Gradients, Layout } from '@/constants/theme';
 
 export type TabType = 'home' | 'jobs' | 'action' | 'chats' | 'profile';
 
@@ -24,284 +18,165 @@ interface FloatingTabBarProps {
   unreadChats?: number;
 }
 
-// ─── Animated Tab Item ─────────────────────────────────────────────────────
-function AnimatedTab({
-  isActive,
+function Tab({
+  active,
   label,
-  iconActive,
-  iconInactive,
+  icon,
   onPress,
   badge,
 }: {
-  isActive: boolean;
+  active: boolean;
   label: string;
-  iconActive: keyof typeof Ionicons.glyphMap;
-  iconInactive: keyof typeof Ionicons.glyphMap;
+  icon: keyof typeof Ionicons.glyphMap;
   onPress: () => void;
   badge?: boolean;
 }) {
-  const scale = useSharedValue(1);
-  const dotWidth = useSharedValue(isActive ? 14 : 0);
   const { colors } = useTheme();
-
-  React.useEffect(() => {
-    dotWidth.set(withSpring(isActive ? 14 : 0, { duration: 300, dampingRatio: 0.7 }));
-  }, [isActive]);
-
-  const animScale = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.get() }],
-  }));
-
-  const dotStyle = useAnimatedStyle(() => ({
-    width: dotWidth.get(),
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: colors.primary,
-    marginTop: 4,
-    opacity: interpolate(dotWidth.get(), [0, 14], [0, 1]),
-  }));
-
-  const iconColor = isActive ? colors.primary : colors.textMuted;
+  const scale = useSharedValue(1);
+  const animated = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
+  const color = active ? colors.navActive : colors.textMuted;
 
   return (
     <Pressable
-      style={styles.tabItem}
-      onPressIn={() => {
-        scale.set(withSpring(0.84, { duration: 80, dampingRatio: 1 }));
-      }}
-      onPressOut={() => {
-        scale.set(withSpring(1, { duration: 320, dampingRatio: 0.55 }));
-      }}
+      style={styles.tab}
+      accessibilityRole="tab"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: active }}
+      onPressIn={() => scale.set(withTiming(0.88, { duration: 100 }))}
+      onPressOut={() => scale.set(withSpring(1, { duration: 280, dampingRatio: 0.7 }))}
       onPress={() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        Haptics.selectionAsync().catch(() => {});
         onPress();
-      }}
-      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-      <Animated.View style={[styles.tabInner, animScale]}>
-        <View style={styles.iconWrap}>
-          <Ionicons name={isActive ? iconActive : iconInactive} size={22} color={iconColor} />
-          {badge && <View style={styles.chatBadge} />}
+      }}>
+      <Animated.View style={[styles.tabInner, animated]}>
+        <View>
+          <Ionicons name={icon} size={23} color={color} />
+          {badge && <View style={[styles.badge, { backgroundColor: colors.accentCoral, borderColor: colors.surface }]} />}
         </View>
-        <Text
-          style={[
-            styles.tabLabel,
-            { color: iconColor },
-            isActive && styles.activeTabLabel,
-          ]}>
-          {label}
-        </Text>
-        <Animated.View style={dotStyle} />
+        <Text style={[styles.label, { color, fontWeight: active ? '600' : '400' }]}>{label}</Text>
       </Animated.View>
     </Pressable>
   );
 }
 
-// ─── Animated Center FAB ───────────────────────────────────────────────────
-function AnimatedCenterFAB({
-  onPress,
-  isClient,
-}: {
-  onPress: () => void;
-  isClient: boolean;
-}) {
+function CenterAction({ onPress, isClient }: { onPress: () => void; isClient: boolean }) {
+  const { colors, isDark } = useTheme();
   const scale = useSharedValue(1);
-  const glowOpacity = useSharedValue(0.35);
-
-  const fabStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.get() }],
-  }));
-
-  const glowStyle = useAnimatedStyle(() => ({
-    opacity: glowOpacity.get(),
-    transform: [
-      { scale: interpolate(glowOpacity.get(), [0.35, 0.7], [1, 1.28]) },
-    ],
-  }));
+  const animated = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
 
   return (
     <Pressable
-      onPressIn={() => {
-        scale.set(withSpring(0.88, { duration: 90, dampingRatio: 1 }));
-        glowOpacity.set(withTiming(0.7, { duration: 100 }));
-      }}
-      onPressOut={() => {
-        scale.set(withSpring(1, { duration: 380, dampingRatio: 0.5 }));
-        glowOpacity.set(withTiming(0.35, { duration: 350 }));
-      }}
+      accessibilityRole="button"
+      accessibilityLabel={isClient ? 'Post a job' : 'Find work'}
+      onPressIn={() => scale.set(withTiming(0.9, { duration: 100 }))}
+      onPressOut={() => scale.set(withSpring(1, { duration: 320, dampingRatio: 0.6 }))}
       onPress={() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
         onPress();
       }}
-      style={styles.centerPressable}>
-      <Animated.View
+      style={styles.centerWrap}>
+      <View
         style={[
-          styles.fabGlow,
-          { backgroundColor: isClient ? '#10B981' : '#0F73F7' },
-          glowStyle,
+          styles.halo,
+          { backgroundColor: isDark ? 'rgba(77,180,228,0.14)' : 'rgba(150, 210, 240, 0.35)', borderColor: isDark ? 'rgba(124,205,242,0.2)' : 'rgba(255,255,255,0.9)' },
         ]}
       />
-      <Animated.View style={[styles.fabWrapper, fabStyle]}>
-        <LinearGradient
-          colors={isClient ? ['#34D399', '#10B981'] : ['#38BDF8', '#0F73F7']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.fabGradient}>
-          <Ionicons
-            name={isClient ? 'add' : 'scan-outline'}
-            size={isClient ? 28 : 22}
-            color="#FFFFFF"
-          />
-        </LinearGradient>
+      <Animated.View style={animated}>
+        <View style={styles.squircleShadow}>
+          <LinearGradient colors={Gradients.card} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.squircle}>
+            <View style={styles.unrotate}>
+              {isClient ? (
+                <Ionicons name="add" size={28} color={colors.onPrimary} />
+              ) : (
+                <MaterialCommunityIcons name="line-scan" size={24} color={colors.onPrimary} />
+              )}
+            </View>
+          </LinearGradient>
+        </View>
       </Animated.View>
     </Pressable>
   );
 }
 
-// ─── Main Tab Bar ──────────────────────────────────────────────────────────
-export function FloatingTabBar({
-  activeTab,
-  onSelectTab,
-  onCenterActionPress,
-  unreadChats = 2,
-}: FloatingTabBarProps) {
+export function FloatingTabBar({ activeTab, onSelectTab, onCenterActionPress, unreadChats = 2 }: FloatingTabBarProps) {
   const { isDark, colors } = useTheme();
   const { isClient } = useRole();
   const insets = useSafeAreaInsets();
+  const bottomPad = Math.max(insets.bottom, 12);
 
   return (
-    <View style={[styles.floatingContainer, { bottom: Math.max(16, insets.bottom + 8) }]}>
-      <View
-        style={[
-          styles.bar,
-          {
-            backgroundColor: isDark ? 'rgba(15, 23, 42, 0.96)' : 'rgba(255, 255, 255, 0.97)',
-            borderColor: isDark ? 'rgba(51, 65, 85, 0.7)' : 'rgba(224, 231, 245, 0.9)',
-          },
-        ]}>
-        <AnimatedTab
-          isActive={activeTab === 'home'}
-          label="Home"
-          iconActive="home"
-          iconInactive="home-outline"
-          onPress={() => onSelectTab('home')}
-        />
-        <AnimatedTab
-          isActive={activeTab === 'jobs'}
+    <View style={[styles.container, { paddingBottom: bottomPad }]} pointerEvents="box-none">
+      <LinearGradient
+        colors={isDark ? ['#131C22', '#0F171C'] : ['#ECF6FC', '#FAFCFE']}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={[StyleSheet.absoluteFill, styles.surface, { borderColor: isDark ? colors.border : 'rgba(255,255,255,0.95)' }]}
+      />
+      <View style={styles.row}>
+        <Tab active={activeTab === 'home'} label="Home" icon="home" onPress={() => onSelectTab('home')} />
+        <Tab
+          active={activeTab === 'jobs'}
           label={isClient ? 'Talent' : 'Jobs'}
-          iconActive={isClient ? 'people' : 'briefcase'}
-          iconInactive={isClient ? 'people-outline' : 'briefcase-outline'}
+          icon={isClient ? 'people' : 'briefcase'}
           onPress={() => onSelectTab('jobs')}
         />
-        <AnimatedCenterFAB
-          isClient={isClient}
-          onPress={onCenterActionPress ?? (() => onSelectTab('action'))}
-        />
-        <AnimatedTab
-          isActive={activeTab === 'chats'}
+        <CenterAction isClient={isClient} onPress={onCenterActionPress ?? (() => onSelectTab('action'))} />
+        <Tab
+          active={activeTab === 'chats'}
           label="Chats"
-          iconActive="chatbubble"
-          iconInactive="chatbubble-outline"
+          icon="chatbox-ellipses"
           onPress={() => onSelectTab('chats')}
           badge={unreadChats > 0}
         />
-        <AnimatedTab
-          isActive={activeTab === 'profile'}
-          label="Profile"
-          iconActive="person"
-          iconInactive="person-outline"
-          onPress={() => onSelectTab('profile')}
-        />
+        <Tab active={activeTab === 'profile'} label="Profile" icon="person" onPress={() => onSelectTab('profile')} />
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  floatingContainer: {
+  container: {
     position: 'absolute',
-    bottom: 22,
-    left: 20,
-    right: 20,
-    alignItems: 'center',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingTop: 10,
     zIndex: 100,
   },
-  bar: {
-    width: '100%',
-    height: 68,
-    borderRadius: 34,
+  surface: {
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    borderTopWidth: 1,
+    shadowColor: '#7FA6BD',
+    shadowOffset: { width: 0, height: -6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    elevation: 12,
+  },
+  row: {
+    height: Layout.navHeight - 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    shadowColor: '#0F73F7',
+    paddingHorizontal: 12,
+  },
+  tab: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 48 },
+  tabInner: { alignItems: 'center', gap: 4 },
+  label: { fontSize: 11 },
+  badge: { position: 'absolute', top: -1, right: -3, width: 9, height: 9, borderRadius: 4.5, borderWidth: 1.5 },
+  centerWrap: { width: 84, height: 84, marginTop: -26, alignItems: 'center', justifyContent: 'center' },
+  halo: { position: 'absolute', width: 84, height: 84, borderRadius: 42, borderWidth: 1 },
+  squircleShadow: {
+    width: 54,
+    height: 54,
+    borderRadius: 18,
+    transform: [{ rotate: '45deg' }],
+    shadowColor: '#3FA7DA',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.14,
-    shadowRadius: 28,
-    elevation: 12,
-  },
-  tabItem: {
-    width: 56,
-    height: 68,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  tabInner: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 4,
-    gap: 2,
-  },
-  iconWrap: {
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tabLabel: {
-    fontSize: 10,
-    fontWeight: '500',
-    marginTop: 2,
-  },
-  activeTabLabel: {
-    fontWeight: '700',
-  },
-  chatBadge: {
-    position: 'absolute',
-    top: -2,
-    right: -5,
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-    backgroundColor: Colors.light.accentCoral,
-  },
-  centerPressable: {
-    width: 64,
-    height: 64,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: -10,
-  },
-  fabGlow: {
-    position: 'absolute',
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-  },
-  fabWrapper: {
-    width: 52,
-    height: 52,
-    borderRadius: 20,
-    shadowColor: '#0F73F7',
-    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.38,
     shadowRadius: 14,
     elevation: 8,
   },
-  fabGradient: {
-    width: 52,
-    height: 52,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  squircle: { flex: 1, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  unrotate: { transform: [{ rotate: '-45deg' }] },
 });

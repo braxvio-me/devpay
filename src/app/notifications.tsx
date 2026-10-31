@@ -1,22 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  RefreshControl,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '@/constants/theme';
+import { Layout } from '@/constants/theme';
+import { Chip, GlassCard, IconButton, ScreenBackground, TopBar } from '@/components/ds';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRole } from '@/contexts/RoleContext';
-import Animated, {
-  FadeInRight,
-  FadeOutLeft,
-} from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeOutLeft } from 'react-native-reanimated';
 import { NotificationSkeleton } from '@/components/skeleton';
 
 export interface NotificationItem {
@@ -36,7 +27,7 @@ export interface NotificationItem {
 
 export default function NotificationsScreen() {
   const router = useRouter();
-  const { isDark, colors } = useTheme();
+  const { colors } = useTheme();
   const { isClient } = useRole();
 
   const [activeTab, setActiveTab] = useState<'all' | 'escrow' | 'contract' | 'system'>('all');
@@ -69,8 +60,8 @@ export default function NotificationsScreen() {
       actionLabel: 'Review & Release',
       actionRoute: '/contracts/review',
       icon: 'shield-checkmark',
-      iconBg: '#ECFDF5',
-      iconColor: '#10B981',
+      iconBg: '#E5F6EF',
+      iconColor: '#1FAE7A',
     },
     {
       id: 'n_c2',
@@ -83,8 +74,8 @@ export default function NotificationsScreen() {
       actionLabel: 'Compare Proposals',
       actionRoute: '/job/applicants',
       icon: 'people',
-      iconBg: '#F3E8FF',
-      iconColor: '#9333EA',
+      iconBg: '#E3F2FA',
+      iconColor: '#3B7493',
     },
     {
       id: 'n_c3',
@@ -97,21 +88,21 @@ export default function NotificationsScreen() {
       actionLabel: 'Escrow Vault',
       actionRoute: '/earnings',
       icon: 'wallet',
-      iconBg: '#EBF3FE',
-      iconColor: '#0F73F7',
+      iconBg: '#E3F2FA',
+      iconColor: '#2C88B4',
     },
     {
       id: 'n_c4',
       category: 'system',
       title: 'Business TIN Registration Verified',
-      description: 'TechCorp Africa Ltd (TIN: C0028192847) has been validated by GRA. High-volume escrow funding is active.',
+      description: 'Kente Labs Ltd (TIN: C0028192847) has been validated by GRA. High-volume escrow funding is active.',
       time: '1d ago',
       isRead: true,
       actionLabel: 'Company Profile',
       actionRoute: '/profile',
       icon: 'checkmark-circle',
-      iconBg: '#ECFDF5',
-      iconColor: '#059669',
+      iconBg: '#E5F6EF',
+      iconColor: '#178F64',
     },
     {
       id: 'n_c5',
@@ -123,8 +114,8 @@ export default function NotificationsScreen() {
       actionLabel: 'Security Settings',
       actionRoute: '/settings',
       icon: 'lock-closed',
-      iconBg: '#FEE2E2',
-      iconColor: '#EF4444',
+      iconBg: '#FCEBEC',
+      iconColor: '#E5484D',
     },
   ];
 
@@ -133,29 +124,29 @@ export default function NotificationsScreen() {
       id: 'n_1',
       category: 'escrow',
       title: 'Milestone 2 Escrow Funded',
-      description: 'Google Africa deposited GH₵ 2,000.00 into secure escrow. You may now commence milestone deliverables safely.',
+      description: 'Volta Pay deposited GH₵ 2,000.00 into secure escrow. You may now commence milestone deliverables safely.',
       time: '15m ago',
       isRead: false,
       amount: 'GH₵ 2,000.00',
       actionLabel: 'View Contract',
       actionRoute: '/contracts',
       icon: 'shield-checkmark',
-      iconBg: '#EBF3FE',
-      iconColor: '#0F73F7',
+      iconBg: '#E3F2FA',
+      iconColor: '#2C88B4',
     },
     {
       id: 'n_2',
       category: 'contract',
       title: 'New Contract Offer Received',
-      description: 'Paystack Ghana offered you "Payment Webhook Architecture" fixed milestone contract with escrow guarantee.',
+      description: 'Kente Labs offered you "Payment Webhook Architecture" fixed milestone contract with escrow guarantee.',
       time: '1h ago',
       isRead: false,
       amount: 'GH₵ 5,000.00',
       actionLabel: 'Review Offer',
       actionRoute: '/job/3',
       icon: 'document-text',
-      iconBg: '#F3E8FF',
-      iconColor: '#9333EA',
+      iconBg: '#E3F2FA',
+      iconColor: '#3B7493',
     },
     {
       id: 'n_3',
@@ -168,8 +159,8 @@ export default function NotificationsScreen() {
       actionLabel: 'View Wallet',
       actionRoute: '/earnings',
       icon: 'wallet',
-      iconBg: '#ECFDF5',
-      iconColor: '#10B981',
+      iconBg: '#E5F6EF',
+      iconColor: '#1FAE7A',
     },
     {
       id: 'n_4',
@@ -181,22 +172,22 @@ export default function NotificationsScreen() {
       actionLabel: 'View Profile',
       actionRoute: '/profile',
       icon: 'checkmark-circle',
-      iconBg: '#ECFDF5',
-      iconColor: '#059669',
+      iconBg: '#E5F6EF',
+      iconColor: '#178F64',
     },
     {
       id: 'n_5',
       category: 'contract',
       title: 'Deliverable Review Approved',
-      description: 'Telecel Digital Labs accepted Milestone 1 Figma prototypes. GH₵ 1,600.00 has moved to your Available Balance.',
+      description: 'Sankofa Studio accepted Milestone 1 Figma prototypes. GH₵ 1,600.00 has moved to your Available Balance.',
       time: '2d ago',
       isRead: true,
       amount: 'GH₵ 1,600.00',
       actionLabel: 'View Contracts',
       actionRoute: '/contracts',
       icon: 'ribbon-outline',
-      iconBg: '#FEF3C7',
-      iconColor: '#D97706',
+      iconBg: '#FDF3E1',
+      iconColor: '#C27A0E',
     },
     {
       id: 'n_6',
@@ -208,8 +199,8 @@ export default function NotificationsScreen() {
       actionLabel: 'Security Settings',
       actionRoute: '/settings',
       icon: 'lock-closed',
-      iconBg: '#FEE2E2',
-      iconColor: '#EF4444',
+      iconBg: '#FCEBEC',
+      iconColor: '#E5484D',
     },
   ];
 
@@ -233,158 +224,106 @@ export default function NotificationsScreen() {
   });
 
   return (
-    <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
-        {/* Top Header */}
-        <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-          <TouchableOpacity
-            style={[styles.backButton, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}
-            onPress={() => router.back()}
-            activeOpacity={0.8}>
-            <Ionicons name="chevron-back" size={20} color={colors.text} />
-          </TouchableOpacity>
+    <View style={{ flex: 1 }}>
+      <ScreenBackground />
+      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+        <TopBar
+          title="Notifications"
+          subtitle={unreadCount > 0 ? `${unreadCount} unread` : 'All caught up'}
+          right={
+            unreadCount > 0 ? (
+              <IconButton icon="checkmark-done" accessibilityLabel="Mark all as read" onPress={handleMarkAllRead} />
+            ) : undefined
+          }
+        />
 
-          <View style={styles.headerTitleWrap}>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>Notifications</Text>
-            {unreadCount > 0 && (
-              <View style={styles.unreadChip}>
-                <Text style={styles.unreadChipText}>{unreadCount} new</Text>
-              </View>
-            )}
-          </View>
-
-          {unreadCount > 0 ? (
-            <TouchableOpacity onPress={handleMarkAllRead} activeOpacity={0.7}>
-              <Text style={styles.markReadText}>Mark read</Text>
-            </TouchableOpacity>
-          ) : (
-            <View style={{ width: 40 }} />
-          )}
+        <View style={styles.tabsWrap}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabs}>
+          {[
+            { id: 'all', label: 'All' },
+            { id: 'escrow', label: 'Payments' },
+            { id: 'contract', label: 'Contracts' },
+            { id: 'system', label: 'Security' },
+          ].map((tab) => (
+            <Chip key={tab.id} label={tab.label} selected={activeTab === tab.id} onPress={() => setActiveTab(tab.id as typeof activeTab)} />
+          ))}
+        </ScrollView>
         </View>
 
-        {/* Category Tabs */}
-        <View style={[styles.tabsContainer, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.tabsScroll}>
-            {[
-              { id: 'all', label: 'All' },
-              { id: 'escrow', label: 'Escrow & Payouts' },
-              { id: 'contract', label: 'Contracts' },
-              { id: 'system', label: 'System & Security' },
-            ].map((tab) => {
-              const isSelected = activeTab === tab.id;
-              return (
-                <TouchableOpacity
-                  key={tab.id}
-                  style={[
-                    styles.tabChip,
-                    { backgroundColor: colors.backgroundElement },
-                    isSelected && styles.activeTabChip,
-                  ]}
-                  onPress={() => setActiveTab(tab.id as any)}
-                  activeOpacity={0.8}>
-                  <Text
-                    style={[
-                      styles.tabChipText,
-                      { color: colors.textSecondary },
-                      isSelected && styles.activeTabChipText,
-                    ]}>
-                    {tab.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
-
-        {/* Notifications Feed */}
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={styles.feed}
           refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor="#0F73F7"
-              colors={['#0F73F7', '#38BDF8']}
-            />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />
           }>
           {isLoading ? (
             <View style={{ gap: 12 }}>
               <NotificationSkeleton />
               <NotificationSkeleton />
               <NotificationSkeleton />
-              <NotificationSkeleton />
             </View>
           ) : filteredNotifications.length === 0 ? (
-            <View style={styles.emptyState}>
-              <View style={styles.emptyIconCircle}>
-                <Ionicons name="notifications-off-outline" size={32} color={Colors.light.textMuted} />
+            <GlassCard style={styles.empty}>
+              <View style={[styles.emptyIcon, { backgroundColor: colors.primaryWash }]}>
+                <Ionicons name="notifications-off-outline" size={26} color={colors.primary} />
               </View>
-              <Text style={styles.emptyTitle}>No Notifications</Text>
-              <Text style={styles.emptySubtitle}>
-                You have no notifications in this category. Important updates about your escrow milestones will appear here.
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>Nothing here</Text>
+              <Text style={[styles.emptySub, { color: colors.textSecondary }]}>
+                Updates about escrow, payouts and contracts will show up here.
               </Text>
-            </View>
+            </GlassCard>
           ) : (
-          filteredNotifications.map((item, index) => (
+            filteredNotifications.map((item, index) => (
               <Animated.View
                 key={item.id}
-                entering={FadeInRight.delay(index * 60).springify().damping(18).stiffness(120)}
-                exiting={FadeOutLeft.duration(220)}
-                style={[
-                  styles.notificationCard,
-                  { backgroundColor: colors.surface, borderColor: colors.border },
-                  !item.isRead && (isDark ? styles.unreadCardDark : styles.unreadCard),
-                ]}>
-                <View style={styles.cardHeader}>
-                  <View style={[styles.iconBox, { backgroundColor: item.iconBg }]}>
-                    <Ionicons name={item.icon} size={20} color={item.iconColor} />
-                  </View>
-
-                  <View style={styles.cardMeta}>
-                    <View style={styles.titleRow}>
-                      <Text style={[styles.notificationTitle, { color: colors.text }]}>{item.title}</Text>
-                      {!item.isRead && <View style={styles.unreadDot} />}
+                entering={FadeInDown.delay(index * 40).duration(320)}
+                exiting={FadeOutLeft.duration(200)}>
+                <GlassCard style={!item.isRead && { borderWidth: 1, borderColor: colors.primarySoft }}>
+                  <View style={styles.cardTop}>
+                    <View style={[styles.icon, { backgroundColor: `${item.iconColor}1F` }]}>
+                      <Ionicons name={item.icon} size={20} color={item.iconColor} />
                     </View>
-                    <Text style={[styles.notificationTime, { color: colors.textMuted }]}>{item.time}</Text>
+                    <View style={{ flex: 1, gap: 2 }}>
+                      <View style={styles.titleRow}>
+                        <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>
+                          {item.title}
+                        </Text>
+                        {!item.isRead && <View style={[styles.dot, { backgroundColor: colors.accentCoral }]} />}
+                      </View>
+                      <Text style={[styles.time, { color: colors.textMuted }]}>{item.time}</Text>
+                    </View>
+                    <Pressable
+                      onPress={() => handleClearNotification(item.id)}
+                      hitSlop={10}
+                      accessibilityRole="button"
+                      accessibilityLabel="Dismiss">
+                      <Ionicons name="close" size={18} color={colors.textMuted} />
+                    </Pressable>
                   </View>
-
-                  <TouchableOpacity
-                    style={styles.dismissBtn}
-                    onPress={() => handleClearNotification(item.id)}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                    <Ionicons name="close" size={16} color={colors.textMuted} />
-                  </TouchableOpacity>
-                </View>
-
-                <Text style={[styles.notificationDesc, { color: colors.textSecondary }]}>{item.description}</Text>
-
-                {/* Amount Pill or Action Button */}
-                <View style={styles.cardFooter}>
-                  {item.amount && (
-                    <View style={[styles.amountPill, { backgroundColor: isDark ? '#1E293B' : '#EFF6FF' }]}>
-                      <Ionicons name="cash-outline" size={13} color="#0F73F7" />
-                      <Text style={styles.amountText}>{item.amount}</Text>
+                  <Text style={[styles.desc, { color: colors.textSecondary }]}>{item.description}</Text>
+                  {(item.amount || item.actionLabel) && (
+                    <View style={styles.footer}>
+                      {item.amount ? (
+                        <Text style={[styles.amount, { color: item.amount.startsWith('+') ? colors.accentGreen : colors.text }]}>{item.amount}</Text>
+                      ) : (
+                        <View />
+                      )}
+                      {item.actionLabel && item.actionRoute && (
+                        <Pressable
+                          onPress={() => {
+                            setNotifications((prev) => prev.map((n) => (n.id === item.id ? { ...n, isRead: true } : n)));
+                            router.push(item.actionRoute as any);
+                          }}
+                          accessibilityRole="link"
+                          style={styles.action}
+                          hitSlop={8}>
+                          <Text style={[styles.actionText, { color: colors.primaryText }]}>{item.actionLabel}</Text>
+                          <Ionicons name="arrow-forward" size={14} color={colors.primaryText} />
+                        </Pressable>
+                      )}
                     </View>
                   )}
-
-                  {item.actionLabel && (
-                    <TouchableOpacity
-                      style={styles.actionButton}
-                      onPress={() => {
-                        if (item.actionRoute) {
-                          router.push(item.actionRoute as any);
-                        }
-                      }}
-                      activeOpacity={0.85}>
-                      <Text style={styles.actionButtonText}>{item.actionLabel}</Text>
-                      <Ionicons name="chevron-forward" size={14} color="#0F73F7" />
-                    </TouchableOpacity>
-                  )}
-                </View>
+                </GlassCard>
               </Animated.View>
             ))
           )}
@@ -395,215 +334,22 @@ export default function NotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
-  safeArea: {
-    flex: 1,
-  },
-  header: {
-    height: 56,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEF3FA',
-    backgroundColor: '#FFFFFF',
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#EEF3FA',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitleWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: Colors.light.text,
-  },
-  unreadChip: {
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-  },
-  unreadChipText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#0F73F7',
-  },
-  markReadText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#0F73F7',
-  },
-  tabsContainer: {
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEF3FA',
-  },
-  tabsScroll: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    gap: 8,
-  },
-  tabChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
-    backgroundColor: '#F1F5F9',
-  },
-  activeTabChip: {
-    backgroundColor: '#0F73F7',
-  },
-  tabChipText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.light.textSecondary,
-  },
-  activeTabChipText: {
-    color: '#FFFFFF',
-  },
-  scrollContent: {
-    padding: 20,
-    gap: 12,
-    paddingBottom: 40,
-  },
-  notificationCard: {
-    borderRadius: 22,
-    padding: 16,
-    borderWidth: 1.5,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.07,
-    shadowRadius: 18,
-    elevation: 4,
-  },
-  unreadCard: {
-    borderColor: 'rgba(225, 29, 72, 0.25)',
-    backgroundColor: '#FFFFFF',
-  },
-  unreadCardDark: {
-    borderColor: 'rgba(225, 29, 72, 0.4)',
-    backgroundColor: 'rgba(30, 41, 59, 0.85)',
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    marginBottom: 10,
-  },
-  iconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardMeta: {
-    flex: 1,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  notificationTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: Colors.light.text,
-  },
-  unreadDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-    backgroundColor: '#0F73F7',
-  },
-  notificationTime: {
-    fontSize: 12,
-    color: Colors.light.textMuted,
-    marginTop: 2,
-  },
-  dismissBtn: {
-    padding: 4,
-  },
-  notificationDesc: {
-    fontSize: 13,
-    lineHeight: 19,
-    color: Colors.light.textSecondary,
-    marginBottom: 12,
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-  },
-  amountPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  amountText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#0F73F7',
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    marginLeft: 'auto',
-  },
-  actionButtonText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#0F73F7',
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 20,
-  },
-  emptyIconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  emptyTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: Colors.light.text,
-    marginBottom: 6,
-  },
-  emptySubtitle: {
-    fontSize: 13,
-    color: Colors.light.textSecondary,
-    textAlign: 'center',
-    lineHeight: 18,
-  },
+  tabsWrap: { height: 56, justifyContent: 'center' },
+  tabs: { gap: 10, paddingHorizontal: Layout.margin, alignItems: 'center' },
+  feed: { paddingHorizontal: Layout.margin, paddingTop: 10, paddingBottom: 48, gap: 12 },
+  cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  icon: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  title: { flexShrink: 1, fontSize: 15, fontWeight: '600' },
+  dot: { width: 8, height: 8, borderRadius: 4 },
+  time: { fontSize: 12 },
+  desc: { fontSize: 13, lineHeight: 19, marginTop: 10 },
+  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 },
+  amount: { fontSize: 15, fontWeight: '600', fontVariant: ['tabular-nums'] },
+  action: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  actionText: { fontSize: 13, fontWeight: '600' },
+  empty: { alignItems: 'center', paddingVertical: 32, gap: 6 },
+  emptyIcon: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
+  emptyTitle: { fontSize: 17, fontWeight: '600' },
+  emptySub: { fontSize: 13, textAlign: 'center', maxWidth: 260, lineHeight: 19 },
 });

@@ -1,21 +1,13 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  Switch,
-  Alert,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, ScrollView, Pressable, Switch } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useTheme } from '@/contexts/ThemeContext';
-import { SuccessOverlay } from '@/components/success-overlay';
 import * as Haptics from 'expo-haptics';
+import { useTheme } from '@/contexts/ThemeContext';
+import { Button, Chip, Field, GlassCard, ScreenBackground, SectionHeader, Segmented, TopBar } from '@/components/ds';
+import { SuccessOverlay } from '@/components/success-overlay';
+import { Layout, Radius } from '@/constants/theme';
 
 interface MilestoneInput {
   id: string;
@@ -23,715 +15,170 @@ interface MilestoneInput {
   amount: string;
 }
 
+type Scope = 'Small' | 'Medium' | 'Large';
+const CATEGORIES = ['Tech & Dev', 'UI/UX Design', 'Mobile Apps', 'Writing', 'Marketing', 'Cloud & APIs'];
+
 export default function CreateJobScreen() {
   const router = useRouter();
-  const { isDark, colors } = useTheme();
-
+  const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Tech & Dev');
   const [description, setDescription] = useState('');
-  const [scope, setScope] = useState<'Small' | 'Medium' | 'Large'>('Medium');
+  const [scope, setScope] = useState<Scope>('Medium');
   const [requireKyc, setRequireKyc] = useState(true);
   const [milestones, setMilestones] = useState<MilestoneInput[]>([
-    { id: '1', title: 'Milestone 1: Architecture & UI Setup', amount: '1500' },
-    { id: '2', title: 'Milestone 2: Core Feature & API Integration', amount: '2000' },
+    { id: '1', title: 'Architecture & UI setup', amount: '1500' },
+    { id: '2', title: 'Core features & API integration', amount: '2000' },
   ]);
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [errors, setErrors] = useState<{ title?: string; description?: string; budget?: string }>({});
+  const [published, setPublished] = useState(false);
 
-  const categories = [
-    'Tech & Dev',
-    'UI/UX Design',
-    'Mobile Apps',
-    'Writing',
-    'Marketing',
-    'Cloud & APIs',
-  ];
+  const total = milestones.reduce((s, m) => s + (parseFloat(m.amount) || 0), 0);
+  const update = (id: string, field: 'title' | 'amount', val: string) =>
+    setMilestones((prev) => prev.map((m) => (m.id === id ? { ...m, [field]: field === 'amount' ? val.replace(/\D/g, '') : val } : m)));
 
-  const totalBudget = milestones.reduce(
-    (sum, m) => sum + (parseFloat(m.amount) || 0),
-    0
-  );
-
-  const handleAddMilestone = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const nextNum = milestones.length + 1;
-    setMilestones((prev) => [
-      ...prev,
-      {
-        id: String(Date.now()),
-        title: '',
-        amount: '',
-      },
-    ]);
-  };
-
-  const handleRemoveMilestone = (id: string) => {
-    if (milestones.length <= 1) {
-      Alert.alert('Minimum Requirement', 'At least one milestone is required.');
-      return;
-    }
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setMilestones((prev) => prev.filter((m) => m.id !== id));
-  };
-
-  const handleUpdateMilestone = (
-    id: string,
-    field: 'title' | 'amount',
-    val: string
-  ) => {
-    setMilestones((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, [field]: val } : m))
-    );
-  };
-
-  const handlePublish = () => {
-    if (!title.trim()) {
-      Alert.alert('Title Required', 'Please enter a job or contract title.');
-      return;
-    }
-    if (!description.trim()) {
-      Alert.alert('Description Required', 'Please provide deliverable specifications.');
-      return;
-    }
-    if (totalBudget <= 0) {
-      Alert.alert('Budget Required', 'Please enter valid milestone amounts.');
-      return;
-    }
-
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setShowSuccess(true);
+  const publish = () => {
+    const next = {
+      title: !title.trim() ? 'Give the job a title.' : undefined,
+      description: !description.trim() ? 'Describe what you need delivered.' : undefined,
+      budget: total <= 0 ? 'Add an amount to at least one milestone.' : undefined,
+    };
+    setErrors(next);
+    if (next.title || next.description || next.budget) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    setPublished(true);
   };
 
   return (
-    <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
-        {/* Header */}
-        <View
-          style={[
-            styles.header,
-            { backgroundColor: colors.surface, borderBottomColor: colors.border },
-          ]}>
-          <TouchableOpacity
-            style={[
-              styles.backButton,
-              { backgroundColor: colors.backgroundElement, borderColor: colors.border },
-            ]}
-            onPress={() => router.back()}
-            activeOpacity={0.8}>
-            <Ionicons name="chevron-back" size={20} color={colors.text} />
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>
-            Post New Contract
-          </Text>
-          <View style={{ width: 40 }} />
-        </View>
-
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}>
-          {/* Top Banner */}
-          <LinearGradient
-            colors={isDark ? ['#1E1B4B', '#0F172A'] : ['#EFF6FF', '#DBEAFE']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.bannerCard}>
-            <View style={styles.bannerIconWrap}>
-              <Ionicons name="shield-checkmark" size={24} color="#0F73F7" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text
-                style={[
-                  styles.bannerTitle,
-                  { color: isDark ? '#FFFFFF' : '#0F172A' },
-                ]}>
-                DevPay Escrow Protection
-              </Text>
-              <Text
-                style={[
-                  styles.bannerSubtitle,
-                  { color: isDark ? '#94A3B8' : '#475569' },
-                ]}>
-                Milestone 1 is pre-funded to attract verified African talent. Funds are held safely and only released when you approve the deliverable.
-              </Text>
-            </View>
-          </LinearGradient>
-
-          {/* Form Card 1: Job Details */}
-          <View
-            style={[
-              styles.formCard,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-            ]}>
-            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
-              CONTRACT DETAILS
-            </Text>
-
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.text }]}>
-                Contract Title
-              </Text>
-              <TextInput
-                style={[
-                  styles.textInput,
-                  {
-                    backgroundColor: colors.backgroundElement,
-                    color: colors.text,
-                    borderColor: colors.border,
-                  },
-                ]}
-                placeholder="e.g. Senior React Native Engineer (MoMo SDK)"
-                placeholderTextColor={colors.textMuted}
-                value={title}
-                onChangeText={setTitle}
-              />
-            </View>
-
-            {/* Category Selector */}
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.text }]}>
-                Category
-              </Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.pillRow}>
-                {categories.map((cat) => {
-                  const active = category === cat;
-                  return (
-                    <TouchableOpacity
-                      key={cat}
-                      style={[
-                        styles.catPill,
-                        {
-                          backgroundColor: active
-                            ? colors.primary
-                            : colors.backgroundElement,
-                          borderColor: active ? colors.primary : colors.border,
-                        },
-                      ]}
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setCategory(cat);
-                      }}>
-                      <Text
-                        style={[
-                          styles.catPillText,
-                          { color: active ? '#FFFFFF' : colors.text },
-                        ]}>
-                        {cat}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </View>
-
-            {/* Scope / Experience Level */}
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.text }]}>
-                Project Scope
-              </Text>
-              <View style={styles.scopeRow}>
-                {(['Small', 'Medium', 'Large'] as const).map((sc) => {
-                  const active = scope === sc;
-                  return (
-                    <TouchableOpacity
-                      key={sc}
-                      style={[
-                        styles.scopeOption,
-                        {
-                          backgroundColor: active
-                            ? isDark
-                              ? '#1E293B'
-                              : '#EFF6FF'
-                            : colors.backgroundElement,
-                          borderColor: active ? colors.primary : colors.border,
-                        },
-                      ]}
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setScope(sc);
-                      }}>
-                      <Ionicons
-                        name={
-                          sc === 'Small'
-                            ? 'flash-outline'
-                            : sc === 'Medium'
-                            ? 'cube-outline'
-                            : 'planet-outline'
-                        }
-                        size={18}
-                        color={active ? colors.primary : colors.textMuted}
-                      />
-                      <Text
-                        style={[
-                          styles.scopeText,
-                          {
-                            color: active ? colors.primary : colors.text,
-                            fontWeight: active ? '700' : '500',
-                          },
-                        ]}>
-                        {sc}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-
-            {/* Description */}
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.text }]}>
-                Deliverables & Scope
-              </Text>
-              <TextInput
-                style={[
-                  styles.textArea,
-                  {
-                    backgroundColor: colors.backgroundElement,
-                    color: colors.text,
-                    borderColor: colors.border,
-                  },
-                ]}
-                placeholder="Outline what must be delivered, accepted frameworks, and milestones..."
-                placeholderTextColor={colors.textMuted}
-                multiline
-                numberOfLines={4}
-                value={description}
-                onChangeText={setDescription}
-              />
-            </View>
+    <View style={{ flex: 1 }}>
+      <ScreenBackground />
+      <SafeAreaView edges={['top']} style={{ flex: 1 }}>
+        <TopBar title="Post a job" />
+        <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+          <View style={{ gap: 16 }}>
+            <Field label="Job title" icon="briefcase-outline" placeholder="e.g. React Native engineer for MoMo app" value={title} onChangeText={setTitle} error={errors.title} />
+            <Field label="What needs to be delivered?" placeholder="Scope, deliverables, tools, deadlines…" multiline value={description} onChangeText={setDescription} error={errors.description} />
           </View>
 
-          {/* Form Card 2: Escrow Milestones */}
-          <View
-            style={[
-              styles.formCard,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-            ]}>
-            <View style={styles.milestoneHeaderRow}>
-              <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
-                ESCROW MILESTONES
-              </Text>
-              <TouchableOpacity
-                style={[styles.addBtn, { backgroundColor: isDark ? '#1E293B' : '#EFF6FF' }]}
-                onPress={handleAddMilestone}>
-                <Ionicons name="add" size={16} color={colors.primary} />
-                <Text style={[styles.addBtnText, { color: colors.primary }]}>
-                  Add Milestone
-                </Text>
-              </TouchableOpacity>
-            </View>
+          <SectionHeader title="Category" style={styles.gap} />
+          <View style={styles.wrap}>
+            {CATEGORIES.map((c) => (
+              <Chip key={c} label={c} size="sm" selected={category === c} onPress={() => setCategory(c)} />
+            ))}
+          </View>
 
-            {milestones.map((m, index) => (
-              <View
-                key={m.id}
-                style={[
-                  styles.milestoneBox,
-                  { backgroundColor: colors.backgroundElement, borderColor: colors.border },
-                ]}>
-                <View style={styles.milestoneTop}>
-                  <View style={styles.milestoneTag}>
-                    <Text style={styles.milestoneTagText}>Phase {index + 1}</Text>
+          <SectionHeader title="Project size" style={styles.gap} />
+          <Segmented<Scope>
+            value={scope}
+            onChange={setScope}
+            options={[
+              { value: 'Small', label: 'Small' },
+              { value: 'Medium', label: 'Medium' },
+              { value: 'Large', label: 'Large' },
+            ]}
+          />
+
+          <SectionHeader title="Milestones" style={styles.gap} />
+          <View style={{ gap: 12 }}>
+            {milestones.map((m, i) => (
+              <GlassCard key={m.id} style={{ gap: 12 }}>
+                <View style={styles.msHead}>
+                  <View style={[styles.msNum, { backgroundColor: colors.primaryWash }]}>
+                    <Text style={[styles.msNumText, { color: colors.primaryText }]}>{i + 1}</Text>
                   </View>
+                  <Text style={[styles.msLabel, { color: colors.textSecondary }]}>Milestone {i + 1}</Text>
                   {milestones.length > 1 && (
-                    <TouchableOpacity
-                      onPress={() => handleRemoveMilestone(m.id)}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                      <Ionicons name="close-circle-outline" size={18} color="#EF4444" />
-                    </TouchableOpacity>
+                    <Pressable
+                      onPress={() => setMilestones((prev) => prev.filter((x) => x.id !== m.id))}
+                      hitSlop={8}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Remove milestone ${i + 1}`}>
+                      <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
+                    </Pressable>
                   )}
                 </View>
-
-                <TextInput
-                  style={[
-                    styles.milestoneTitleInput,
-                    { color: colors.text, borderBottomColor: colors.border },
-                  ]}
-                  value={m.title}
-                  placeholder="Milestone Title"
-                  placeholderTextColor={colors.textMuted}
-                  onChangeText={(val) => handleUpdateMilestone(m.id, 'title', val)}
+                <Field placeholder="What’s delivered" value={m.title} onChangeText={(t) => update(m.id, 'title', t)} />
+                <Field
+                  placeholder="Amount"
+                  keyboardType="number-pad"
+                  value={m.amount}
+                  onChangeText={(t) => update(m.id, 'amount', t)}
+                  prefix={<Text style={[styles.cur, { color: colors.textSecondary }]}>GH₵</Text>}
                 />
-
-                <View style={styles.amountRow}>
-                  <Text style={[styles.currencyLabel, { color: colors.textSecondary }]}>
-                    Amount (GH₵)
-                  </Text>
-                  <TextInput
-                    style={[
-                      styles.milestoneAmountInput,
-                      {
-                        backgroundColor: colors.surface,
-                        color: colors.text,
-                        borderColor: colors.border,
-                      },
-                    ]}
-                    value={m.amount}
-                    keyboardType="numeric"
-                    placeholder="0.00"
-                    placeholderTextColor={colors.textMuted}
-                    onChangeText={(val) => handleUpdateMilestone(m.id, 'amount', val)}
-                  />
-                </View>
-              </View>
+              </GlassCard>
             ))}
-
-            {/* Total Budget Summary */}
-            <View
-              style={[
-                styles.totalBox,
-                { backgroundColor: isDark ? '#0F172A' : '#F1F5F9' },
-              ]}>
-              <View>
-                <Text style={[styles.totalLabel, { color: colors.textSecondary }]}>
-                  Total Contract Escrow
-                </Text>
-                <Text style={styles.totalSublabel}>
-                  BoG Compliant Escrow Deposit
-                </Text>
-              </View>
-              <Text style={[styles.totalAmount, { color: colors.primary }]}>
-                GH₵ {totalBudget.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-              </Text>
-            </View>
           </View>
+          {errors.budget && <Text style={[styles.err, { color: colors.accentCoral }]}>{errors.budget}</Text>}
+          <Button
+            label="Add milestone"
+            variant="soft"
+            size="md"
+            style={{ marginTop: 12 }}
+            icon={<Ionicons name="add" size={18} color={colors.primaryText} />}
+            onPress={() => {
+              Haptics.selectionAsync().catch(() => {});
+              setMilestones((prev) => [...prev, { id: String(Date.now()), title: '', amount: '' }]);
+            }}
+          />
 
-          {/* Form Card 3: Trust & Verification */}
-          <View
-            style={[
-              styles.formCard,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-            ]}>
-            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
-              DEVELOPER VERIFICATION
-            </Text>
-
-            <View style={styles.switchRow}>
-              <View style={styles.switchLeft}>
-                <View
-                  style={[
-                    styles.kycIconWrap,
-                    { backgroundColor: isDark ? '#064E3B' : '#ECFDF5' },
-                  ]}>
-                  <Ionicons name="card-outline" size={20} color="#10B981" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.switchTitle, { color: colors.text }]}>
-                    Ghana Card (NIA) Verified Only
-                  </Text>
-                  <Text
-                    style={[styles.switchSubtitle, { color: colors.textSecondary }]}>
-                    Only developers with national ID verification can submit proposals
-                  </Text>
-                </View>
-              </View>
-              <Switch
-                value={requireKyc}
-                onValueChange={(val) => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setRequireKyc(val);
-                }}
-                trackColor={{ false: '#E2E8F0', true: '#BFDBFE' }}
-                thumbColor={requireKyc ? '#0F73F7' : '#FFFFFF'}
-              />
+          <GlassCard style={[styles.kyc, { marginTop: Layout.sectionGap }]}>
+            <View style={[styles.kycIcon, { backgroundColor: colors.greenSoft }]}>
+              <Ionicons name="id-card" size={18} color={colors.accentGreen} />
             </View>
-          </View>
-
-          {/* Action CTA */}
-          <TouchableOpacity
-            style={styles.publishBtnWrap}
-            onPress={handlePublish}
-            activeOpacity={0.88}>
-            <LinearGradient
-              colors={['#0F73F7', '#38BDF8']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.publishGradient}>
-              <Ionicons name="rocket-outline" size={20} color="#FFFFFF" />
-              <Text style={styles.publishBtnText}>
-                Post Contract & Pre-Fund Escrow
-              </Text>
-            </LinearGradient>
-          </TouchableOpacity>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.kycTitle, { color: colors.text }]}>Ghana Card verified only</Text>
+              <Text style={[styles.kycSub, { color: colors.textSecondary }]}>Only Trusted freelancers can apply</Text>
+            </View>
+            <Switch
+              value={requireKyc}
+              onValueChange={setRequireKyc}
+              trackColor={{ true: colors.primary, false: colors.backgroundSelected }}
+              thumbColor="#FFFFFF"
+              accessibilityLabel="Require Ghana Card verification"
+            />
+          </GlassCard>
         </ScrollView>
+
+        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+          <View style={styles.totalRow}>
+            <Text style={[styles.totalLabel, { color: colors.textSecondary }]}>Total budget · {milestones.length} milestones</Text>
+            <Text style={[styles.total, { color: colors.text }]}>GH₵ {total.toLocaleString()}</Text>
+          </View>
+          <Button label="Publish Job" onPress={publish} />
+        </View>
       </SafeAreaView>
 
       <SuccessOverlay
-        visible={showSuccess}
-        type="success"
-        title="Contract Published!"
-        subtitle={`Your contract "${title}" is live. Milestone 1 (GH₵ ${(
-          parseFloat(milestones[0]?.amount) || 0
-        ).toLocaleString()}) is secured in DevPay Escrow.`}
-        dismissLabel="View Contract"
+        visible={published}
+        title="Job published"
+        subtitle="Verified freelancers can now send proposals. You’ll fund milestone 1 when you hire."
         onDismiss={() => {
-          setShowSuccess(false);
-          router.replace('/contracts');
+          setPublished(false);
+          router.replace('/');
         }}
+        dismissLabel="Back to Home"
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-  },
-  safeArea: {
-    flex: 1,
-  },
-  header: {
-    height: 56,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '800',
-  },
-  scrollContent: {
-    padding: 20,
-    gap: 18,
-    paddingBottom: 40,
-  },
-  bannerCard: {
-    borderRadius: 18,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-  },
-  bannerIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bannerTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  bannerSubtitle: {
-    fontSize: 12,
-    lineHeight: 18,
-    marginTop: 2,
-  },
-  formCard: {
-    borderRadius: 20,
-    padding: 18,
-    borderWidth: 1,
-    gap: 16,
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 0.8,
-  },
-  inputGroup: {
-    gap: 8,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  textInput: {
-    height: 48,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    fontSize: 14,
-    fontWeight: '500',
-    borderWidth: 1,
-  },
-  textArea: {
-    minHeight: 100,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 14,
-    fontWeight: '500',
-    borderWidth: 1,
-    textAlignVertical: 'top',
-  },
-  pillRow: {
-    gap: 8,
-    paddingVertical: 4,
-  },
-  catPill: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  catPillText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  scopeRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  scopeOption: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    height: 44,
-    borderRadius: 12,
-    borderWidth: 1.5,
-  },
-  scopeText: {
-    fontSize: 13,
-  },
-  milestoneHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  addBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
-  },
-  addBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  milestoneBox: {
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
-    gap: 10,
-  },
-  milestoneTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  milestoneTag: {
-    backgroundColor: '#0F73F7',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  milestoneTagText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    textTransform: 'uppercase',
-  },
-  milestoneTitleInput: {
-    fontSize: 14,
-    fontWeight: '600',
-    paddingVertical: 6,
-    borderBottomWidth: 1,
-  },
-  amountRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  currencyLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  milestoneAmountInput: {
-    width: 120,
-    height: 38,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    fontSize: 14,
-    fontWeight: '700',
-    borderWidth: 1,
-    textAlign: 'right',
-  },
-  totalBox: {
-    borderRadius: 14,
-    padding: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 4,
-  },
-  totalLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-  },
-  totalSublabel: {
-    fontSize: 11,
-    color: '#10B981',
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  totalAmount: {
-    fontSize: 18,
-    fontWeight: '900',
-  },
-  switchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  switchLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
-  },
-  kycIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  switchTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  switchSubtitle: {
-    fontSize: 12,
-    lineHeight: 16,
-    marginTop: 2,
-  },
-  publishBtnWrap: {
-    borderRadius: 27,
-    overflow: 'hidden',
-    shadowColor: '#0F73F7',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 14,
-    elevation: 6,
-  },
-  publishGradient: {
-    height: 54,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-  },
-  publishBtnText: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
+  content: { paddingHorizontal: Layout.margin, paddingTop: 8, paddingBottom: 32 },
+  gap: { marginTop: Layout.sectionGap },
+  wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  msHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  msNum: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  msNumText: { fontSize: 13, fontWeight: '600' },
+  msLabel: { flex: 1, fontSize: 13, fontWeight: '500' },
+  cur: { fontSize: 15, fontWeight: '500' },
+  err: { fontSize: 12, marginTop: 8, marginLeft: 6 },
+  kyc: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: Radius.lg },
+  kycIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  kycTitle: { fontSize: 14, fontWeight: '600' },
+  kycSub: { fontSize: 12, marginTop: 2 },
+  footer: { paddingHorizontal: Layout.margin, paddingTop: 10, gap: 10 },
+  totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
+  totalLabel: { fontSize: 13 },
+  total: { fontSize: 20, fontWeight: '600', letterSpacing: -0.4, fontVariant: ['tabular-nums'] },
 });

@@ -1,274 +1,115 @@
-﻿import React, { useState, useRef, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Colors } from '@/constants/theme';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, TextInput, Pressable, TextInputKeyPressEvent } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useTheme } from '@/contexts/ThemeContext';
+import { AuthShell } from '@/components/auth-shell';
+import { Button } from '@/components/ds';
+import { Radius, Shadows } from '@/constants/theme';
 
 export default function VerifyOtpScreen() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
   const { phone, role } = useLocalSearchParams();
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [timer, setTimer] = useState(45);
-  const inputRefs = useRef<any[]>([]);
+  const [focused, setFocused] = useState(0);
+  const inputs = useRef<(React.ComponentRef<typeof TextInput> | null)[]>([]);
 
   useEffect(() => {
     if (timer <= 0) return;
-    const interval = setInterval(() => {
-      setTimer((t) => t - 1);
-    }, 1000);
-    return () => clearInterval(interval);
+    const id = setInterval(() => setTimer((t) => t - 1), 1000);
+    return () => clearInterval(id);
   }, [timer]);
 
-  const handleChangeText = (text: string, index: number) => {
-    const newCode = [...code];
-    newCode[index] = text;
-    setCode(newCode);
-
-    if (text.length > 0 && index < 5) {
-      inputRefs.current[index + 1]?.focus();
+  const setDigit = (text: string, i: number) => {
+    const digits = text.replace(/\D/g, '');
+    const next = [...code];
+    if (digits.length > 1) {
+      // pasted code
+      digits.slice(0, 6 - i).split('').forEach((d, k) => (next[i + k] = d));
+      setCode(next);
+      inputs.current[Math.min(5, i + digits.length)]?.focus();
+      return;
     }
+    next[i] = digits;
+    setCode(next);
+    if (digits && i < 5) inputs.current[i + 1]?.focus();
   };
 
-  const handleKeyPress = (e: any, index: number) => {
-    if (e.nativeEvent.key === 'Backspace' && code[index] === '' && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
+  const onKey = (e: TextInputKeyPressEvent, i: number) => {
+    if (e.nativeEvent.key === 'Backspace' && code[i] === '' && i > 0) inputs.current[i - 1]?.focus();
   };
 
-  const handleVerify = () => {
-    // If freelancer, guide to Profile Filling setup, otherwise go to home
-    if (role === 'freelancer') {
-      router.push('/profile-setup');
-    } else {
-      router.replace('/');
-    }
-  };
+  const complete = code.every((d) => d !== '');
+  const verify = () => (role === 'freelancer' ? router.push('/profile-setup') : router.replace('/'));
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.keyboardView}>
-        <View style={styles.content}>
-          {/* Back Button */}
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-            activeOpacity={0.8}>
-            <Ionicons name="chevron-back" size={20} color={Colors.light.text} />
-          </TouchableOpacity>
-
-          {/* Heading */}
-          <View style={styles.header}>
-            <View style={styles.shieldPill}>
-              <Ionicons name="key-outline" size={24} color="#0F73F7" />
-            </View>
-            <Text style={styles.title}>Enter Verification Code</Text>
-            <Text style={styles.subtitle}>
-              We sent a 6-digit security code via SMS to{' '}
-              <Text style={styles.boldPhone}>+233 {phone || '24 123 4567'}</Text>.
-            </Text>
-          </View>
-
-          {/* 6 Digit Input Boxes */}
-          <View style={styles.otpRow}>
-            {code.map((digit, index) => (
-              <TextInput
-                key={index}
-                ref={(ref) => {
-                  inputRefs.current[index] = ref;
-                }}
-                style={[
-                  styles.otpBox,
-                  digit !== '' && styles.otpBoxFilled,
-                ]}
-                keyboardType="number-pad"
-                maxLength={1}
-                value={digit}
-                onChangeText={(text) => handleChangeText(text, index)}
-                onKeyPress={(e) => handleKeyPress(e, index)}
-                selectTextOnFocus
-              />
-            ))}
-          </View>
-
-          {/* Resend Timer */}
-          <View style={styles.resendRow}>
-            {timer > 0 ? (
-              <Text style={styles.resendTimerText}>
-                Resend code in <Text style={styles.timerBold}>{timer}s</Text>
-              </Text>
-            ) : (
-              <TouchableOpacity onPress={() => setTimer(45)}>
-                <Text style={styles.resendActionText}>Resend Code via SMS</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {/* Primary Action Button */}
-          <TouchableOpacity
-            style={styles.verifyButton}
-            onPress={handleVerify}
-            activeOpacity={0.88}>
-            <LinearGradient
-              colors={['#0F73F7', '#38BDF8']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.gradientButton}>
-              <Text style={styles.verifyButtonText}>Verify & Continue</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.changePhoneRow}
-            onPress={() => router.back()}>
-            <Text style={styles.changePhoneText}>Wrong phone number? Change</Text>
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+    <AuthShell
+      title="Verify your number"
+      subtitle={`Enter the 6-digit code we sent by SMS to +233 ${phone || '24 123 4567'}.`}
+      step={{ index: 3, total: 3 }}
+      footer={<Button label="Verify & Continue" onPress={verify} disabled={!complete} />}>
+      <View style={styles.row}>
+        {code.map((d, i) => (
+          <TextInput
+            key={i}
+            ref={(r) => {
+              inputs.current[i] = r;
+            }}
+            value={d}
+            onChangeText={(t) => setDigit(t, i)}
+            onKeyPress={(e) => onKey(e, i)}
+            onFocus={() => setFocused(i)}
+            keyboardType="number-pad"
+            textContentType="oneTimeCode"
+            autoComplete={i === 0 ? 'sms-otp' : 'off'}
+            maxLength={i === 0 ? 6 : 1}
+            selectTextOnFocus
+            selectionColor={colors.primary}
+            accessibilityLabel={`Digit ${i + 1}`}
+            style={[
+              styles.box,
+              {
+                color: colors.text,
+                backgroundColor: colors.surface,
+                borderColor: focused === i ? colors.primary : d ? colors.primarySoft : isDark ? colors.border : 'transparent',
+              },
+              !isDark && Shadows.button,
+            ]}
+          />
+        ))}
+      </View>
+      <View style={styles.resend}>
+        {timer > 0 ? (
+          <Text style={[styles.resendText, { color: colors.textSecondary }]}>
+            Resend code in <Text style={{ color: colors.text, fontWeight: '600', fontVariant: ['tabular-nums'] }}>{timer}s</Text>
+          </Text>
+        ) : (
+          <Pressable onPress={() => setTimer(45)} accessibilityRole="button" hitSlop={8}>
+            <Text style={[styles.resendText, { color: colors.primaryText, fontWeight: '600' }]}>Resend code</Text>
+          </Pressable>
+        )}
+      </View>
+      <Pressable onPress={() => router.back()} accessibilityRole="link" style={{ alignSelf: 'center' }} hitSlop={8}>
+        <Text style={[styles.resendText, { color: colors.textSecondary }]}>Wrong number? Change it</Text>
+      </Pressable>
+    </AuthShell>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  row: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
+  box: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 10,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#EEF3FA',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  header: {
-    alignItems: 'center',
-    marginTop: 24,
-  },
-  shieldPill: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#EBF4FE',
-    borderWidth: 1,
-    borderColor: '#D4E6FC',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: Colors.light.text,
-    letterSpacing: -0.4,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 13,
-    color: Colors.light.textSecondary,
-    textAlign: 'center',
-    marginTop: 8,
-    lineHeight: 20,
-    paddingHorizontal: 20,
-  },
-  boldPhone: {
-    fontWeight: '700',
-    color: Colors.light.text,
-  },
-  otpRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 32,
-    paddingHorizontal: 6,
-  },
-  otpBox: {
-    width: 46,
-    height: 54,
-    borderRadius: 14,
-    backgroundColor: '#FFFFFF',
+    minWidth: 0,
+    width: 0,
+    height: 58,
+    borderRadius: Radius.md,
     borderWidth: 1.5,
-    borderColor: '#EEF3FA',
     textAlign: 'center',
     fontSize: 22,
-    fontWeight: '800',
-    color: Colors.light.text,
-    shadowColor: '#0F73F7',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
+    fontWeight: '600',
   },
-  otpBoxFilled: {
-    borderColor: '#0F73F7',
-    backgroundColor: '#F0F7FF',
-  },
-  resendRow: {
-    alignItems: 'center',
-    marginTop: 24,
-  },
-  resendTimerText: {
-    fontSize: 13,
-    color: Colors.light.textSecondary,
-  },
-  timerBold: {
-    fontWeight: '700',
-    color: '#0F73F7',
-  },
-  resendActionText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#0F73F7',
-  },
-  verifyButton: {
-    height: 54,
-    borderRadius: 27,
-    overflow: 'hidden',
-    marginTop: 32,
-    shadowColor: '#0F73F7',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  gradientButton: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  verifyButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  changePhoneRow: {
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  changePhoneText: {
-    fontSize: 13,
-    color: Colors.light.textSecondary,
-    fontWeight: '500',
-  },
+  resend: { alignItems: 'center', marginTop: 4 },
+  resendText: { fontSize: 14 },
 });
