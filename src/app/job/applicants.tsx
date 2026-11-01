@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, Pressable } from 'react-native';
+import { View, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { Dialog } from '@/lib/dialog';
+import { Text } from '@/components/ui-text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -82,11 +84,11 @@ export default function JobApplicantsScreen() {
 
   const hire = (a: Applicant) =>
     !verified
-      ? Alert.alert('Verify to hire', 'Only verified clients can hire on DevPay. It takes a few minutes.', [
+      ? Dialog.alert('Verify to hire', 'Only verified clients can hire on DevPay. It takes a few minutes.', [
           { text: 'Not now', style: 'cancel' },
           { text: 'Get verified', onPress: () => router.push('/verification') },
         ])
-      : Alert.alert('Hire and fund milestone 1?', `${a.name}’s first milestone (GH₵ 1,500) will be locked in escrow.`, [
+      : Dialog.alert('Hire and fund milestone 1?', `${a.name}’s first milestone (GH₵ 1,500) will be locked in escrow.`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Hire & fund',

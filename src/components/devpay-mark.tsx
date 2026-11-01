@@ -1,36 +1,19 @@
 import React from 'react';
-import { View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Gradients } from '@/constants/theme';
+import { Image } from 'expo-image';
 
-/** Brand mark: the nav's rotated sky squircle with a shield-check. */
-export function DevPayMark({ size = 72 }: { size?: number }) {
-  const r = size * 0.33;
+/** Logo artwork is 218×149 (cropped from assets/images/logo-source.jpg). */
+const RATIO = 218 / 149;
+const LOGO = require('../../assets/images/logo-mark.png');
+
+/** DevPay logo mark: code brackets around Africa. `size` is the height in points. */
+export function DevPayMark({ size = 32 }: { size?: number }) {
   return (
-    <View style={{ width: size * 1.1, height: size * 1.1, alignItems: 'center', justifyContent: 'center' }}>
-      <View
-        style={{
-          width: size * 0.78,
-          height: size * 0.78,
-          borderRadius: r,
-          transform: [{ rotate: '45deg' }],
-          shadowColor: '#3FA7DA',
-          shadowOffset: { width: 0, height: size * 0.12 },
-          shadowOpacity: 0.35,
-          shadowRadius: size * 0.22,
-          elevation: 8,
-        }}>
-        <LinearGradient
-          colors={Gradients.card}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{ flex: 1, borderRadius: r, alignItems: 'center', justifyContent: 'center' }}>
-          <View style={{ transform: [{ rotate: '-45deg' }] }}>
-            <MaterialCommunityIcons name="shield-check" size={size * 0.38} color="#FFFFFF" />
-          </View>
-        </LinearGradient>
-      </View>
-    </View>
+    <Image
+      source={LOGO}
+      contentFit="contain"
+      style={{ width: size * RATIO, height: size }}
+      accessibilityLabel="DevPay"
+      accessibilityRole="image"
+    />
   );
 }

@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable } from 'react-native';
+import { Text } from '@/components/ui-text';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Avatar, IconButton } from '@/components/ds';
-import { CurrentUser } from '@/constants/media';
+import { useCurrentUser } from '@/contexts/AuthContext';
 import { Layout } from '@/constants/theme';
 
 interface DevPayHeaderProps {
@@ -16,21 +17,23 @@ interface DevPayHeaderProps {
 }
 
 export function DevPayHeader({
-  location = CurrentUser.location,
+  location,
   unreadCount = 0,
   onNotificationPress,
   onProfilePress,
   onLocationPress,
 }: DevPayHeaderProps) {
   const { colors } = useTheme();
+  const me = useCurrentUser();
+  const place = location ?? me.location;
 
   return (
     <View style={styles.header}>
       <View style={styles.left}>
         <Pressable onPress={onProfilePress} accessibilityRole="button" accessibilityLabel="Open profile" hitSlop={6}>
-          <Avatar uri={CurrentUser.avatar} size={48} />
+          <Avatar uri={me.avatar} size={48} />
         </Pressable>
-        <Pressable onPress={onLocationPress} accessibilityRole="button" accessibilityLabel={`Location: ${location}`} style={{ gap: 3 }}>
+        <Pressable onPress={onLocationPress} accessibilityRole="button" accessibilityLabel={`Location: ${place}`} style={{ gap: 3 }}>
           <View style={styles.row}>
             <Text style={[styles.caption, { color: colors.textSecondary }]}>My Location</Text>
             <Ionicons name="chevron-down" size={13} color={colors.textSecondary} />
@@ -38,7 +41,7 @@ export function DevPayHeader({
           <View style={styles.row}>
             <Ionicons name="location-sharp" size={15} color={colors.text} />
             <Text style={[styles.location, { color: colors.text }]} numberOfLines={1}>
-              {location}
+              {place}
             </Text>
           </View>
         </Pressable>

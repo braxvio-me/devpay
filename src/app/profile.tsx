@@ -1,23 +1,35 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Switch, Pressable } from 'react-native';
+import { View, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { Dialog } from '@/lib/dialog';
+import { Text } from '@/components/ui-text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRole } from '@/contexts/RoleContext';
 import { useVerification } from '@/contexts/VerificationContext';
 import { FloatingTabBar, TabType } from '@/components/floating-tab-bar';
-import { Avatar, Chip, GlassCard, IconButton, ListRow, ScreenBackground, SectionHeader, useNavClearance } from '@/components/ds';
-import { CurrentUser } from '@/constants/media';
-import { Gradients, Layout, Radius, Shadows } from '@/constants/theme';
+import {
+  Avatar,
+  Chip,
+  GlassCard,
+  IconButton,
+  ListRow,
+  ScreenBackground,
+  SectionHeader,
+  useNavClearance,
+  Switch,
+} from '@/components/ds';
+import { useCurrentUser } from '@/contexts/AuthContext';
+import { Layout, Radius, Shadows } from '@/constants/theme';
 
 const SKILLS = ['React Native', 'TypeScript', 'Expo', 'MoMo APIs', 'Figma'];
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-  const { isClient, toggleRole } = useRole();
+  const { isClient } = useRole();
+  const me = useCurrentUser();
   const navClearance = useNavClearance();
   const [available, setAvailable] = useState(true);
   const { verified, identity } = useVerification();
@@ -37,7 +49,7 @@ export default function ProfileScreen() {
 
   const onTab = (tab: TabType) => {
     if (tab === 'home') router.replace('/');
-    if (tab === 'jobs') router.push(isClient ? '/explore' : '/contracts');
+    if (tab === 'jobs') router.push('/contracts');
     if (tab === 'chats') router.push('/messages');
   };
 
@@ -64,17 +76,17 @@ export default function ProfileScreen() {
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: Layout.margin, paddingBottom: navClearance }}>
           <GlassCard style={styles.identity}>
-            <Avatar uri={CurrentUser.avatar} size={84} online={available} />
+            <Avatar uri={me.avatar} size={84} online={available} />
             <View style={styles.nameRow}>
-              <Text style={[styles.name, { color: colors.text }]}>{CurrentUser.name}</Text>
+              <Text style={[styles.name, { color: colors.text }]}>{me.name}</Text>
               {verified && <MaterialCommunityIcons name="check-decagram" size={18} color={colors.primary} />}
             </View>
             <Text style={[styles.headline, { color: colors.textSecondary }]}>
-              {isClient ? 'Hiring for Kente Labs' : 'Senior React Native Engineer'}
+              {me.headline}
             </Text>
             <View style={styles.loc}>
               <Ionicons name="location-sharp" size={13} color={colors.textSecondary} />
-              <Text style={[styles.locText, { color: colors.textSecondary }]}>{CurrentUser.location}</Text>
+              <Text style={[styles.locText, { color: colors.textSecondary }]}>{me.location}</Text>
             </View>
 
             <View style={[styles.stats, { borderTopColor: colors.border }]}>
@@ -91,29 +103,40 @@ export default function ProfileScreen() {
           </GlassCard>
 
           <Pressable onPress={() => router.push('/verification')} accessibilityRole="button" style={[styles.verify, Shadows.lifted]}>
-            <LinearGradient colors={Gradients.card} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.verifyInner}>
+            <View style={[styles.verifyInner, { backgroundColor: colors.feature }]}>
               <View style={{ flex: 1, gap: 8 }}>
                 <Text style={styles.verifyTitle}>{verified ? 'Verified · all features unlocked' : `Profile ${verification}% complete`}</Text>
                 <View style={styles.track}>
                   <View style={[styles.fill, { width: `${verification}%` }]} />
                 </View>
                 <Text style={styles.verifySub}>
-                  {verified ? 'See your verified benefits' : isClient ? 'Get verified to hire and fund larger escrows' : 'Get verified to earn the Trusted badge'}
+                  {verified ? 'See your verified benefits' : isClient ? 'Get verified to hire and fund larger escrows' : 'Get verified to earn the Verified badge'}
                 </Text>
               </View>
               <View style={styles.verifyBtn}>
                 <Ionicons name="arrow-forward" size={18} color={colors.primaryText} />
               </View>
-            </LinearGradient>
+            </View>
           </Pressable>
 
           <View style={styles.duo}>
-            <GlassCard style={styles.duoCard} onPress={toggleRole} accessibilityLabel={isClient ? 'Switch to freelancer' : 'Switch to client'}>
-              <View style={[styles.duoIcon, { backgroundColor: colors.primaryWash }]}>
-                <Ionicons name="swap-horizontal" size={20} color={colors.navActive} />
+            <GlassCard
+              style={styles.duoCard}
+              onPress={() =>
+                Dialog.alert(
+                  `${isClient ? 'Client' : 'Freelancer'} account`,
+                  `Each DevPay account has one role. To ${isClient ? 'find work' : 'hire'}, sign up again with a different phone number.`
+                )
+              }
+              accessibilityLabel={`Account type: ${isClient ? 'client' : 'freelancer'}`}>
+              <View style={styles.duoTop}>
+                <View style={[styles.duoIcon, { backgroundColor: colors.primaryWash }]}>
+                  <Ionicons name={isClient ? 'briefcase' : 'laptop-outline'} size={20} color={colors.navActive} />
+                </View>
+                <Ionicons name="lock-closed" size={14} color={colors.textMuted} />
               </View>
-              <Text style={[styles.duoTitle, { color: colors.text }]}>{isClient ? 'Switch to Freelancer' : 'Switch to Client'}</Text>
-              <Text style={[styles.duoSub, { color: colors.textSecondary }]}>{isClient ? 'Find work and get paid' : 'Post jobs and hire'}</Text>
+              <Text style={[styles.duoTitle, { color: colors.text }]}>{isClient ? 'Client' : 'Freelancer'}</Text>
+              <Text style={[styles.duoSub, { color: colors.textSecondary }]}>One role per account</Text>
             </GlassCard>
             <GlassCard style={styles.duoCard}>
               <View style={styles.duoTop}>
@@ -167,7 +190,7 @@ export default function ProfileScreen() {
         </ScrollView>
       </SafeAreaView>
 
-      <FloatingTabBar activeTab="profile" onSelectTab={onTab} onCenterActionPress={() => router.push(isClient ? '/job/create' : '/explore')} />
+      <FloatingTabBar activeTab="profile" onSelectTab={onTab} onCenterActionPress={() => router.push('/assistant')} />
     </View>
   );
 }
@@ -197,7 +220,7 @@ const styles = StyleSheet.create({
   verify: { marginTop: 16, borderRadius: Radius.xl },
   verifyInner: { borderRadius: Radius.xl, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 14 },
   verifyTitle: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
-  track: { height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.3)', overflow: 'hidden' },
+  track: { height: 6, borderRadius: 3, backgroundColor: '#4A8FB5', overflow: 'hidden' },
   fill: { height: 6, borderRadius: 3, backgroundColor: '#FFFFFF' },
   verifySub: { color: '#FFFFFF', fontSize: 12, fontWeight: '500' },
   verifyBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },

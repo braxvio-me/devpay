@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { Text } from '@/components/ui-text';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRole } from '@/contexts/RoleContext';
 import { Button, GlassCard, PressableScale, ScreenBackground, SectionHeader, Segmented, Sheet, TopBar } from '@/components/ds';
 import { SummaryRow } from '@/components/payments';
 import { SuccessOverlay } from '@/components/success-overlay';
-import { Gradients, Layout, Radius, Shadows } from '@/constants/theme';
+import { useReceipts } from '@/contexts/ReceiptsContext';
+import { useCurrentUser } from '@/contexts/AuthContext';
+import { Layout, Radius, Shadows } from '@/constants/theme';
 
 type PlanId = 'starter' | 'pro' | 'elite';
 type BillingCycle = 'monthly' | 'annually';
@@ -174,6 +176,9 @@ export default function PremiumScreen() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [done, setDone] = useState(false);
+  const [receiptRef, setReceiptRef] = useState('');
+  const { addReceipt } = useReceipts();
+  const me = useCurrentUser();
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   const plan = plans.find((p) => p.id === selected)!;
@@ -184,6 +189,15 @@ export default function PremiumScreen() {
     setTimeout(() => {
       setProcessing(false);
       setConfirmOpen(false);
+      const r = addReceipt({
+        kind: 'subscription',
+        title: `${plan.name} · ${billing === 'annually' ? 'annual' : 'monthly'} plan`,
+        from: me.name,
+        to: 'DevPay',
+        method: 'MTN MoMo',
+        amount: billing === 'annually' ? price * 12 : price,
+      });
+      setReceiptRef(r.ref);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       setTimeout(() => setDone(true), 200);
     }, 1500);
@@ -224,8 +238,8 @@ export default function PremiumScreen() {
                       <View style={styles.planNameRow}>
                         <Text style={[styles.planName, { color: fg }]}>{p.name}</Text>
                         {p.badge && (
-                          <View style={[styles.badge, { backgroundColor: featured ? 'rgba(255,255,255,0.22)' : colors.primarySoft }]}>
-                            <Text style={[styles.badgeText, { color: featured ? '#FFFFFF' : colors.primaryText }]}>
+                          <View style={[styles.badge, { backgroundColor: featured ? '#FFFFFF' : colors.action }]}>
+                            <Text style={[styles.badgeText, { color: featured ? '#15181B' : '#FFFFFF' }]}>
                               {p.badge.charAt(0) + p.badge.slice(1).toLowerCase()}
                             </Text>
                           </View>
@@ -266,9 +280,9 @@ export default function PremiumScreen() {
                     active && !featured && { borderWidth: 1.5, borderColor: colors.primary },
                   ]}>
                   {featured ? (
-                    <LinearGradient colors={Gradients.card} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.planInner}>
+                    <View style={[styles.planInner, { backgroundColor: colors.feature }]}>
                       {body}
-                    </LinearGradient>
+                    </View>
                   ) : (
                     <View style={styles.planInner}>{body}</View>
                   )}
@@ -333,6 +347,11 @@ export default function PremiumScreen() {
         onDismiss={() => {
           setDone(false);
           router.back();
+        }}
+        secondaryLabel="View receipt"
+        onSecondary={() => {
+          setDone(false);
+          if (receiptRef) router.push(`/receipts/${receiptRef}`);
         }}
       />
     </View>

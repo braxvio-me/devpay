@@ -1,9 +1,12 @@
 import React, { ReactNode } from 'react';
-import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { Text } from '@/components/ui-text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Field, IconButton, ScreenBackground } from '@/components/ds';
+import { DevPayMark } from '@/components/devpay-mark';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { Layout } from '@/constants/theme';
 
 /** Shared frame for onboarding and auth: back button, title block, form, pinned footer. */
@@ -44,6 +47,11 @@ export function AuthShell({
               />
             ) : (
               <View style={{ width: 44 }} />
+            )}
+            {!step && (
+              <Animated.View entering={FadeIn.duration(400)} style={styles.logo}>
+                <DevPayMark size={26} />
+              </Animated.View>
             )}
             {step && (
               <View style={styles.steps} accessibilityLabel={`Step ${step.index} of ${step.total}`}>
@@ -143,6 +151,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Layout.margin,
   },
   steps: { flexDirection: 'row', gap: 6 },
+  logo: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
   step: { height: 6, borderRadius: 3 },
   content: { paddingHorizontal: Layout.margin, paddingTop: 16, paddingBottom: 32 },
   title: { fontSize: 28, fontWeight: '600', letterSpacing: -0.7 },

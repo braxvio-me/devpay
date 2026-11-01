@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, KeyboardAvoidingView, Platform, Modal, Alert, Linking } from 'react-native';
+import { View, StyleSheet, ScrollView, Pressable, KeyboardAvoidingView, Platform, Modal, Linking } from 'react-native';
+import { Dialog } from '@/lib/dialog';
+import { Text } from '@/components/ui-text';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -7,6 +9,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn, FadeInDown, FadeOut, LinearTransition } from 'react-native-reanimated';
+import { useOnline, offlineAlert } from '@/hooks/use-online';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Avatar, CompanyLogo, ListRow, Sheet } from '@/components/ds';
 import { ChatWallpaper } from '@/components/chat/wallpaper';
@@ -49,8 +52,9 @@ const now = () => {
 export default function ChatDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const online = useOnline();
   const thread = getThread(id);
   const scroll = useRef<React.ComponentRef<typeof ScrollView>>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -95,6 +99,7 @@ export default function ChatDetailScreen() {
   };
 
   const push = (m: Omit<ChatMessage, 'id' | 'time' | 'sender' | 'status' | 'fresh'>) => {
+    if (!online) return offlineAlert('send messages');
     setMessages((prev) => [...prev, { ...m, id: `m${Date.now()}${Math.random()}`, sender: 'me', time: now(), status: 'sent', fresh: true }]);
     scrollEnd();
     simulateReply();
@@ -104,7 +109,7 @@ export default function ChatDetailScreen() {
     setSheet(false);
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert('Camera access needed', 'Allow camera access to take photos in chat.', [
+      Dialog.alert('Camera access needed', 'Allow camera access to take photos in chat.', [
         { text: 'Not now', style: 'cancel' },
         ...(Platform.OS !== 'web' ? [{ text: 'Open Settings', onPress: () => Linking.openSettings() }] : []),
       ]);
@@ -137,7 +142,7 @@ export default function ChatDetailScreen() {
 
   const confirmDelete = (m: ChatMessage) =>
     m.sender === 'me' &&
-    Alert.alert('Delete message?', 'It will be removed for you.', [
+    Dialog.alert('Delete message?', 'It will be removed for you.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: () => setMessages((prev) => prev.filter((x) => x.id !== m.id)) },
     ]);
@@ -175,13 +180,15 @@ export default function ChatDetailScreen() {
                 <MaterialCommunityIcons name="check-decagram" size={14} color={colors.primary} />
               </View>
               {typing ? (
-                <Animated.Text key="typing" entering={FadeIn.duration(150)} style={[styles.sub, { color: colors.primaryText }]}>
-                  typing…
-                </Animated.Text>
+                <Animated.View key="typing" entering={FadeIn.duration(150)}>
+                  <Text style={[styles.sub, { color: colors.primaryText }]}>typing…</Text>
+                </Animated.View>
               ) : (
-                <Animated.Text key="status" entering={FadeIn.duration(150)} style={[styles.sub, { color: colors.textSecondary }]} numberOfLines={1}>
+                <Animated.View key="status" entering={FadeIn.duration(150)}>
+                  <Text style={[styles.sub, { color: colors.textSecondary }]} numberOfLines={1}>
                   {thread.online ? 'online' : 'last seen recently'}
-                </Animated.Text>
+                  </Text>
+                </Animated.View>
               )}
             </View>
           </Pressable>
@@ -239,7 +246,7 @@ export default function ChatDetailScreen() {
           </ScrollView>
         </View>
 
-        <View style={{ backgroundColor: isDark ? 'rgba(12,19,23,0.6)' : 'rgba(255,255,255,0.35)' }}>
+        <View style={{ backgroundColor: colors.surface, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }}>
           <Composer
             bottomInset={insets.bottom}
             onSendText={(text) => push({ kind: 'text', text })}

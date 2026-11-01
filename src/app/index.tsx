@@ -1,14 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { Text } from '@/components/ui-text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRole } from '@/contexts/RoleContext';
 import { useVerification } from '@/contexts/VerificationContext';
+import { useAuth, useCurrentUser } from '@/contexts/AuthContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { requestPermission, scheduleDeadline } from '@/lib/notify';
+import { nextReminder } from '@/constants/projects';
 
 import { DevPayHeader } from '@/components/devpay-header';
+import { WalletCard, cardDigits } from '@/components/wallet-card';
 import { ReminderCard } from '@/components/reminder-card';
 import { SearchBar } from '@/components/search-bar';
 import { CategoryPills } from '@/components/category-pills';
@@ -32,7 +37,7 @@ import {
 } from '@/components/ds';
 import { Jobs, JobCategories, Job } from '@/constants/jobs';
 import { ApplicantFaces } from '@/constants/media';
-import { Gradients, Layout, Radius, Shadows } from '@/constants/theme';
+import { Layout, Radius, Shadows } from '@/constants/theme';
 
 const LOCATIONS = ['East Legon, Accra', 'Osu, Accra', 'Airport City, Accra', 'Kumasi', 'Tema', 'Takoradi', 'Remote'];
 
@@ -50,8 +55,34 @@ export default function HomeScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [jobs, setJobs] = useState<Job[]>(Jobs);
-  const [location, setLocation] = useState('East Legon, Accra');
+  const { user, updateProfile } = useAuth();
+  const location = user?.location ?? 'Accra';
+  const setLocation = (l: string) => updateProfile({ location: l });
   const [locationOpen, setLocationOpen] = useState(false);
+
+  // First sign-in after sign-up: freelancers set up their profile, clients go straight in.
+  // Ask for notification permission once, on the first visit to Home.
+  useEffect(() => {
+    AsyncStorage.getItem('devpay_notif_asked').then((asked) => {
+      if (asked) return;
+      AsyncStorage.setItem('devpay_notif_asked', '1').catch(() => {});
+      requestPermission().catch(() => {});
+    });
+  }, []);
+
+  const reminder = nextReminder(isClient ? 'client' : 'freelancer');
+  useEffect(() => {
+    if (!reminder) return;
+    scheduleDeadline(`${reminder.projectId}-${reminder.milestoneId}`, reminder.title, reminder.subtitle, reminder.dueAt, reminder.route).catch(() => {});
+  }, [reminder]);
+
+  const setupShownFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!user?.isNew || setupShownFor.current === user.id) return;
+    setupShownFor.current = user.id;
+    // Both roles fill in their profile the first time.
+    router.push('/profile-setup');
+  }, [router, user?.id, user?.isNew]);
 
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 700);
@@ -93,7 +124,7 @@ export default function HomeScreen() {
 
   const handleTabSelect = (tab: TabType) => {
     setActiveTab(tab);
-    if (tab === 'jobs') router.push(isClient ? '/explore' : '/contracts');
+    if (tab === 'jobs') router.push('/contracts');
     if (tab === 'chats') router.push('/messages');
     if (tab === 'profile') router.push('/profile');
   };
@@ -119,16 +150,14 @@ export default function HomeScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />
           }>
           {isClient ? (
-            <ClientDashboard
-              query={clientSearchQuery}
-              onQuery={setClientSearchQuery}
-            />
+            <>
+              <ReminderCard reminder={reminder} onPress={() => reminder && router.push(reminder.route as never)} />
+              <View style={{ height: 16 }} />
+              <ClientDashboard query={clientSearchQuery} onQuery={setClientSearchQuery} />
+            </>
           ) : (
             <>
-              <ReminderCard
-                subtitle="Milestone 2 due in 2 hours"
-                countdown="945"
-                onPress={() => router.push('/contracts')}>
+              <ReminderCard reminder={reminder} onPress={() => reminder && router.push(reminder.route as never)}>
                 <SearchBar
                   value={searchQuery}
                   onChangeText={setSearchQuery}
@@ -214,7 +243,7 @@ export default function HomeScreen() {
       <FloatingTabBar
         activeTab={activeTab}
         onSelectTab={handleTabSelect}
-        onCenterActionPress={() => router.push(isClient ? '/job/create' : '/explore')}
+        onCenterActionPress={() => router.push('/assistant')}
       />
       <Sheet visible={locationOpen} onClose={() => setLocationOpen(false)} title="Your location">
         {LOCATIONS.map((l, i) => (
@@ -240,6 +269,8 @@ function ClientDashboard({ query, onQuery }: { query: string; onQuery: (q: strin
   const router = useRouter();
   const { colors } = useTheme();
   const { verified } = useVerification();
+  const { user } = useAuth();
+  const me = useCurrentUser();
 
   const quick = [
     { icon: 'document-text' as const, label: 'Post job', to: '/job/create' },
@@ -258,27 +289,19 @@ function ClientDashboard({ query, onQuery }: { query: string; onQuery: (q: strin
         onSubmitEditing={() => router.push('/explore')}
       />
 
-      <View style={[styles.escrowCard, Shadows.lifted]}>
-        <LinearGradient colors={Gradients.card} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.escrowInner}>
-          <View style={styles.rowBetween}>
-            <Text style={styles.escrowLabel}>Held in escrow</Text>
-            <View style={styles.escrowBadge}>
-              <Text style={styles.escrowBadgeText}>3 active contracts</Text>
-            </View>
-          </View>
-          <Text style={styles.escrowAmount}>GH₵ 28,500.00</Text>
-          <View style={styles.escrowSplit}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.escrowSmall}>Released</Text>
-              <Text style={styles.escrowSmallVal}>GH₵ 14,200</Text>
-            </View>
-            <View style={styles.escrowDivider} />
-            <View style={{ flex: 1, paddingLeft: 16 }}>
-              <Text style={styles.escrowSmall}>Awaiting release</Text>
-              <Text style={styles.escrowSmallVal}>GH₵ 14,300</Text>
-            </View>
-          </View>
-        </LinearGradient>
+      <View style={styles.escrowCard}>
+        <WalletCard
+          tone="escrow"
+          label="Held in escrow"
+          amount="GH₵ 28,500.00"
+          holder={me.name}
+          last4={cardDigits(user?.id)}
+          badge="3 active"
+          breakdown={[
+            { label: 'Released', value: 'GH₵ 14,200' },
+            { label: 'Awaiting release', value: 'GH₵ 14,300' },
+          ]}
+        />
       </View>
 
       {!verified && (
@@ -360,15 +383,6 @@ const styles = StyleSheet.create({
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   row4: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   escrowCard: { marginTop: 18, borderRadius: Radius.xl },
-  escrowInner: { borderRadius: Radius.xl, padding: 20, gap: 6 },
-  escrowLabel: { color: 'rgba(255,255,255,0.9)', fontSize: 13, fontWeight: '500' },
-  escrowBadge: { backgroundColor: 'rgba(255,255,255,0.22)', paddingHorizontal: 10, height: 26, borderRadius: Radius.pill, justifyContent: 'center' },
-  escrowBadgeText: { color: '#FFFFFF', fontSize: 12, fontWeight: '500' },
-  escrowAmount: { color: '#FFFFFF', fontSize: 30, fontWeight: '600', letterSpacing: -0.8, fontVariant: ['tabular-nums'] },
-  escrowSplit: { flexDirection: 'row', marginTop: 12, paddingTop: 14, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.25)' },
-  escrowDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.25)' },
-  escrowSmall: { color: 'rgba(255,255,255,0.82)', fontSize: 12 },
-  escrowSmallVal: { color: '#FFFFFF', fontSize: 15, fontWeight: '600', marginTop: 2, fontVariant: ['tabular-nums'] },
   verifyCard: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 16 },
   verifyIcon: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
   quickRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 },

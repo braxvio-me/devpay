@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
+import { Text } from '@/components/ui-text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRole } from '@/contexts/RoleContext';
 import { Appear, Button, GlassCard, IconButton, ScreenBackground, SectionHeader, StatusPill, TopBar } from '@/components/ds';
-import { Gradients, Layout, Radius, Shadows } from '@/constants/theme';
+import { Layout } from '@/constants/theme';
+import { WalletCard, cardDigits } from '@/components/wallet-card';
+import { useAuth, useCurrentUser } from '@/contexts/AuthContext';
 
 interface Transaction {
   id: string;
@@ -25,6 +27,8 @@ export default function EarningsScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { isClient } = useRole();
+  const { user } = useAuth();
+  const me = useCurrentUser();
 
   const available = isClient ? 28500 : 2450;
   const pending = isClient ? 14200 : 1800;
@@ -59,61 +63,52 @@ export default function EarningsScreen() {
           title={isClient ? 'Escrow wallet' : 'Earnings'}
           right={
             <IconButton
-              icon="download-outline"
-              accessibilityLabel="Download statement"
-              onPress={() => Alert.alert('Statement on its way', 'We’ll email this month’s PDF statement to you.')}
+              icon="receipt-outline"
+              accessibilityLabel="Receipts"
+              onPress={() => router.push('/receipts')}
             />
           }
         />
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <View style={[styles.walletShadow, Shadows.lifted]}>
-            <LinearGradient colors={Gradients.card} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.wallet}>
-              <View style={styles.rowBetween}>
-                <Text style={styles.wLabel}>{isClient ? 'Escrow balance' : 'Available to withdraw'}</Text>
-                <View style={styles.wBadge}>
-                  <Text style={styles.wBadgeText}>GHS</Text>
-                </View>
-              </View>
-              <Text style={styles.wAmount}>{cedis(available)}</Text>
-              <View style={styles.wPending}>
-                <Ionicons name="lock-closed" size={13} color="rgba(255,255,255,0.9)" />
-                <Text style={styles.wPendingText}>
-                  {cedis(pending)} {isClient ? 'released to freelancers' : 'held in active milestones'}
-                </Text>
-              </View>
-              <View style={styles.wActions}>
-                {isClient ? (
-                  <Button
-                    label="Deposit"
-                    variant="light"
-                    size="md"
-                    style={{ flex: 1 }}
-                    icon={<Ionicons name="add" size={18} color={colors.text} />}
-                    onPress={() => router.push('/payment')}
-                  />
-                ) : (
-                  <>
-                    <Button
-                      label="Withdraw"
-                      variant="light"
-                      size="md"
-                      style={{ flex: 1 }}
-                      icon={<Ionicons name="arrow-down" size={17} color={colors.text} />}
-                      onPress={() => router.push('/withdraw')}
-                    />
-                    <Button
-                      label="Top up"
-                      variant="ghost"
-                      size="md"
-                      fg="#FFFFFF"
-                      style={[{ flex: 1 }, styles.ghostOnBlue]}
-                      icon={<Ionicons name="add" size={18} color="#FFFFFF" />}
-                      onPress={() => router.push('/payment')}
-                    />
-                  </>
-                )}
-              </View>
-            </LinearGradient>
+          <WalletCard
+            tone={isClient ? 'escrow' : 'earnings'}
+            label={isClient ? 'Escrow balance' : 'Available to withdraw'}
+            amount={cedis(available)}
+            holder={me.name}
+            last4={cardDigits(user?.id)}
+            badge="GHS"
+            breakdown={
+              isClient
+                ? [
+                    { label: 'Released', value: cedis(pending) },
+                    { label: 'Fee', value: 'Free' },
+                  ]
+                : [
+                    { label: 'In milestones', value: cedis(pending) },
+                    { label: 'Payout', value: 'MTN MoMo' },
+                  ]
+            }
+          />
+          <View style={styles.wActions}>
+            {isClient ? (
+              <Button label="Deposit" style={{ flex: 1 }} icon={<Ionicons name="add" size={18} color="#FFFFFF" />} onPress={() => router.push('/payment')} />
+            ) : (
+              <>
+                <Button
+                  label="Withdraw"
+                  style={{ flex: 1 }}
+                  icon={<Ionicons name="arrow-down" size={17} color="#FFFFFF" />}
+                  onPress={() => router.push('/withdraw')}
+                />
+                <Button
+                  label="Top up"
+                  variant="soft"
+                  style={{ flex: 1 }}
+                  icon={<Ionicons name="add" size={18} color={colors.primaryText} />}
+                  onPress={() => router.push('/payment')}
+                />
+              </>
+            )}
           </View>
 
           <View style={styles.stats}>
@@ -168,16 +163,7 @@ export default function EarningsScreen() {
 const styles = StyleSheet.create({
   content: { paddingHorizontal: Layout.margin, paddingBottom: 48, paddingTop: 8 },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  walletShadow: { borderRadius: Radius.xl },
-  wallet: { borderRadius: Radius.xl, padding: 20 },
-  wLabel: { color: 'rgba(255,255,255,0.9)', fontSize: 13, fontWeight: '500' },
-  wBadge: { backgroundColor: 'rgba(255,255,255,0.22)', paddingHorizontal: 10, height: 24, borderRadius: Radius.pill, justifyContent: 'center' },
-  wBadgeText: { color: '#FFFFFF', fontSize: 11, fontWeight: '600' },
-  wAmount: { color: '#FFFFFF', fontSize: 34, fontWeight: '600', letterSpacing: -1, marginTop: 8, fontVariant: ['tabular-nums'] },
-  wPending: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
-  wPendingText: { color: 'rgba(255,255,255,0.9)', fontSize: 13 },
-  wActions: { flexDirection: 'row', gap: 10, marginTop: 20 },
-  ghostOnBlue: { borderWidth: 1, borderColor: 'rgba(255,255,255,0.5)' },
+  wActions: { flexDirection: 'row', gap: 10, marginTop: 18 },
   stats: { flexDirection: 'row', gap: 10, marginTop: 16 },
   stat: { flex: 1, padding: 14, gap: 4 },
   statLabel: { fontSize: 12 },

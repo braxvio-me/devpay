@@ -1,26 +1,16 @@
 /**
- * Ultra-Premium Liquid Glassmorphic Notification Banner for DevPay
- * Inspired by iPhone Dynamic Island & Samsung OneUI morphism.
- * Also schedules native phone notifications for the device notification center.
+ * In-app toast: short confirmation shown at the top of the screen.
+ * Solid, theme-aware card; slides down, auto-hides, tap to dismiss.
  */
 import React, { useRef, useCallback, forwardRef, useImperativeHandle, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  withTiming,
-  Easing,
-} from 'react-native-reanimated';
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
+import { Text } from '@/components/ui-text';
+import { useTheme } from '@/contexts/ThemeContext';
+import { Radius } from '@/constants/theme';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -29,7 +19,7 @@ export interface ToastConfig {
   message?: string;
   type?: ToastType;
   duration?: number; // ms — default 4000
-  category?: string; // e.g. "DEVPAY ESCROW", "MILESTONE", "MESSAGE"
+  category?: string;
   important?: boolean;
 }
 
@@ -38,138 +28,64 @@ export interface ToastHandle {
   hide: () => void;
 }
 
-const ICON_MAP: Record<ToastType, keyof typeof Ionicons.glyphMap> = {
-  success: 'shield-checkmark',
-  error: 'alert-circle',
-  info: 'information-circle',
+const ICON: Record<ToastType, keyof typeof Ionicons.glyphMap> = {
+  success: 'checkmark',
+  error: 'alert',
+  info: 'information',
   warning: 'warning',
-};
-
-const ACCENT_COLORS: Record<ToastType, { badge: string; icon: string; glow: string }> = {
-  success: { badge: '#1FAE7A', icon: '#FFFFFF', glow: 'rgba(16, 185, 129, 0.35)' },
-  error:   { badge: '#E5484D', icon: '#FFFFFF', glow: 'rgba(239, 68, 68, 0.35)' },
-  info:    { badge: '#E5484D', icon: '#FFFFFF', glow: 'rgba(225, 29, 72, 0.35)' },
-  warning: { badge: '#E9A23B', icon: '#FFFFFF', glow: 'rgba(245, 158, 11, 0.35)' },
 };
 
 export const Toast = forwardRef<ToastHandle>((_, ref) => {
   const insets = useSafeAreaInsets();
-  const translateY = useSharedValue(-160);
-  const scale = useSharedValue(0.92);
+  const { colors } = useTheme();
+  const y = useSharedValue(-140);
   const opacity = useSharedValue(0);
   const [config, setConfig] = useState<ToastConfig | null>(null);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const hide = useCallback(() => {
-    translateY.set(withTiming(-160, { duration: 260, easing: Easing.bezier(0.77, 0, 0.175, 1) }));
-    scale.set(withTiming(0.92, { duration: 240 }));
-    opacity.set(withTiming(0, { duration: 220 }));
-  }, []);
+    y.set(withTiming(-140, { duration: 240, easing: Easing.in(Easing.cubic) }));
+    opacity.set(withTiming(0, { duration: 200 }));
+  }, [opacity, y]);
 
   const show = useCallback(
-    (newConfig: ToastConfig) => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-      setConfig(newConfig);
-
-      // Trigger tactile haptics
-      Haptics.notificationAsync(
-        newConfig.type === 'error'
-          ? Haptics.NotificationFeedbackType.Error
-          : Haptics.NotificationFeedbackType.Success
-      );
-
-      // Animate liquid glass notification drop
-      translateY.set(withSpring(0, { damping: 18, mass: 0.8, stiffness: 190 }));
-      scale.set(withSpring(1, { dampingRatio: 0.72 }));
-      opacity.set(withTiming(1, { duration: 180 }));
-
-      timerRef.current = setTimeout(() => {
-        hide();
-      }, newConfig.duration ?? 4200);
+    (next: ToastConfig) => {
+      if (timer.current) clearTimeout(timer.current);
+      setConfig(next);
+      Haptics.notificationAsync(next.type === 'error' ? Haptics.NotificationFeedbackType.Error : Haptics.NotificationFeedbackType.Success).catch(() => {});
+      y.set(withSpring(0, { duration: 420, dampingRatio: 0.8 }));
+      opacity.set(withTiming(1, { duration: 160 }));
+      timer.current = setTimeout(hide, next.duration ?? 4000);
     },
-    [hide]
+    [hide, opacity, y]
   );
 
   useImperativeHandle(ref, () => ({ show, hide }));
 
-  const animStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.get() }, { scale: scale.get() }],
-    opacity: opacity.get(),
-  }));
+  const anim = useAnimatedStyle(() => ({ transform: [{ translateY: y.get() }], opacity: opacity.get() }));
 
   if (!config) return null;
-
   const type = config.type ?? 'info';
-  const colors = ACCENT_COLORS[type];
-  const category = config.category ?? 'DEVPAY ESCROW';
+  const tone = { success: colors.accentGreen, error: colors.accentCoral, info: colors.action, warning: colors.accentAmber }[type];
 
   return (
-    <Animated.View
-      style={[
-        styles.outerContainer,
-        { top: Math.max(14, insets.top + 6) },
-        animStyle,
-      ]}>
-      {/* Liquid Glassmorphism Body */}
-      <TouchableOpacity
-        activeOpacity={0.92}
-        onPress={hide}
-        style={styles.cardTouchWrap}>
-        <LinearGradient
-          colors={[
-            'rgba(255, 255, 255, 0.88)',
-            'rgba(255, 255, 255, 0.65)',
-            'rgba(248, 250, 252, 0.82)',
-          ]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.glassBody}>
-          {/* Top Specular Sheen line */}
-          <LinearGradient
-            colors={['rgba(255, 255, 255, 0.95)', 'rgba(255, 255, 255, 0.1)']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.specularTopLine}
-          />
-
-          <View style={styles.cardContent}>
-            {/* App / Category Squircle Badge */}
-            <View style={[styles.badgeSquircle, { backgroundColor: colors.badge }]}>
-              <Ionicons name={ICON_MAP[type]} size={18} color={colors.icon} />
-            </View>
-
-            {/* Notification Text Column */}
-            <View style={styles.textColumn}>
-              {/* Top Meta Tag Row: "DEVPAY ESCROW • now" */}
-              <View style={styles.metaRow}>
-                <Text style={styles.categoryTag}>{category}</Text>
-                <View style={styles.metaDot} />
-                <Text style={styles.metaTime}>now</Text>
-              </View>
-
-              {/* Title */}
-              <Text style={styles.titleText} numberOfLines={1}>
-                {config.title}
-              </Text>
-
-              {/* Message */}
-              {config.message ? (
-                <Text style={styles.messageText} numberOfLines={2}>
-                  {config.message}
-                </Text>
-              ) : null}
-            </View>
-
-            {/* Dismiss Cross */}
-            <TouchableOpacity
-              style={styles.closeBtn}
-              onPress={hide}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <Ionicons name="close" size={16} color="#6B7378" />
-            </TouchableOpacity>
-          </View>
-        </LinearGradient>
-      </TouchableOpacity>
+    <Animated.View style={[styles.wrap, { top: Math.max(14, insets.top + 6) }, anim]} accessibilityLiveRegion="polite" accessibilityRole="alert">
+      <Pressable onPress={hide} style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]} accessibilityHint="Dismiss">
+        <View style={[styles.icon, { backgroundColor: tone }]}>
+          <Ionicons name={ICON[type]} size={16} color="#FFFFFF" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
+            {config.title}
+          </Text>
+          {config.message ? (
+            <Text style={[styles.message, { color: colors.textSecondary }]} numberOfLines={2}>
+              {config.message}
+            </Text>
+          ) : null}
+        </View>
+        <Ionicons name="close" size={16} color={colors.textMuted} />
+      </Pressable>
     </Animated.View>
   );
 });
@@ -178,110 +94,26 @@ Toast.displayName = 'Toast';
 
 export function useToast() {
   const toastRef = useRef<ToastHandle>(null);
-
-  const show = useCallback((config: ToastConfig) => {
-    toastRef.current?.show(config);
-  }, []);
-
-  const hide = useCallback(() => {
-    toastRef.current?.hide();
-  }, []);
-
+  const show = useCallback((config: ToastConfig) => toastRef.current?.show(config), []);
+  const hide = useCallback(() => toastRef.current?.hide(), []);
   return { ref: toastRef, toastRef, show, hide };
 }
 
 const styles = StyleSheet.create({
-  outerContainer: {
-    position: 'absolute',
-    left: 16,
-    right: 16,
-    zIndex: 99999,
-    alignItems: 'center',
-  },
-  cardTouchWrap: {
+  wrap: { position: 'absolute', left: 16, right: 16, zIndex: 99999, alignItems: 'center' },
+  card: {
     width: '100%',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.16,
-    shadowRadius: 26,
-    elevation: 16,
-  },
-  glassBody: {
-    borderRadius: 26,
+    maxWidth: 520,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
     paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.65)',
-    overflow: 'hidden',
-    position: 'relative',
+    paddingHorizontal: 14,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    boxShadow: '0px 10px 24px rgba(15, 30, 39, 0.14)',
   },
-  specularTopLine: {
-    position: 'absolute',
-    top: 0,
-    left: 20,
-    right: 20,
-    height: 1.5,
-    borderRadius: 1,
-  },
-  cardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  badgeSquircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  textColumn: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 2,
-    gap: 5,
-  },
-  categoryTag: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#6B7378',
-  },
-  metaDot: {
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
-    backgroundColor: '#8E979D',
-  },
-  metaTime: {
-    fontSize: 10,
-    fontWeight: '500',
-    color: '#8E979D',
-  },
-  titleText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#17191C',
-    letterSpacing: -0.2,
-  },
-  messageText: {
-    fontSize: 12,
-    lineHeight: 16,
-    color: '#24323A',
-    marginTop: 2,
-  },
-  closeBtn: {
-    padding: 6,
-    marginLeft: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  icon: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+  title: { fontSize: 14, fontWeight: '600' },
+  message: { fontSize: 13, lineHeight: 18, marginTop: 2 },
 });

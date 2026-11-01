@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { Text, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable } from 'react-native';
+import { Text } from '@/components/ui-text';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { AuthShell, PhoneField } from '@/components/auth-shell';
 import { Button, Field, Segmented } from '@/components/ds';
 
@@ -17,20 +19,27 @@ export default function RegisterScreen() {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [agreed, setAgreed] = useState(true);
   const [submitted, setSubmitted] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [accountError, setAccountError] = useState<string>();
+  const { startSignUp } = useAuth();
 
   const errors = {
     fullName: fullName.trim().length < 2 ? 'Enter your full name.' : undefined,
     phone: phone.replace(/\s/g, '').length < 9 ? 'Enter a 9-digit Ghana number.' : undefined,
     password: password.length < 8 ? 'Use at least 8 characters.' : undefined,
   };
-  const valid = !errors.fullName && !errors.phone && !errors.password && agreed;
+  const valid = !errors.fullName && !errors.phone && !errors.password;
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     setSubmitted(true);
+    setAccountError(undefined);
     if (!valid) return;
-    router.push({ pathname: '/verify-otp', params: { phone, role } });
+    setBusy(true);
+    const err = await startSignUp({ name: fullName, phone, email, password, role });
+    setBusy(false);
+    if (err) return setAccountError(err);
+    router.push('/verify-otp');
   };
 
   return (
@@ -40,7 +49,7 @@ export default function RegisterScreen() {
       step={{ index: 2, total: 3 }}
       footer={
         <>
-          <Button label="Create Account" onPress={handleRegister} />
+          <Button label="Create Account" loading={busy} onPress={handleRegister} />
           <Pressable onPress={() => router.push('/login')} style={styles.footer} accessibilityRole="link">
             <Text style={[styles.footerText, { color: colors.textSecondary }]}>
               Already have an account? <Text style={{ color: colors.text, fontWeight: '600' }}>Sign In</Text>
@@ -86,19 +95,17 @@ export default function RegisterScreen() {
         onChangeText={setPassword}
         error={submitted ? errors.password : undefined}
       />
-      <Pressable
-        onPress={() => setAgreed((a) => !a)}
-        style={styles.terms}
-        accessibilityRole="checkbox"
-        accessibilityState={{ checked: agreed }}>
-        <Ionicons name={agreed ? 'checkbox' : 'square-outline'} size={20} color={agreed ? colors.primary : colors.textMuted} />
+      <View style={styles.terms}>
+        <Ionicons name="document-text-outline" size={18} color={colors.textMuted} />
         <Text style={[styles.termsText, { color: colors.textSecondary }]}>
-          I agree to the <Text style={{ color: colors.primaryText }}>Terms of Service</Text> and{' '}
-          <Text style={{ color: colors.primaryText }}>Escrow Policy</Text>.
+          After you verify your number, you’ll read and accept our Terms, Privacy, Escrow and other policies, one page at a time.
         </Text>
-      </Pressable>
-      {submitted && !agreed && (
-        <Text style={[styles.err, { color: colors.accentCoral }]}>Accept the terms to continue.</Text>
+      </View>
+      {accountError && (
+        <View style={[styles.accountErr, { backgroundColor: colors.coralSoft }]}>
+          <Ionicons name="alert-circle" size={18} color={colors.accentCoral} />
+          <Text style={[styles.accountErrText, { color: colors.text }]}>{accountError}</Text>
+        </View>
       )}
     </AuthShell>
   );
@@ -107,6 +114,8 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   terms: { flexDirection: 'row', gap: 10, alignItems: 'flex-start', paddingHorizontal: 4 },
   termsText: { flex: 1, fontSize: 13, lineHeight: 19 },
+  accountErr: { flexDirection: 'row', gap: 10, padding: 14, borderRadius: 16, alignItems: 'flex-start' },
+  accountErrText: { flex: 1, fontSize: 13, lineHeight: 19 },
   err: { fontSize: 12, marginTop: -10, marginLeft: 4 },
   footer: { alignItems: 'center', paddingVertical: 8 },
   footerText: { fontSize: 13 },

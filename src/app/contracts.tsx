@@ -1,101 +1,66 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, StyleSheet, ScrollView } from 'react-native';
+import { Text } from '@/components/ui-text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRole } from '@/contexts/RoleContext';
 import { FloatingTabBar, TabType } from '@/components/floating-tab-bar';
-import { SuccessOverlay } from '@/components/success-overlay';
-import {
-  Appear,
-  Avatar,
-  Button,
-  CompanyLogo,
-  Field,
-  GlassCard,
-  IconButton,
-  ScreenBackground,
-  Segmented,
-  Sheet,
-  StatusPill,
-  useNavClearance,
-} from '@/components/ds';
-import { SummaryRow } from '@/components/payments';
-import { Companies, Company } from '@/constants/companies';
-import { Portraits } from '@/constants/media';
-import { Layout, Radius } from '@/constants/theme';
+import { SearchBar } from '@/components/search-bar';
+import { LatestJobCard } from '@/components/latest-job-card';
+import { ProjectCard } from '@/components/project-card';
+import { Appear, Button, Chip, GlassCard, IconButton, ScreenBackground, StatusPill, useNavClearance } from '@/components/ds';
+import { Jobs, JobCategories } from '@/constants/jobs';
+import { Projects, ProjectStatus, projectTotals, cedis } from '@/constants/projects';
+import { Layout } from '@/constants/theme';
 
-type Status = 'In Progress' | 'In Review' | 'Released';
+type Tab = 'open' | ProjectStatus;
 
-interface Contract {
-  id: string;
-  company?: Company;
-  person?: { name: string; avatar: string };
-  title: string;
-  total: string;
-  milestone: { index: number; count: number; title: string; amount: string; status: Status; due: string; revisions: number };
-}
+/** The client's own job posts (demo). */
+const MY_POSTS = [
+  { id: 'j1', title: 'React Native Engineer (MoMo SDK)', budget: 'GH₵ 4,500', proposals: 3, posted: '2 days ago' },
+  { id: 'j2', title: 'Checkout UX audit', budget: 'GH₵ 1,800', proposals: 7, posted: '5 days ago' },
+];
 
-export default function ContractsScreen() {
+export default function WorkScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { isClient } = useRole();
   const navClearance = useNavClearance();
-  const [segment, setSegment] = useState<'active' | 'completed'>('active');
-  const [submitFor, setSubmitFor] = useState<Contract | null>(null);
-  const [notes, setNotes] = useState('');
-  const [link, setLink] = useState('');
-  const [notesError, setNotesError] = useState<string>();
-  const [submitted, setSubmitted] = useState(false);
-  const [receiptFor, setReceiptFor] = useState<Contract | null>(null);
+  const [tab, setTab] = useState<Tab>('open');
+  const [query, setQuery] = useState('');
+  const [category, setCategory] = useState('See All');
+  const [jobs, setJobs] = useState(Jobs);
 
-  const party = (c: Company, name: string, avatar: string) =>
-    isClient ? { person: { name, avatar } } : { company: c };
-
-  const active: Contract[] = [
-    {
-      id: 'c_1',
-      ...party(Companies.volta, 'Kwame Mensah', Portraits.kwame),
-      title: 'MoMo checkout redesign',
-      total: 'GH₵ 4,500',
-      milestone: { index: 2, count: 3, title: 'Design system & tokens', amount: 'GH₵ 2,000', status: isClient ? 'In Review' : 'In Progress', due: '3 days left', revisions: 0 },
-    },
-    {
-      id: 'c_2',
-      ...party(Companies.sankofa, 'Akosua Serwaa', Portraits.akosua),
-      title: 'Booking app checkout',
-      total: 'GH₵ 3,200',
-      milestone: { index: 1, count: 2, title: 'Prototype & checkout flow', amount: 'GH₵ 1,600', status: 'In Review', due: 'Auto-approves in 4 days', revisions: 1 },
-    },
+  const byStatus = (s: ProjectStatus) => Projects.filter((p) => p.status === s);
+  const tabs: { id: Tab; label: string; count: number }[] = [
+    { id: 'open', label: isClient ? 'My posts' : 'Find jobs', count: isClient ? MY_POSTS.length : Jobs.length },
+    { id: 'active', label: 'Active', count: byStatus('active').length },
+    { id: 'review', label: 'In review', count: byStatus('review').length },
+    { id: 'completed', label: 'Completed', count: byStatus('completed').length },
   ];
-  const completed: Contract[] = [
-    {
-      id: 'c_3',
-      ...party(Companies.kente, 'Kofi Darko', Portraits.kofi),
-      title: 'Learning dashboard',
-      total: 'GH₵ 5,000',
-      milestone: { index: 3, count: 3, title: 'Final handoff', amount: 'GH₵ 1,500', status: 'Released', due: 'Paid 12 Oct', revisions: 1 },
-    },
-  ];
-  const list = segment === 'active' ? active : completed;
 
-  const submit = () => {
-    if (!notes.trim()) return setNotesError('Add a short summary so the client knows what to check.');
-    setSubmitFor(null);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    setSubmitted(true);
-    setNotes('');
-    setLink('');
-    setNotesError(undefined);
+  const openJobs = useMemo(() => {
+    const q = query.toLowerCase().trim();
+    return jobs.filter((j) => {
+      if (category !== 'See All' && j.category !== category) return false;
+      return !q || `${j.title} ${j.company.name} ${j.tags.join(' ')} ${j.location}`.toLowerCase().includes(q);
+    });
+  }, [category, jobs, query]);
+
+  const activeEscrow = byStatus('active')
+    .concat(byStatus('review'))
+    .reduce((s, p) => s + projectTotals(p).inEscrow, 0);
+
+  const onTab = (t: TabType) => {
+    if (t === 'home') router.replace('/');
+    if (t === 'chats') router.push('/messages');
+    if (t === 'profile') router.push('/profile');
   };
 
-  const onTab = (tab: TabType) => {
-    if (tab === 'home') router.replace('/');
-    if (tab === 'chats') router.push('/messages');
-    if (tab === 'profile') router.push('/profile');
-  };
+  const projects = tab === 'open' ? [] : byStatus(tab);
 
   return (
     <View style={{ flex: 1 }}>
@@ -103,177 +68,125 @@ export default function ContractsScreen() {
       <SafeAreaView edges={['top']} style={{ flex: 1 }}>
         <View style={styles.header}>
           <View style={styles.titleRow}>
-            <IconButton
-              icon="chevron-back"
-              accessibilityLabel="Go back"
-              onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-            />
+            <IconButton icon="chevron-back" accessibilityLabel="Go back" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
             <Text style={[styles.title, { color: colors.text }]} accessibilityRole="header">
-              Contracts
+              {isClient ? 'Projects' : 'My work'}
             </Text>
           </View>
           <IconButton icon="notifications-outline" accessibilityLabel="Notifications" badge onPress={() => router.push('/notifications')} />
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: Layout.margin, paddingBottom: navClearance }}>
-          <Segmented
-            value={segment}
-            onChange={setSegment}
-            options={[
-              { value: 'active', label: `Active (${active.length})` },
-              { value: 'completed', label: `Completed (${completed.length})` },
-            ]}
-          />
-
-          <View style={{ gap: 14, marginTop: 18 }}>
-            {list.map((c, i) => (
-              <Appear key={`${segment}-${c.id}`} index={i}>
-              <ContractCard
-                contract={c}
-                isClient={isClient}
-                onReview={() => router.push('/contracts/review')}
-                onSubmit={() => setSubmitFor(c)}
-                onChat={() => router.push('/chat/t_1' as any)}
-                onReceipt={() => setReceiptFor(c)}
-              />
-              </Appear>
+        <View style={styles.tabs}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.tabsContent, { alignItems: 'center' }]} accessibilityRole="tablist">
+            {tabs.map((t) => (
+              <Chip key={t.id} label={`${t.label} · ${t.count}`} selected={tab === t.id} onPress={() => setTab(t.id)} />
             ))}
-          </View>
+          </ScrollView>
+        </View>
+
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: Layout.margin, paddingBottom: navClearance }}>
+          <Animated.View key={tab} entering={FadeIn.duration(220)}>
+            {tab === 'open' && !isClient && (
+              <>
+                <SearchBar value={query} onChangeText={setQuery} placeholder="Search jobs, skills, companies..." />
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.cats} contentContainerStyle={styles.tabsContent}>
+                  {JobCategories.map((c) => (
+                    <Chip key={c} size="sm" label={c} selected={category === c} onPress={() => setCategory(c)} />
+                  ))}
+                </ScrollView>
+                <Text style={[styles.count, { color: colors.textSecondary }]}>
+                  {openJobs.length} open job{openJobs.length === 1 ? '' : 's'} · tap one for full details
+                </Text>
+                <View style={{ gap: 14 }}>
+                  {openJobs.map((j, i) => (
+                    <Appear key={j.id} index={i}>
+                      <LatestJobCard
+                        job={j}
+                        layout="search"
+                        onPress={() => router.push(`/job/${j.id}` as never)}
+                        onApplyPress={() => router.push(`/job/${j.id}` as never)}
+                        onBookmarkToggle={() => setJobs((prev) => prev.map((x) => (x.id === j.id ? { ...x, bookmarked: !x.bookmarked } : x)))}
+                      />
+                    </Appear>
+                  ))}
+                  {openJobs.length === 0 && <Empty icon="search" text="No jobs match. Try another skill or category." />}
+                </View>
+              </>
+            )}
+
+            {tab === 'open' && isClient && (
+              <>
+                <View style={styles.actions}>
+                  <Button label="Post a job" size="md" style={{ flex: 1 }} icon={<Ionicons name="add" size={18} color="#FFFFFF" />} onPress={() => router.push('/job/create')} />
+                  <Button
+                    label="Find talent"
+                    variant="light"
+                    size="md"
+                    style={{ flex: 1 }}
+                    icon={<Ionicons name="people-outline" size={18} color={colors.text} />}
+                    onPress={() => router.push('/explore')}
+                  />
+                </View>
+                <View style={{ gap: 14 }}>
+                  {MY_POSTS.map((post, i) => (
+                    <Appear key={post.id} index={i}>
+                      <GlassCard onPress={() => router.push('/job/applicants')} accessibilityLabel={`${post.title}, ${post.proposals} proposals`}>
+                        <View style={styles.postTop}>
+                          <StatusPill label="Hiring" tone="green" />
+                          <Text style={[styles.postedAgo, { color: colors.textSecondary }]}>Posted {post.posted}</Text>
+                        </View>
+                        <Text style={[styles.postTitle, { color: colors.text }]}>{post.title}</Text>
+                        <View style={styles.postFoot}>
+                          <Text style={[styles.postBudget, { color: colors.text }]}>{post.budget}</Text>
+                          <View style={styles.meta}>
+                            <Ionicons name="people-outline" size={15} color={colors.primaryText} />
+                            <Text style={[styles.link, { color: colors.primaryText }]}>{post.proposals} proposals</Text>
+                            <Ionicons name="chevron-forward" size={15} color={colors.primaryText} />
+                          </View>
+                        </View>
+                      </GlassCard>
+                    </Appear>
+                  ))}
+                </View>
+              </>
+            )}
+
+            {tab !== 'open' && (
+              <>
+                {(tab === 'active' || tab === 'review') && (
+                  <View style={[styles.note, { backgroundColor: colors.primaryWash }]}>
+                    <Ionicons name="shield-checkmark" size={16} color={colors.primaryText} />
+                    <Text style={[styles.noteText, { color: colors.text }]}>{cedis(activeEscrow)} held in escrow across your open projects.</Text>
+                  </View>
+                )}
+                <View style={{ gap: 14 }}>
+                  {projects.map((p, i) => (
+                    <Appear key={p.id} index={i}>
+                      <ProjectCard project={p} asClient={isClient} onPress={() => router.push(`/project/${p.id}` as never)} />
+                    </Appear>
+                  ))}
+                  {projects.length === 0 && <Empty icon="folder-open-outline" text="Nothing here yet." />}
+                </View>
+              </>
+            )}
+          </Animated.View>
         </ScrollView>
       </SafeAreaView>
 
-      <FloatingTabBar activeTab="jobs" onSelectTab={onTab} onCenterActionPress={() => router.push(isClient ? '/job/create' : '/explore')} />
-
-      <Sheet visible={!!submitFor} onClose={() => setSubmitFor(null)} title="Submit work">
-        <Text style={[styles.sheetSub, { color: colors.textSecondary }]}>
-          {submitFor?.milestone.title} · {submitFor?.milestone.amount}. The client gets 7 days to review before funds auto-release.
-        </Text>
-        <View style={{ gap: 14, marginTop: 14 }}>
-          <Field label="Link (GitHub, Figma, Drive)" icon="link-outline" placeholder="https://" autoCapitalize="none" value={link} onChangeText={setLink} />
-          <Field
-            label="What did you deliver?"
-            placeholder="Summary, setup steps, test accounts…"
-            multiline
-            value={notes}
-            onChangeText={(t) => {
-              setNotes(t);
-              if (notesError) setNotesError(undefined);
-            }}
-            error={notesError}
-          />
-          <Button label="Submit to Client" onPress={submit} />
-        </View>
-      </Sheet>
-
-      <Sheet visible={!!receiptFor} onClose={() => setReceiptFor(null)} title="Payment receipt">
-        {receiptFor && (
-          <GlassCard style={{ marginTop: 4 }}>
-            <SummaryRow label="Contract" value={receiptFor.title} />
-            <SummaryRow label="Milestone" value={receiptFor.milestone.title} />
-            <SummaryRow label="Released" value={receiptFor.milestone.due.replace('Paid ', '')} />
-            <SummaryRow label="Paid to" value="MTN MoMo · 024 123 4567" />
-            <SummaryRow label="Reference" value={`ESC-REL-${receiptFor.id.toUpperCase()}`} />
-            <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 6 }} />
-            <SummaryRow label="Amount" value={receiptFor.milestone.amount} strong />
-          </GlassCard>
-        )}
-        <Button label="Close" variant="soft" style={{ marginTop: 14 }} onPress={() => setReceiptFor(null)} />
-      </Sheet>
-
-      <SuccessOverlay
-        visible={submitted}
-        title="Work submitted"
-        subtitle="The client has been notified. Their 7-day review window starts now."
-        onDismiss={() => setSubmitted(false)}
-      />
+      <FloatingTabBar activeTab="jobs" onSelectTab={onTab} onCenterActionPress={() => router.push('/assistant')} />
     </View>
   );
 }
 
-function ContractCard({
-  contract: c,
-  isClient,
-  onReview,
-  onSubmit,
-  onChat,
-  onReceipt,
-}: {
-  contract: Contract;
-  isClient: boolean;
-  onReview: () => void;
-  onSubmit: () => void;
-  onChat: () => void;
-  onReceipt: () => void;
-}) {
+function Empty({ icon, text }: { icon: keyof typeof Ionicons.glyphMap; text: string }) {
   const { colors } = useTheme();
-  const m = c.milestone;
-  const tone = m.status === 'In Progress' ? 'blue' : m.status === 'In Review' ? 'amber' : 'green';
-  const name = c.company?.name ?? c.person?.name ?? '';
-
   return (
-    <GlassCard>
-      <View style={styles.top}>
-        {c.company ? <CompanyLogo mark={c.company.mark} size={42} /> : <Avatar uri={c.person!.avatar} size={42} ring={false} />}
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.party, { color: colors.textSecondary }]}>{name}</Text>
-          <Text style={[styles.cTitle, { color: colors.text }]} numberOfLines={2}>
-            {c.title}
-          </Text>
-        </View>
-        <Text style={[styles.total, { color: colors.text }]}>{c.total}</Text>
-      </View>
-
-      <View style={styles.progress} accessibilityLabel={`Milestone ${m.index} of ${m.count}`}>
-        {Array.from({ length: m.count }).map((_, i) => (
-          <View
-            key={i}
-            style={[
-              styles.seg,
-              { backgroundColor: i < m.index - 1 || m.status === 'Released' ? colors.accentGreen : i === m.index - 1 ? colors.primary : colors.backgroundSelected },
-            ]}
-          />
-        ))}
-      </View>
-
-      <View style={[styles.milestone, { backgroundColor: colors.backgroundElement }]}>
-        <View style={styles.mTop}>
-          <Text style={[styles.mLabel, { color: colors.textSecondary }]}>
-            Milestone {m.index} of {m.count}
-          </Text>
-          <StatusPill label={m.status} tone={tone} />
-        </View>
-        <View style={styles.mTop}>
-          <Text style={[styles.mTitle, { color: colors.text }]}>{m.title}</Text>
-          <Text style={[styles.mAmount, { color: colors.text }]}>{m.amount}</Text>
-        </View>
-        <View style={styles.meta}>
-          <View style={styles.metaItem}>
-            <Ionicons name="time-outline" size={14} color={colors.textSecondary} />
-            <Text style={[styles.metaText, { color: colors.textSecondary }]}>{m.due}</Text>
-          </View>
-          <View style={styles.metaItem}>
-            <Ionicons name="refresh-outline" size={14} color={colors.textSecondary} />
-            <Text style={[styles.metaText, { color: colors.textSecondary }]}>{m.revisions}/2 revisions</Text>
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.actions}>
-        <Button label="Chat" variant="soft" size="md" style={{ width: 96 }} onPress={onChat} />
-        {m.status === 'Released' ? (
-          <Button label="Paid · View receipt" variant="light" size="md" style={{ flex: 1 }} onPress={onReceipt} />
-        ) : isClient ? (
-          m.status === 'In Review' ? (
-            <Button label="Review & release" size="md" style={{ flex: 1 }} onPress={onReview} />
-          ) : (
-            <Button label="Work in progress" variant="light" size="md" disabled style={{ flex: 1 }} />
-          )
-        ) : m.status === 'In Progress' ? (
-          <Button label="Submit work" size="md" style={{ flex: 1 }} onPress={onSubmit} />
-        ) : (
-          <Button label="Client is reviewing" variant="light" size="md" disabled style={{ flex: 1 }} />
-        )}
-      </View>
+    <GlassCard style={styles.empty}>
+      <Ionicons name={icon} size={24} color={colors.primary} />
+      <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{text}</Text>
     </GlassCard>
   );
 }
@@ -285,24 +198,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Layout.margin,
-    marginBottom: 6,
   },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  title: { fontSize: 26, fontWeight: '600', letterSpacing: -0.6 },
-  top: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  party: { fontSize: 12 },
-  cTitle: { fontSize: 16, fontWeight: '600', marginTop: 2 },
-  total: { fontSize: 15, fontWeight: '600', fontVariant: ['tabular-nums'] },
-  progress: { flexDirection: 'row', gap: 6, marginTop: 16 },
-  seg: { flex: 1, height: 5, borderRadius: 3 },
-  milestone: { borderRadius: Radius.md, padding: 14, marginTop: 14, gap: 8 },
-  mTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  mLabel: { fontSize: 12, fontWeight: '500' },
-  mTitle: { flex: 1, fontSize: 14, fontWeight: '600' },
-  mAmount: { fontSize: 14, fontWeight: '600', fontVariant: ['tabular-nums'] },
-  meta: { flexDirection: 'row', gap: 16 },
-  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  metaText: { fontSize: 12 },
-  actions: { flexDirection: 'row', gap: 10, marginTop: 14 },
-  sheetSub: { fontSize: 13, lineHeight: 19 },
+  title: { fontSize: 26, fontWeight: '700', letterSpacing: -0.6 },
+  tabs: { height: 52, justifyContent: 'center', marginBottom: 6 },
+  tabsContent: { gap: 8, paddingHorizontal: Layout.margin },
+  cats: { flexGrow: 0, marginTop: 14, marginHorizontal: -Layout.margin },
+  count: { fontSize: 13, marginTop: 16, marginBottom: 12 },
+  actions: { flexDirection: 'row', gap: 10, marginBottom: 16 },
+  postTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  postedAgo: { fontSize: 12 },
+  postTitle: { fontSize: 16, fontWeight: '600', marginTop: 12 },
+  postFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 },
+  postBudget: { fontSize: 15, fontWeight: '600' },
+  meta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  link: { fontSize: 13, fontWeight: '600' },
+  note: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderRadius: 16, marginBottom: 14 },
+  noteText: { flex: 1, fontSize: 13 },
+  empty: { alignItems: 'center', gap: 8, paddingVertical: 28 },
+  emptyText: { fontSize: 14, textAlign: 'center' },
 });

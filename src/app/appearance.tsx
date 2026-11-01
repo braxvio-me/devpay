@@ -1,10 +1,18 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Switch, Pressable } from 'react-native';
+import { View, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { Text } from '@/components/ui-text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/contexts/ThemeContext';
-import { GlassCard, ListRow, ScreenBackground, SectionHeader, TopBar } from '@/components/ds';
+import {
+  GlassCard,
+  ListRow,
+  ScreenBackground,
+  SectionHeader,
+  TopBar,
+  Switch,
+} from '@/components/ds';
 import { Colors, Layout, Radius } from '@/constants/theme';
 
 type Mode = 'light' | 'dark' | 'system';

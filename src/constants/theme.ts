@@ -33,6 +33,18 @@ export const Colors = {
     cardBorder: 'rgba(255, 255, 255, 0.9)',
     shadow: '#7FA6BD',
     onPrimary: '#FFFFFF',
+    /** Solid action fill for primary buttons (white text passes AA). */
+    action: '#1C6E99',
+    /** Near-black for toggles, slide-to-confirm and the nav pill. */
+    ink: '#15181B',
+    onInk: '#FFFFFF',
+    /** Solid feature cards (balances, featured job, plans): the same blue as the tab bar. No gradients or translucency. */
+    feature: '#1C6E99',
+    onFeature: '#FFFFFF',
+    featureMuted: '#D3E6F0',
+    featureLine: '#4A8FB5',
+    /** Brand teal from the logo, for accents on feature cards. */
+    brandTeal: '#13C3A3',
   },
   dark: {
     text: '#EEF3F6',
@@ -60,6 +72,14 @@ export const Colors = {
     cardBorder: 'rgba(40, 55, 64, 0.8)',
     shadow: '#000000',
     onPrimary: '#FFFFFF',
+    action: '#2479A6',
+    ink: '#EEF3F6',
+    onInk: '#0C1317',
+    feature: '#2479A6',
+    onFeature: '#FFFFFF',
+    featureMuted: '#D3E6F0',
+    featureLine: '#4F95BA',
+    brandTeal: '#2BD3B4',
   },
 } as const;
 
@@ -98,7 +118,7 @@ export const Layout = {
   gutter: 20,
   sectionGap: 24,
   headerHeight: 60,
-  navHeight: 70,
+  navHeight: 60,
 } as const;
 
 export const Type = {
@@ -113,25 +133,14 @@ export const Type = {
 
 export const Shadows = {
   soft: {
-    shadowColor: '#7FA6BD',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.14,
-    shadowRadius: 18,
-    elevation: 3,
+    boxShadow: '0px 1px 2px rgba(15, 30, 39, 0.05)',
   },
+  /** Neutral depth for featured cards; no coloured glow. */
   lifted: {
-    shadowColor: '#3FA7DA',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.28,
-    shadowRadius: 22,
-    elevation: 8,
+    boxShadow: '0px 6px 14px rgba(15, 30, 39, 0.12)',
   },
   button: {
-    shadowColor: '#5B7C8F',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.14,
-    shadowRadius: 8,
-    elevation: 2,
+    boxShadow: '0px 3px 8px rgba(91, 124, 143, 0.14)',
   },
 } as const;
 

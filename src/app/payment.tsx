@@ -1,13 +1,18 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
+import { Text } from '@/components/ui-text';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useOnline, offlineAlert } from '@/hooks/use-online';
+import { notify } from '@/lib/notify';
 import { useTheme } from '@/contexts/ThemeContext';
 import { PhoneField } from '@/components/auth-shell';
 import { Button, ChoiceCard, GlassCard, ScreenBackground, SectionHeader, TopBar } from '@/components/ds';
 import { AmountInput, MethodId, PayMethods, SummaryRow } from '@/components/payments';
 import { SuccessOverlay } from '@/components/success-overlay';
+import { useReceipts } from '@/contexts/ReceiptsContext';
+import { useCurrentUser } from '@/contexts/AuthContext';
 import { Layout, Radius } from '@/constants/theme';
 
 const MILESTONES = [
@@ -15,12 +20,15 @@ const MILESTONES = [
   { id: 'c_2', title: 'Milestone 1 · Figma prototype', who: 'Akosua Serwaa · Booking app', amount: 1600 },
 ];
 
+const METHOD_NAME: Record<string, string> = { momo: 'MTN MoMo', telecel: 'Telecel Cash', at: 'AT Money', card: 'Visa / Mastercard', wallet: 'DevPay wallet', bank: 'Bank transfer' };
+
 const cedis = (n: number) => `GH₵ ${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export default function PaymentScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const online = useOnline();
   const [target, setTarget] = useState('c_1');
   const [amount, setAmount] = useState('2000');
   const [method, setMethod] = useState<MethodId>('momo');
@@ -28,16 +36,30 @@ export default function PaymentScreen() {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string>();
   const [txRef, setTxRef] = useState('');
+  const { addReceipt } = useReceipts();
+  const me = useCurrentUser();
 
   const num = parseFloat(amount) || 0;
 
   const fund = () => {
     if (num <= 0) return setError('Enter how much to deposit.');
     setError(undefined);
+    if (!online) return offlineAlert('fund escrow');
     setProcessing(true);
     setTimeout(() => {
       setProcessing(false);
-      setTxRef(`DEV-ESCROW-${Math.floor(100000 + Math.random() * 900000)}`);
+      const m = MILESTONES.find((x) => x.id === target);
+      const receipt = addReceipt({
+        kind: 'escrow_funding',
+        title: `Escrow funding · ${m?.title ?? 'Milestone'}`,
+        from: me.name,
+        to: `DevPay escrow · ${m?.who.split(' · ')[0] ?? 'Freelancer'}`,
+        method: method === 'momo' || method === 'telecel' ? `${METHOD_NAME[method]} · 0${phone.replace(/\s/g, '')}` : METHOD_NAME[method] ?? method,
+        amount: num,
+        status: 'Held in escrow',
+      });
+      setTxRef(receipt.ref);
+      notify('Escrow funded', `${cedis(num)} is now held safely in escrow.`, '/contracts');
     }, 1200);
   };
 
@@ -113,6 +135,12 @@ export default function PaymentScreen() {
           router.back();
         }}
         dismissLabel="Done"
+        secondaryLabel="View receipt"
+        onSecondary={() => {
+          const ref = txRef;
+          setTxRef('');
+          router.replace(`/receipts/${ref}`);
+        }}
       />
     </View>
   );

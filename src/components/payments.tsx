@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable } from 'react-native';
+import { Text, TextInput } from '@/components/ui-text';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -58,8 +59,8 @@ export function PayMethods({
               <View style={styles.nameRow}>
                 <Text style={[styles.name, { color: colors.text }]}>{m.name}</Text>
                 {m.badge && (
-                  <View style={[styles.badge, { backgroundColor: colors.primarySoft }]}>
-                    <Text style={[styles.badgeText, { color: colors.primaryText }]}>{m.badge}</Text>
+                  <View style={[styles.badge, { backgroundColor: colors.action }]}>
+                    <Text style={[styles.badgeText, { color: '#FFFFFF' }]}>{m.badge}</Text>
                   </View>
                 )}
               </View>

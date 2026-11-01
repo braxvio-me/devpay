@@ -1,59 +1,71 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
+import { Text } from '@/components/ui-text';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useTheme } from '@/contexts/ThemeContext';
-import { GlassCard, ScreenBackground, TopBar } from '@/components/ds';
+import { useAuth } from '@/contexts/AuthContext';
+import { Appear, GlassCard, ListRow, ScreenBackground, TopBar } from '@/components/ds';
+import { getDoc, LegalDocs, POLICY_VERSION } from '@/constants/legal';
 import { Layout, Radius } from '@/constants/theme';
 
-/** Plain-language summaries. Placeholder until the final legal text is supplied. */
-const DOCS = {
-  terms: {
-    title: 'Terms of Service',
-    sections: [
-      { h: 'Using DevPay', p: 'Clients post milestone-based jobs and freelancers apply. Both sides agree to the scope, price and deadline of each milestone before work starts.' },
-      { h: 'Escrow', p: 'A client funds each milestone before the freelancer starts it. Funds are released when the client approves the work, or automatically 7 days after submission if the client doesn’t respond.' },
-      { h: 'Revisions and disputes', p: 'Each milestone includes up to two revision requests. If you can’t agree, either side can open a dispute and DevPay reviews the contract, chat and submitted work.' },
-      { h: 'Verification', p: 'Some features need a verified account. Verification checks your Ghana Card or business documents and has a one-time fee.' },
-    ],
-  },
-  privacy: {
-    title: 'Privacy Policy',
-    sections: [
-      { h: 'What we collect', p: 'Your name, phone number, email, profile details, payout accounts, and the documents you submit for verification.' },
-      { h: 'How we use it', p: 'To run your account, process escrow payments and payouts, verify identities, and keep the marketplace safe.' },
-      { h: 'Who sees it', p: 'Clients and freelancers see your public profile. Payment partners see what they need to move money. Identity documents are used only for verification.' },
-      { h: 'Your choices', p: 'You can edit your profile anytime and delete your account from Settings once you have no active escrow.' },
-    ],
-  },
-};
-
+/** /legal lists every policy; /legal?doc=terms shows one. */
 export default function LegalScreen() {
   const { doc } = useLocalSearchParams<{ doc?: string }>();
+  const router = useRouter();
   const { colors } = useTheme();
-  const d = doc === 'privacy' ? DOCS.privacy : DOCS.terms;
+  const { user } = useAuth();
+  const d = getDoc(doc);
+  const accepted = user?.acceptedPolicies;
 
   return (
     <View style={{ flex: 1 }}>
       <ScreenBackground />
       <SafeAreaView edges={['top']} style={{ flex: 1 }}>
-        <TopBar title={d.title} />
+        <TopBar title={d ? d.title : 'Policies'} />
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={[styles.note, { backgroundColor: colors.amberSoft }]}>
             <Ionicons name="information-circle" size={18} color={colors.accentAmber} />
-            <Text style={[styles.noteText, { color: colors.text }]}>Draft summary. The full legal text will replace this before launch.</Text>
+            <Text style={[styles.noteText, { color: colors.text }]}>Draft summary for review. Final legal text replaces this before launch.</Text>
           </View>
-          <GlassCard style={{ gap: 18 }}>
-            {d.sections.map((s) => (
-              <View key={s.h} style={{ gap: 6 }}>
-                <Text style={[styles.h, { color: colors.text }]} accessibilityRole="header">
-                  {s.h}
-                </Text>
-                <Text style={[styles.p, { color: colors.textSecondary }]}>{s.p}</Text>
-              </View>
-            ))}
-          </GlassCard>
+
+          {d ? (
+            <Animated.View entering={FadeInDown.duration(280)}>
+              <GlassCard style={{ gap: 18 }}>
+                {d.sections.map((s) => (
+                  <View key={s.h} style={{ gap: 6 }}>
+                    <Text style={[styles.h, { color: colors.text }]} accessibilityRole="header">
+                      {s.h}
+                    </Text>
+                    <Text style={[styles.p, { color: colors.textSecondary }]}>{s.p}</Text>
+                  </View>
+                ))}
+              </GlassCard>
+              <Text style={[styles.meta, { color: colors.textMuted }]}>Version {POLICY_VERSION}</Text>
+            </Animated.View>
+          ) : (
+            <>
+              <GlassCard padded={false} style={{ paddingHorizontal: 16 }}>
+                {LegalDocs.map((x, i) => (
+                  <Appear key={x.id} index={i}>
+                    <ListRow
+                      icon={x.icon}
+                      label={x.title}
+                      last={i === LegalDocs.length - 1}
+                      onPress={() => router.push({ pathname: '/legal', params: { doc: x.id } })}
+                    />
+                  </Appear>
+                ))}
+              </GlassCard>
+              <Text style={[styles.meta, { color: colors.textMuted }]}>
+                {accepted
+                  ? `You accepted version ${accepted.version} on ${new Date(accepted.at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}.`
+                  : `Current version ${POLICY_VERSION}.`}
+              </Text>
+            </>
+          )}
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -66,4 +78,5 @@ const styles = StyleSheet.create({
   noteText: { flex: 1, fontSize: 13, lineHeight: 18 },
   h: { fontSize: 15, fontWeight: '600' },
   p: { fontSize: 14, lineHeight: 21 },
+  meta: { fontSize: 12, textAlign: 'center', marginTop: 12 },
 });

@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable, TextInputKeyPressEvent } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { View, StyleSheet, Pressable, TextInputKeyPressEvent } from 'react-native';
+import { Text, TextInput } from '@/components/ui-text';
+import { useRouter } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { AuthShell } from '@/components/auth-shell';
 import { Button } from '@/components/ds';
 import { Radius, Shadows } from '@/constants/theme';
@@ -9,7 +11,10 @@ import { Radius, Shadows } from '@/constants/theme';
 export default function VerifyOtpScreen() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
-  const { phone, role } = useLocalSearchParams();
+  const { pending, completeSignUp } = useAuth();
+  const [error, setError] = useState<string>();
+  const [busy, setBusy] = useState(false);
+  const phone = pending ? pending.phone.replace(/(\d{2})(\d{3})(\d{4})/, '$1 $2 $3') : '';
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [timer, setTimer] = useState(45);
   const [focused, setFocused] = useState(0);
@@ -41,14 +46,19 @@ export default function VerifyOtpScreen() {
   };
 
   const complete = code.every((d) => d !== '');
-  const verify = () => (role === 'freelancer' ? router.push('/profile-setup') : router.replace('/'));
+  const verify = async () => {
+    setBusy(true);
+    const err = await completeSignUp();
+    setBusy(false);
+    if (err) setError(err);
+  };
 
   return (
     <AuthShell
       title="Verify your number"
-      subtitle={`Enter the 6-digit code we sent by SMS to +233 ${phone || '24 123 4567'}.`}
+      subtitle={pending ? `Enter the 6-digit code we sent by SMS to +233 ${phone}. (Demo: any 6 digits.)` : 'Your sign-up expired. Go back and start again.'}
       step={{ index: 3, total: 3 }}
-      footer={<Button label="Verify & Continue" onPress={verify} disabled={!complete} />}>
+      footer={<Button label="Verify & Create Account" loading={busy} onPress={verify} disabled={!complete || !pending} />}>
       <View style={styles.row}>
         {code.map((d, i) => (
           <TextInput
@@ -79,6 +89,7 @@ export default function VerifyOtpScreen() {
           />
         ))}
       </View>
+      {error && <Text style={[styles.resendText, { color: colors.accentCoral, textAlign: 'center' }]}>{error}</Text>}
       <View style={styles.resend}>
         {timer > 0 ? (
           <Text style={[styles.resendText, { color: colors.textSecondary }]}>

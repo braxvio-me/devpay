@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Text } from '@/components/ui-text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useRole } from '@/contexts/RoleContext';
 import { FloatingTabBar, TabType } from '@/components/floating-tab-bar';
 import { SearchBar } from '@/components/search-bar';
 import {
@@ -11,9 +12,7 @@ import {
   Avatar,
   Chip,
   CompanyLogo,
-  GlassCard,
   IconButton,
-  PressableScale,
   ScreenBackground,
   useNavClearance,
 } from '@/components/ds';
@@ -25,7 +24,6 @@ type Filter = 'All' | 'Unread' | 'Clients' | 'Freelancers';
 export default function MessagesScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-  const { isClient } = useRole();
   const navClearance = useNavClearance();
   const [filter, setFilter] = useState<Filter>('All');
   const [query, setQuery] = useState('');
@@ -41,7 +39,7 @@ export default function MessagesScreen() {
 
   const onTab = (tab: TabType) => {
     if (tab === 'home') router.replace('/');
-    if (tab === 'jobs') router.push(isClient ? '/explore' : '/contracts');
+    if (tab === 'jobs') router.push('/contracts');
     if (tab === 'profile') router.push('/profile');
   };
 
@@ -75,7 +73,8 @@ export default function MessagesScreen() {
             ))}
           </ScrollView>
 
-          <GlassCard padded={false} style={{ marginTop: 18, paddingHorizontal: 16 }}>
+          {/* Flat list like WhatsApp / Telegram: full-width rows, dividers start under the text. */}
+          <View style={styles.list}>
             {list.map((t, i) => (
               <Appear key={t.id} index={i}>
                 <ThreadRow thread={t} last={i === list.length - 1} onPress={() => router.push(`/chat/${t.id}` as any)} />
@@ -84,11 +83,11 @@ export default function MessagesScreen() {
             {list.length === 0 && (
               <Text style={[styles.empty, { color: colors.textSecondary }]}>No conversations match.</Text>
             )}
-          </GlassCard>
+          </View>
         </ScrollView>
       </SafeAreaView>
 
-      <FloatingTabBar activeTab="chats" onSelectTab={onTab} onCenterActionPress={() => router.push(isClient ? '/job/create' : '/explore')} />
+      <FloatingTabBar activeTab="chats" onSelectTab={onTab} onCenterActionPress={() => router.push('/assistant')} />
     </View>
   );
 }
@@ -96,44 +95,46 @@ export default function MessagesScreen() {
 function ThreadRow({ thread, last, onPress }: { thread: Thread; last: boolean; onPress: () => void }) {
   const { colors } = useTheme();
   const unread = thread.unread > 0;
+  const mine = thread.lastMessage.startsWith('You:');
+  const preview = mine ? thread.lastMessage.replace(/^You:\s*/, '') : thread.lastMessage;
   return (
-    <PressableScale
+    <Pressable
       onPress={onPress}
-      haptic={false}
-      scaleTo={0.985}
-      accessibilityLabel={`${thread.name}. ${thread.lastMessage}${unread ? `. ${thread.unread} unread` : ''}`}
-      style={[styles.row, !last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
+      accessibilityRole="button"
+      accessibilityLabel={`${thread.name}, ${thread.project}. ${thread.lastMessage}${unread ? `. ${thread.unread} unread` : ''}`}
+      style={({ pressed }) => [styles.row, pressed && { backgroundColor: colors.backgroundElement }]}>
       {thread.company ? (
-        <CompanyLogo mark={thread.company.mark} size={50} />
+        <CompanyLogo mark={thread.company.mark} size={AVATAR} />
       ) : (
-        <Avatar uri={thread.avatar!} size={50} ring={false} online={thread.online} />
+        <Avatar uri={thread.avatar!} size={AVATAR} ring={false} online={thread.online} />
       )}
-      <View style={{ flex: 1, gap: 3 }}>
+      <View style={[styles.body, !last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
         <View style={styles.rowTop}>
           <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>
             {thread.name}
           </Text>
-          <Text style={[styles.time, { color: unread ? colors.primaryText : colors.textMuted }]}>{thread.time}</Text>
+          <Text style={[styles.time, { color: unread ? colors.action : colors.textMuted, fontWeight: unread ? '600' : '400' }]}>{thread.time}</Text>
         </View>
-        <Text style={[styles.project, { color: colors.navActive }]} numberOfLines={1}>
-          {thread.project}
-        </Text>
         <View style={styles.rowTop}>
-          <Text
-            style={[styles.preview, { color: unread ? colors.text : colors.textSecondary, fontWeight: unread ? '500' : '400' }]}
-            numberOfLines={1}>
-            {thread.lastMessage}
-          </Text>
+          <View style={styles.previewRow}>
+            {mine && <Ionicons name="checkmark-done" size={16} color={colors.action} />}
+            <Text style={[styles.preview, { color: colors.textSecondary }]} numberOfLines={1}>
+              <Text style={{ color: colors.action, fontWeight: '500' }}>{thread.project}: </Text>
+              <Text style={{ color: unread ? colors.text : colors.textSecondary, fontWeight: unread ? '500' : '400' }}>{preview}</Text>
+            </Text>
+          </View>
           {unread && (
-            <View style={[styles.badge, { backgroundColor: colors.primary }]}>
+            <View style={[styles.badge, { backgroundColor: colors.action }]}>
               <Text style={styles.badgeText}>{thread.unread}</Text>
             </View>
           )}
         </View>
       </View>
-    </PressableScale>
+    </Pressable>
   );
 }
+
+const AVATAR = 52;
 
 const styles = StyleSheet.create({
   header: {
@@ -148,13 +149,15 @@ const styles = StyleSheet.create({
   title: { fontSize: 26, fontWeight: '600', letterSpacing: -0.6 },
   chips: { marginHorizontal: -Layout.margin, marginTop: 16, flexGrow: 0 },
   chipsContent: { gap: 10, paddingHorizontal: Layout.margin },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 },
+  list: { marginHorizontal: -Layout.margin, marginTop: 10 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingLeft: Layout.margin },
+  body: { flex: 1, gap: 4, paddingVertical: 14, paddingRight: Layout.margin },
   rowTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  name: { flex: 1, fontSize: 15, fontWeight: '600' },
+  name: { flex: 1, fontSize: 16, fontWeight: '600' },
   time: { fontSize: 12 },
-  project: { fontSize: 12, fontWeight: '500' },
-  preview: { flex: 1, fontSize: 13 },
-  badge: { minWidth: 20, height: 20, borderRadius: 10, paddingHorizontal: 6, alignItems: 'center', justifyContent: 'center' },
+  previewRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  preview: { flex: 1, fontSize: 14 },
+  badge: { minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 6, alignItems: 'center', justifyContent: 'center' },
   badgeText: { color: '#FFFFFF', fontSize: 11, fontWeight: '600' },
   empty: { textAlign: 'center', paddingVertical: 28, fontSize: 14 },
 });

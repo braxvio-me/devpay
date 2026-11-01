@@ -1,38 +1,26 @@
 /**
- * SuccessOverlay — animated full-screen success/error state.
+ * SuccessOverlay — completion moment for finished tasks (payments, proposals, verification…).
  *
- * Usage:
- *   <SuccessOverlay
- *     visible={showSuccess}
- *     type="success"
- *     title="Application Sent!"
- *     subtitle="Volta Pay will review your proposal within 48 hours."
- *     onDismiss={() => router.push('/contracts')}
- *     dismissLabel="View My Applications"
- *   />
+ * <SuccessOverlay visible title="Proposal sent" subtitle="…" onDismiss={…} />
+ * type: success | verified | pending | error
  */
-import React, { useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Modal,
-  Dimensions,
-} from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, StyleSheet, Modal, AccessibilityInfo } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import Animated, {
-  useSharedValue,
+  Easing,
   useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withSequence,
   withSpring,
   withTiming,
-  withSequence,
-  withDelay,
-  Easing,
 } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-
-const { width: W } = Dimensions.get('window');
+import { Text } from '@/components/ui-text';
+import { useTheme } from '@/contexts/ThemeContext';
+import { Button } from '@/components/ds';
+import { Radius } from '@/constants/theme';
 
 type OverlayType = 'success' | 'error' | 'pending' | 'verified';
 
@@ -43,87 +31,61 @@ interface SuccessOverlayProps {
   subtitle?: string;
   onDismiss?: () => void;
   dismissLabel?: string;
+  /** Optional second action under the main button, e.g. "View receipt". */
+  secondaryLabel?: string;
+  onSecondary?: () => void;
   autoClose?: number; // ms — 0 = no auto-close
 }
 
-const CONFIG: Record<
-  OverlayType,
-  { icon: keyof typeof Ionicons.glyphMap; colors: [string, string]; bg: string }
-> = {
-  success: {
-    icon: 'checkmark-circle',
-    colors: ['#1FAE7A', '#178F64'],
-    bg: '#E5F6EF',
-  },
-  error: {
-    icon: 'close-circle',
-    colors: ['#E5484D', '#D93E43'],
-    bg: '#FEF2F2',
-  },
-  pending: {
-    icon: 'time',
-    colors: ['#E9A23B', '#C27A0E'],
-    bg: '#FFFBEB',
-  },
-  verified: {
-    icon: 'shield-checkmark',
-    colors: ['#6CC7F1', '#2C88B4'],
-    bg: '#E3F2FA',
-  },
+const ICON: Record<OverlayType, keyof typeof Ionicons.glyphMap> = {
+  success: 'checkmark',
+  verified: 'shield-checkmark',
+  pending: 'time',
+  error: 'close',
 };
 
-// ─── Confetti dot ──────────────────────────────────────────────────────────
-function ConfettiDot({
-  color,
-  startX,
-  startY,
-  delay,
-}: {
-  color: string;
-  startX: number;
-  startY: number;
-  delay: number;
-}) {
-  const y = useSharedValue(0);
-  const x = useSharedValue(0);
-  const opacity = useSharedValue(0);
-  const scale = useSharedValue(0);
+/** Logo teal + orange with the app's sky and green. */
+const CONFETTI = ['#13C3A3', '#F5A524', '#3AA6DB', '#1FAE7A', '#13C3A3', '#F5A524'];
+const ICON_SIZE = 88;
 
+function Particle({ angle, distance, color, delay, size, round }: { angle: number; distance: number; color: string; delay: number; size: number; round: boolean }) {
+  const t = useSharedValue(0);
+  const fall = useSharedValue(0);
   useEffect(() => {
-    y.set(withDelay(delay, withTiming(-120 - Math.random() * 80, { duration: 900, easing: Easing.out(Easing.quad) })));
-    x.set(withDelay(delay, withTiming((Math.random() - 0.5) * 180, { duration: 900 })));
-    opacity.set(withDelay(delay, withSequence(
-      withTiming(1, { duration: 200 }),
-      withDelay(500, withTiming(0, { duration: 300 }))
-    )));
-    scale.set(withDelay(delay, withSpring(1, { duration: 300, dampingRatio: 0.6 })));
-  }, []);
-
-  const style = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: x.get() },
-      { translateY: y.get() },
-      { scale: scale.get() },
-    ],
-    opacity: opacity.get(),
-  }));
-
+    t.set(withDelay(delay, withTiming(1, { duration: 620, easing: Easing.out(Easing.cubic) })));
+    fall.set(withDelay(delay + 380, withTiming(1, { duration: 700, easing: Easing.in(Easing.quad) })));
+  }, [delay, fall, t]);
+  const style = useAnimatedStyle(() => {
+    const p = t.get();
+    return {
+      opacity: p === 0 ? 0 : 1 - fall.get(),
+      transform: [
+        { translateX: Math.cos(angle) * distance * p },
+        { translateY: Math.sin(angle) * distance * p + fall.get() * 60 },
+        { rotate: `${p * 280}deg` },
+        { scale: 0.6 + p * 0.4 },
+      ],
+    };
+  });
   return (
     <Animated.View
+      pointerEvents="none"
       style={[
-        styles.dot,
-        {
-          backgroundColor: color,
-          left: startX,
-          top: startY,
-          width: 10,
-          height: 10,
-          borderRadius: 5,
-        },
+        styles.particle,
+        { backgroundColor: color, width: size, height: round ? size : size * 0.45, borderRadius: round ? size / 2 : 2 },
         style,
       ]}
     />
   );
+}
+
+function Ripple({ color, delay }: { color: string; delay: number }) {
+  const s = useSharedValue(0);
+  useEffect(() => {
+    s.set(withDelay(delay, withTiming(1, { duration: 900, easing: Easing.out(Easing.cubic) })));
+  }, [delay, s]);
+  const style = useAnimatedStyle(() => ({ opacity: (1 - s.get()) * 0.5, transform: [{ scale: 1 + s.get() * 0.9 }] }));
+  return <Animated.View pointerEvents="none" style={[styles.ripple, { borderColor: color }, style]} />;
 }
 
 export function SuccessOverlay({
@@ -133,104 +95,98 @@ export function SuccessOverlay({
   subtitle,
   onDismiss,
   dismissLabel = 'Continue',
+  secondaryLabel,
+  onSecondary,
   autoClose = 0,
 }: SuccessOverlayProps) {
-  const cfg = CONFIG[type];
+  const { colors } = useTheme();
+  const [reduceMotion, setReduceMotion] = useState(false);
+  const tone = {
+    success: colors.accentGreen,
+    verified: colors.action,
+    pending: colors.accentAmber,
+    error: colors.accentCoral,
+  }[type];
+  const celebrate = (type === 'success' || type === 'verified') && !reduceMotion;
 
-  // Icon entrance
-  const iconScale = useSharedValue(0.3);
-  const iconOpacity = useSharedValue(0);
-  const cardY = useSharedValue(60);
+  const cardY = useSharedValue(40);
   const cardOpacity = useSharedValue(0);
+  const iconScale = useSharedValue(0);
   const checkScale = useSharedValue(0);
+
+  // One burst layout per opening.
+  const particles = useMemo(
+    () =>
+      Array.from({ length: 20 }, (_, i) => ({
+        angle: (i / 20) * Math.PI * 2 + (i % 2 ? 0.15 : -0.1),
+        distance: 90 + ((i * 37) % 70),
+        color: CONFETTI[i % CONFETTI.length],
+        delay: 180 + (i % 5) * 25,
+        size: 7 + (i % 3) * 2,
+        round: i % 3 === 0,
+      })),
+    []
+  );
 
   useEffect(() => {
     if (!visible) return;
-
-    // Backdrop fade
-    cardOpacity.set(withTiming(1, { duration: 300 }));
-    cardY.set(withSpring(0, { duration: 500, dampingRatio: 0.75 }));
-
-    // Icon bounce in
-    iconOpacity.set(withDelay(150, withTiming(1, { duration: 200 })));
-    iconScale.set(
-      withDelay(
-        150,
-        withSequence(
-          withSpring(1.2, { duration: 280, dampingRatio: 0.5 }),
-          withSpring(1, { duration: 200, dampingRatio: 0.8 })
-        )
-      )
-    );
-
-    // Checkmark "draw" scale
-    checkScale.set(withDelay(300, withSpring(1, { duration: 350, dampingRatio: 0.6 })));
-
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion).catch(() => {});
+    cardOpacity.set(0);
+    cardY.set(40);
+    iconScale.set(0);
+    checkScale.set(0);
+    cardOpacity.set(withTiming(1, { duration: 220 }));
+    cardY.set(withSpring(0, { duration: 480, dampingRatio: 0.8 }));
+    iconScale.set(withDelay(120, withSequence(withSpring(1.12, { duration: 260, dampingRatio: 0.55 }), withSpring(1, { duration: 220 }))));
+    checkScale.set(withDelay(260, withSpring(1, { duration: 320, dampingRatio: 0.6 })));
+    Haptics.notificationAsync(
+      type === 'error' ? Haptics.NotificationFeedbackType.Error : type === 'pending' ? Haptics.NotificationFeedbackType.Warning : Haptics.NotificationFeedbackType.Success
+    ).catch(() => {});
     if (autoClose > 0 && onDismiss) {
-      setTimeout(onDismiss, autoClose);
+      const t = setTimeout(onDismiss, autoClose);
+      return () => clearTimeout(t);
     }
-  }, [visible]);
+  }, [autoClose, cardOpacity, cardY, checkScale, iconScale, onDismiss, type, visible]);
 
-  const iconStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: iconScale.get() }],
-    opacity: iconOpacity.get(),
-  }));
-
-  const cardStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: cardY.get() }],
-    opacity: cardOpacity.get(),
-  }));
-
-  const confettiColors = ['#1FAE7A', '#2C88B4', '#E9A23B', '#E5484D', '#8B5CF6', '#6CC7F1'];
+  const cardStyle = useAnimatedStyle(() => ({ opacity: cardOpacity.get(), transform: [{ translateY: cardY.get() }] }));
+  const iconStyle = useAnimatedStyle(() => ({ transform: [{ scale: iconScale.get() }] }));
+  const checkStyle = useAnimatedStyle(() => ({ transform: [{ scale: checkScale.get() }], opacity: checkScale.get() }));
 
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={onDismiss}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onDismiss} statusBarTranslucent>
       <View style={styles.backdrop}>
-        {/* Confetti dots — only for success/verified */}
-        {(type === 'success' || type === 'verified') &&
-          Array.from({ length: 14 }).map((_, i) => (
-            <ConfettiDot
-              key={i}
-              color={confettiColors[i % confettiColors.length]}
-              startX={W / 2 - 6}
-              startY={300}
-              delay={i * 40}
+        <Animated.View style={[styles.card, { backgroundColor: colors.surface }, cardStyle]} accessibilityRole="alert" accessibilityLiveRegion="polite">
+          <View style={styles.iconArea}>
+            {visible && celebrate && (
+              <>
+                <Ripple color={tone} delay={200} />
+                <Ripple color={tone} delay={420} />
+                {particles.map((p, i) => (
+                  <Particle key={i} {...p} />
+                ))}
+              </>
+            )}
+            <Animated.View style={[styles.icon, { backgroundColor: tone }, iconStyle]}>
+              <Animated.View style={checkStyle}>
+                <Ionicons name={ICON[type]} size={44} color="#FFFFFF" />
+              </Animated.View>
+            </Animated.View>
+          </View>
+
+          <Text style={[styles.title, { color: colors.text }]} accessibilityRole="header">
+            {title}
+          </Text>
+          {subtitle ? <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{subtitle}</Text> : null}
+
+          {onDismiss && <Button label={dismissLabel} onPress={onDismiss} style={styles.button} />}
+          {secondaryLabel && onSecondary && (
+            <Button
+              label={secondaryLabel}
+              variant="soft"
+              icon={<Ionicons name="receipt-outline" size={17} color={colors.primaryText} />}
+              onPress={onSecondary}
+              style={styles.secondary}
             />
-          ))}
-
-        <Animated.View style={[styles.card, cardStyle]}>
-          {/* Icon circle */}
-          <Animated.View style={[styles.iconWrap, { backgroundColor: cfg.bg }, iconStyle]}>
-            <LinearGradient
-              colors={cfg.colors}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.iconGradient}>
-              <Ionicons name={cfg.icon} size={44} color="#FFFFFF" />
-            </LinearGradient>
-          </Animated.View>
-
-          {/* Title */}
-          <Text style={styles.title}>{title}</Text>
-
-          {/* Subtitle */}
-          {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
-
-          {/* Dismiss button */}
-          {onDismiss && (
-            <TouchableOpacity
-              style={styles.dismissBtn}
-              onPress={onDismiss}
-              activeOpacity={0.88}>
-              <LinearGradient
-                colors={cfg.colors}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.dismissGradient}>
-                <Text style={styles.dismissLabel}>{dismissLabel}</Text>
-                <Ionicons name="chevron-forward" size={18} color="#FFF" />
-              </LinearGradient>
-            </TouchableOpacity>
           )}
         </Animated.View>
       </View>
@@ -239,80 +195,23 @@ export function SuccessOverlay({
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 28,
-  },
+  backdrop: { flex: 1, backgroundColor: 'rgba(12, 22, 28, 0.5)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
   card: {
     width: '100%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 32,
-    padding: 32,
+    maxWidth: 380,
+    borderRadius: Radius.xxl,
+    paddingHorizontal: 26,
+    paddingTop: 34,
+    paddingBottom: 24,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 20 },
-    shadowOpacity: 0.22,
-    shadowRadius: 40,
-    elevation: 12,
+    boxShadow: '0px 20px 40px rgba(15, 30, 39, 0.22)',
   },
-  iconWrap: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-    padding: 6,
-  },
-  iconGradient: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#17191C',
-    textAlign: 'center',
-    letterSpacing: -0.4,
-    marginBottom: 10,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#6B7378',
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 28,
-  },
-  dismissBtn: {
-    width: '100%',
-    height: 52,
-    borderRadius: 26,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 5,
-  },
-  dismissGradient: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  dismissLabel: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  dot: {
-    position: 'absolute',
-  },
+  iconArea: { width: ICON_SIZE, height: ICON_SIZE, alignItems: 'center', justifyContent: 'center', marginBottom: 22 },
+  icon: { width: ICON_SIZE, height: ICON_SIZE, borderRadius: ICON_SIZE / 2, alignItems: 'center', justifyContent: 'center' },
+  ripple: { position: 'absolute', width: ICON_SIZE, height: ICON_SIZE, borderRadius: ICON_SIZE / 2, borderWidth: 3 },
+  particle: { position: 'absolute' },
+  secondary: { alignSelf: 'stretch', marginTop: 10 },
+  title: { fontSize: 22, fontWeight: '700', letterSpacing: -0.5, textAlign: 'center' },
+  subtitle: { fontSize: 14, lineHeight: 21, textAlign: 'center', marginTop: 8 },
+  button: { alignSelf: 'stretch', marginTop: 24 },
 });

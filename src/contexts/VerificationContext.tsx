@@ -7,6 +7,7 @@
  */
 import React, { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface VerificationState {
   identity: boolean;
@@ -20,7 +21,8 @@ interface VerificationValue extends VerificationState {
   reset: () => void;
 }
 
-const STORAGE_KEY = 'devpay_verification';
+/** Stored per account. */
+const keyFor = (accountId: string) => `devpay_verification_${accountId}`;
 const EMPTY: VerificationState = { identity: false, paid: false };
 
 const VerificationContext = createContext<VerificationValue>({
@@ -32,21 +34,29 @@ const VerificationContext = createContext<VerificationValue>({
 });
 
 export function VerificationProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<VerificationState>(EMPTY);
+  const { user } = useAuth();
+  const accountId = user?.id ?? null;
+  const [byAccount, setByAccount] = useState<Record<string, VerificationState>>({});
+  const state = (accountId && byAccount[accountId]) || EMPTY;
 
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY)
-      .then((raw) => raw && setState({ ...EMPTY, ...JSON.parse(raw) }))
+    if (!accountId) return;
+    AsyncStorage.getItem(keyFor(accountId))
+      .then((raw) => setByAccount((m) => ({ ...m, [accountId]: raw ? { ...EMPTY, ...JSON.parse(raw) } : EMPTY })))
       .catch(() => {});
-  }, []);
+  }, [accountId]);
 
-  const update = useCallback((patch: Partial<VerificationState>) => {
-    setState((prev) => {
-      const next = { ...prev, ...patch };
-      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next)).catch(() => {});
-      return next;
-    });
-  }, []);
+  const update = useCallback(
+    (patch: Partial<VerificationState>) => {
+      if (!accountId) return;
+      setByAccount((m) => {
+        const next = { ...(m[accountId] ?? EMPTY), ...patch };
+        AsyncStorage.setItem(keyFor(accountId), JSON.stringify(next)).catch(() => {});
+        return { ...m, [accountId]: next };
+      });
+    },
+    [accountId]
+  );
 
   return (
     <VerificationContext.Provider

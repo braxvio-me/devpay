@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable } from 'react-native';
+import { Text } from '@/components/ui-text';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,6 +11,7 @@ import { useVerification } from '@/contexts/VerificationContext';
 import { AuthShell } from '@/components/auth-shell';
 import { Button, Field } from '@/components/ds';
 import { SuccessOverlay } from '@/components/success-overlay';
+import { FaceScanModal } from '@/components/face-scan';
 import { pickImage } from '@/hooks/pick-image';
 import { Radius } from '@/constants/theme';
 
@@ -32,6 +34,8 @@ export default function KycScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [done, setDone] = useState(false);
+  const [selfie, setSelfie] = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
 
   const errors = isClient
     ? {
@@ -43,7 +47,8 @@ export default function KycScreen() {
         name: !cardName.trim() ? 'Enter the name exactly as on your card.' : undefined,
         pin: !PIN.test(ghanaCardPin) ? 'Format: GHA-123456789-0' : undefined,
       };
-  const valid = Object.values(errors).every((e) => !e);
+  const photosMissing = !frontUri || !backUri;
+  const valid = Object.values(errors).every((e) => !e) && !photosMissing && !!selfie;
 
   const submit = () => {
     setSubmitted(true);
@@ -66,7 +71,7 @@ export default function KycScreen() {
         subtitle={
           isClient
             ? 'We check your registration with the RGD and GRA before you can fund large escrows.'
-            : 'Verified freelancers get the Trusted badge and can send proposals.'
+            : 'Verified freelancers get the Verified badge and can send proposals.'
         }
         right={
           <Pressable onPress={() => router.replace('/')} hitSlop={10} accessibilityRole="button">
@@ -145,7 +150,49 @@ export default function KycScreen() {
             onPress={async () => setBackUri((await pickImage(isClient ? 'Director’s Ghana Card' : 'Ghana Card back', [16, 10])) ?? backUri)}
           />
         </View>
+        {submitted && photosMissing && <Text style={[styles.err, { color: colors.accentCoral }]}>Add both photos.</Text>}
+
+        <Text style={[styles.label, { color: colors.textSecondary }]}>Face check</Text>
+        {selfie ? (
+          <View style={[styles.faceCard, { backgroundColor: colors.surface, borderColor: colors.accentGreen }]}>
+            <View style={styles.faceRow}>
+              {frontUri && <Image source={{ uri: frontUri }} contentFit="cover" style={styles.faceDoc} />}
+              <Ionicons name="swap-horizontal" size={18} color={colors.textMuted} />
+              <Image source={{ uri: selfie }} contentFit="cover" style={styles.faceSelfie} />
+            </View>
+            <View style={styles.faceStatus}>
+              <Ionicons name="checkmark-circle" size={18} color={colors.accentGreen} />
+              <Text style={[styles.faceTitle, { color: colors.text }]}>Face matched</Text>
+              <Pressable onPress={() => setScanning(true)} hitSlop={8} accessibilityRole="button" style={{ marginLeft: 'auto' }}>
+                <Text style={[styles.retake, { color: colors.primaryText }]}>Retake</Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : (
+          <View style={[styles.faceCard, { backgroundColor: colors.surface, borderColor: submitted ? colors.accentCoral : colors.border }]}>
+            <View style={styles.faceIntro}>
+              <View style={[styles.faceIcon, { backgroundColor: colors.primaryWash }]}>
+                <Ionicons name="scan-outline" size={22} color={colors.navActive} />
+              </View>
+              <Text style={[styles.faceText, { color: colors.textSecondary }]}>
+                {photosMissing ? 'Add your document photos first, then scan your face.' : 'A quick face scan confirms the card belongs to you.'}
+              </Text>
+            </View>
+            <Button label="Start face scan" size="md" disabled={photosMissing} onPress={() => setScanning(true)} style={{ marginTop: 12 }} />
+          </View>
+        )}
       </AuthShell>
+
+      <FaceScanModal
+        visible={scanning}
+        title="Verify it’s you"
+        onCancel={() => setScanning(false)}
+        onSuccess={(uri) => {
+          setScanning(false);
+          // Demo: the match runs on DevPay's servers after launch; the selfie is shown here for review.
+          setSelfie(uri ?? frontUri);
+        }}
+      />
 
       <SuccessOverlay
         visible={done}
@@ -195,6 +242,17 @@ const styles = StyleSheet.create({
   noteText: { flex: 1, fontSize: 13, lineHeight: 18 },
   label: { fontSize: 13, fontWeight: '500', marginBottom: -8 },
   uploads: { flexDirection: 'row', gap: 12 },
+  err: { fontSize: 12, marginTop: -10, marginLeft: 4 },
+  faceCard: { borderRadius: Radius.lg, borderWidth: 1.5, padding: 14 },
+  faceIntro: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  faceIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  faceText: { flex: 1, fontSize: 13, lineHeight: 19 },
+  faceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 14 },
+  faceDoc: { width: 104, height: 66, borderRadius: Radius.sm },
+  faceSelfie: { width: 66, height: 66, borderRadius: 33 },
+  faceStatus: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12 },
+  faceTitle: { fontSize: 14, fontWeight: '600' },
+  retake: { fontSize: 13, fontWeight: '600' },
   upload: {
     flex: 1,
     borderRadius: Radius.lg,

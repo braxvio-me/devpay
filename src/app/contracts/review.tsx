@@ -1,12 +1,18 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, Linking } from 'react-native';
+import { View, StyleSheet, ScrollView, Linking } from 'react-native';
+import { Dialog } from '@/lib/dialog';
+import { Text } from '@/components/ui-text';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { useOnline, offlineAlert } from '@/hooks/use-online';
+import { notify } from '@/lib/notify';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Avatar, Button, Field, GlassCard, ListRow, ScreenBackground, SectionHeader, Sheet, StatusPill, TopBar } from '@/components/ds';
 import { SuccessOverlay } from '@/components/success-overlay';
+import { useReceipts } from '@/contexts/ReceiptsContext';
+import { useCurrentUser } from '@/contexts/AuthContext';
 import { Portraits } from '@/constants/media';
 import { Layout, Radius } from '@/constants/theme';
 
@@ -27,19 +33,36 @@ export default function MilestoneReviewScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const online = useOnline();
   const [revisionOpen, setRevisionOpen] = useState(false);
   const [notes, setNotes] = useState('');
   const [notesError, setNotesError] = useState<string>();
   const [result, setResult] = useState<'released' | 'revision' | null>(null);
+  const [receiptRef, setReceiptRef] = useState('');
+  const { addReceipt } = useReceipts();
+  const me = useCurrentUser();
 
   const release = () =>
-    Alert.alert('Release payment?', `${D.amount} goes to ${D.dev.name}’s MTN MoMo now.`, [
+    !online
+      ? offlineAlert('release payment')
+      : Dialog.alert('Release payment?', `${D.amount} goes to ${D.dev.name}’s MTN MoMo now.`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Release',
         onPress: () => {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+          const r = addReceipt({
+            kind: 'release',
+            title: `Released · ${D.milestone}`,
+            from: me.name,
+            to: D.dev.name,
+            method: 'DevPay escrow → MTN MoMo',
+            amount: Number(D.amount.replace(/[^\d.]/g, '')),
+            status: 'Sent',
+          });
+          setReceiptRef(r.ref);
           setResult('released');
+          notify('Payment released', `${D.amount} sent to ${D.dev.name}.`, '/contracts');
         },
       },
     ]);
@@ -135,6 +158,11 @@ export default function MilestoneReviewScreen() {
         onDismiss={() => {
           setResult(null);
           router.replace('/contracts');
+        }}
+        secondaryLabel="View receipt"
+        onSecondary={() => {
+          setResult(null);
+          router.replace(`/receipts/${receiptRef}`);
         }}
       />
       <SuccessOverlay

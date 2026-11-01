@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text } from '@/components/ui-text';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Avatar, Button, GlassCard, ScreenBackground, TopBar } from '@/components/ds';
-import { CurrentUser } from '@/constants/media';
+import { useAuth, useCurrentUser } from '@/contexts/AuthContext';
 import { Layout, Radius } from '@/constants/theme';
 
 export default function LogoutScreen() {
@@ -13,10 +14,12 @@ export default function LogoutScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const [busy, setBusy] = useState(false);
+  const { signOut } = useAuth();
+  const me = useCurrentUser();
 
   const logout = () => {
     setBusy(true);
-    setTimeout(() => router.replace('/login'), 800);
+    setTimeout(signOut, 500);
   };
 
   return (
@@ -25,10 +28,10 @@ export default function LogoutScreen() {
       <SafeAreaView edges={['top']} style={{ flex: 1 }}>
         <TopBar title="Sign out" />
         <View style={styles.body}>
-          <Avatar uri={CurrentUser.avatar} size={96} />
+          <Avatar uri={me.avatar} size={96} />
           <Text style={[styles.title, { color: colors.text }]}>Sign out of DevPay?</Text>
           <Text style={[styles.sub, { color: colors.textSecondary }]}>
-            You’re signed in as {CurrentUser.name}. You’ll need your phone number and password to get back in.
+            You’re signed in as {me.name}. You’ll need your phone number and password to get back in.
           </Text>
 
           <GlassCard style={styles.note}>

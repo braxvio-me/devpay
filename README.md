@@ -1,56 +1,78 @@
-# Welcome to your Expo app 👋
+# DevPay
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Freelance marketplace for Ghana with escrow-protected milestone payments. Clients post jobs and fund each milestone into escrow; freelancers deliver and get paid to Mobile Money.
 
-## Get started
+Built with Expo SDK 58, Expo Router and React Native 0.88 (New Architecture). **The app is frontend-only for now**: accounts, payments, chat and notifications run on device with demo data. See [docs/BACKEND_HANDOFF.md](docs/BACKEND_HANDOFF.md) for what the backend must replace.
 
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Run it
 
 ```bash
-npm run reset-project
+npm install
+npx expo start -c        # dev server (clear cache after dependency changes)
+npx expo run:ios         # development build on iOS (needs Xcode)
+npx expo run:android     # development build on Android (needs Android Studio)
 ```
 
-This command will move the starter code to the **example** directory and create a blank **src/app** directory where you can start developing.
+Camera, microphone, Face ID / fingerprint, notifications and the app icon need a **development build**, not Expo Go or a JS reload.
 
-### Other setup steps
+Before committing:
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+```bash
+npx tsc --noEmit
+npx expo lint
+```
 
-## Learn more
+### Demo accounts
 
-To learn more about developing your project with Expo, look at the following resources:
+| Role | Phone | Password |
+| --- | --- | --- |
+| Freelancer | 24 123 4567 | `devpay123` |
+| Client | 20 555 0101 | `devpay123` |
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+The sign-up OTP accepts any 6 digits. Accounts and sessions are stored on the device (AsyncStorage).
 
-## Join the community
+## Project map
 
-Join our community of developers creating universal apps.
+```
+src/
+  app/                 Routes (Expo Router). Every file is a screen.
+    _layout.tsx        Providers, auth guard (Stack.Protected), splash, lock screen, policy gate, dialogs
+    welcome.tsx        Onboarding (signed out)
+    login / register / verify-otp / forgot-password / choose-role
+    index.tsx          Home (freelancer feed or client dashboard)
+    contracts.tsx      Work hub: open jobs / my posts, active, in review, completed
+    project/[id].tsx   Project detail: milestones, files, activity
+    job/…              Job detail, apply, create, applicants
+    talent/[id].tsx    Freelancer profile (as seen by clients)
+    chat/…, messages   Chat (voice notes, photos, typing)
+    assistant.tsx      DevPay Assistant (rule-based search + FAQ)
+    verification, kyc, premium, earnings, withdraw, payment, settings, legal, help, about …
+  components/
+    ds.tsx             Design-system kit (buttons, cards, chips, fields, sheets, switch…)
+    ui-text.tsx        Text/TextInput with the Inter font (same on iOS and Android)
+    floating-tab-bar   Bottom nav (elastic active pill)
+    chat/, payments, success-overlay, dialog-host, lock-screen, policy-gate, animated-splash …
+  contexts/
+    AuthContext        Accounts, sessions, one role per account, policy acceptance
+    AppLockContext     Face ID / fingerprint app lock and privacy cover
+    VerificationContext, RoleContext, ThemeContext
+  constants/           Theme tokens and demo data (jobs, projects, talent, threads, legal, app)
+  lib/                 notify (local notifications), dialog, assistant
+  hooks/               use-online (network), pick-image
+assets/images/         App icon, splash, adaptive icons, logo (logo-source.jpg is the original upload)
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Design decisions live in [DESIGN.md](DESIGN.md); product context in [PRODUCT.md](PRODUCT.md).
+
+## Conventions
+
+- Import `Text` / `TextInput` from `@/components/ui-text`, never from `react-native` (keeps Inter and Android metrics consistent).
+- Use `Dialog.alert` from `@/lib/dialog` instead of `Alert.alert`.
+- Use the `Shadows` tokens / `boxShadow`, not `shadowColor` + `elevation`.
+- Colours come from `useTheme().colors`; never hard-code a light-only colour.
+- Money-moving actions check `useOnline()` and show `offlineAlert()` when offline.
+- Policy text lives in `src/constants/legal.ts`. Bump `POLICY_VERSION` when it changes; every user is asked to accept again.
+
+## Launch
+
+See [docs/LAUNCH_CHECKLIST.md](docs/LAUNCH_CHECKLIST.md).

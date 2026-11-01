@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { AuthShell, PhoneField } from '@/components/auth-shell';
+import { useAuth } from '@/contexts/AuthContext';
+import { SuccessOverlay } from '@/components/success-overlay';
 import { Button, Field, Segmented } from '@/components/ds';
 
 type Method = 'phone' | 'email';
@@ -17,10 +18,14 @@ export default function ForgotPasswordScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>();
+  const [reset, setReset] = useState(false);
+  const { findAccount, resetPassword } = useAuth();
+  const identifier = method === 'phone' ? phone : email;
 
   const handleRequestOtp = () => {
     if (method === 'phone' && !phone.trim()) return setError('Enter your Ghana mobile number.');
     if (method === 'email' && !email.trim()) return setError('Enter your email address.');
+    if (!findAccount(identifier)) return setError('No account uses that number or email.');
     setError(undefined);
     setIsLoading(true);
     setTimeout(() => {
@@ -35,12 +40,11 @@ export default function ForgotPasswordScreen() {
     if (newPassword !== confirmPassword) return setError('The two passwords don’t match.');
     setError(undefined);
     setIsLoading(true);
-    setTimeout(() => {
+    resetPassword(identifier, newPassword).then((err) => {
       setIsLoading(false);
-      Alert.alert('Password updated', 'Sign in with your new password.', [
-        { text: 'Sign In', onPress: () => router.replace('/login') },
-      ]);
-    }, 700);
+      if (err) return setError(err);
+      setReset(true);
+    });
   };
 
   const destination = method === 'phone' ? `+233 ${phone}` : email;
@@ -79,7 +83,7 @@ export default function ForgotPasswordScreen() {
   ) : (
     <AuthShell
       title="Set a new password"
-      subtitle={`Enter the 6-digit code sent to ${destination}, then choose a new password.`}
+      subtitle={`Enter the 6-digit code sent to ${destination} (demo: any 6 digits), then choose a new password.`}
       onBack={() => setStep('request')}
       footer={<Button label="Reset & Sign In" loading={isLoading} onPress={handleResetPassword} />}>
       <Field
@@ -108,6 +112,16 @@ export default function ForgotPasswordScreen() {
         value={confirmPassword}
         onChangeText={setConfirmPassword}
         error={error}
+      />
+      <SuccessOverlay
+        visible={reset}
+        title="Password updated"
+        subtitle="Sign in with your new password."
+        dismissLabel="Sign In"
+        onDismiss={() => {
+          setReset(false);
+          router.replace('/login');
+        }}
       />
     </AuthShell>
   );

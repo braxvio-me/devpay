@@ -1,10 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, StyleSheet, Pressable } from 'react-native';
+import { Text } from '@/components/ui-text';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { AvatarStack, BookmarkButton, CompanyRow, PressableScale } from '@/components/ds';
-import { Gradients, Radius, Shadows } from '@/constants/theme';
+import { Radius, Shadows } from '@/constants/theme';
 import type { Job } from '@/constants/jobs';
 
 interface RecommendedJobCardProps {
@@ -27,7 +27,7 @@ export function RecommendedJobCard({ job, featured, onPress, onBookmarkToggle, o
     <>
       <View style={styles.top}>
         <CompanyRow company={job.company} light={light} />
-        <BookmarkButton active={job.bookmarked} onPress={onBookmarkToggle} onGradient={light && !job.bookmarked} />
+        <BookmarkButton active={job.bookmarked} onPress={onBookmarkToggle} onGradient={light} />
       </View>
 
       <View style={{ gap: 4 }}>
@@ -45,12 +45,9 @@ export function RecommendedJobCard({ job, featured, onPress, onBookmarkToggle, o
           onPress={onApplyPress ?? onPress}
           accessibilityRole="button"
           accessibilityLabel={`Apply to ${job.title}`}
-          style={[
-            styles.apply,
-            { backgroundColor: light ? 'rgba(255,255,255,0.2)' : isDark ? colors.primarySoft : colors.primaryWash },
-          ]}>
-          <Text style={[styles.applyText, { color: light ? '#FFFFFF' : colors.primaryText }]}>Apply</Text>
-          <Feather name="arrow-up-right" size={15} color={light ? '#FFFFFF' : colors.primaryText} />
+          style={({ pressed }) => [styles.apply, { backgroundColor: light ? '#FFFFFF' : colors.action, opacity: pressed ? 0.85 : 1 }]}>
+          <Text style={[styles.applyText, { color: light ? colors.action : '#FFFFFF' }]}>Apply</Text>
+          <Feather name="arrow-up-right" size={14} color={light ? colors.action : '#FFFFFF'} />
         </Pressable>
       </View>
     </>
@@ -69,9 +66,9 @@ export function RecommendedJobCard({ job, featured, onPress, onBookmarkToggle, o
         !featured && { backgroundColor: colors.surface },
       ]}>
       {featured ? (
-        <LinearGradient colors={Gradients.card} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.inner}>
+        <View style={[styles.inner, { backgroundColor: colors.feature }]}>
           {body}
-        </LinearGradient>
+        </View>
       ) : (
         <View style={styles.inner}>{body}</View>
       )}
@@ -85,15 +82,7 @@ const styles = StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 },
   title: { fontSize: 17, fontWeight: '600', letterSpacing: -0.3 },
   salary: { fontSize: 13, fontWeight: '500' },
-  bottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginRight: -16, marginBottom: -16 },
-  apply: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    height: 48,
-    paddingLeft: 30,
-    paddingRight: 20,
-    borderTopLeftRadius: Radius.lg,
-  },
-  applyText: { fontSize: 15, fontWeight: '500' },
+  bottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  apply: { flexDirection: 'row', alignItems: 'center', gap: 4, height: 36, paddingHorizontal: 16, borderRadius: Radius.pill },
+  applyText: { fontSize: 14, fontWeight: '600' },
 });

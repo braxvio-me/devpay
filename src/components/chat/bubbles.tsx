@@ -1,5 +1,6 @@
 import React, { ReactNode, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable } from 'react-native';
+import { Text } from '@/components/ui-text';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
@@ -12,6 +13,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useTheme } from '@/contexts/ThemeContext';
+import { playbackMode } from '@/components/chat/composer';
 import { Radius } from '@/constants/theme';
 
 export type MessageKind = 'text' | 'image' | 'voice' | 'file' | 'event';
@@ -63,7 +65,7 @@ function Meta({ msg, light }: { msg: ChatMessage; light?: boolean }) {
   const fg = light ? 'rgba(255,255,255,0.92)' : c.meta;
   return (
     <View style={styles.meta}>
-      <Text style={[styles.time, { color: fg }]}>{msg.time}</Text>
+      <Text maxFontSizeMultiplier={1.3} style={[styles.time, { color: fg }]}>{msg.time}</Text>
       {msg.sender === 'me' && (
         <Ionicons
           name={msg.status === 'sent' ? 'checkmark' : 'checkmark-done'}
@@ -194,7 +196,11 @@ export function VoiceBubble({ msg, tail }: { msg: ChatMessage; tail: boolean }) 
     <BubbleFrame msg={msg} tail={tail}>
       <View style={styles.voice}>
         <Pressable
-          onPress={() => (status.playing ? player.pause() : player.play())}
+          onPress={async () => {
+            if (status.playing) return player.pause();
+            await playbackMode();
+            player.play();
+          }}
           disabled={!msg.uri}
           accessibilityRole="button"
           accessibilityLabel={status.playing ? 'Pause voice note' : 'Play voice note'}
@@ -255,7 +261,7 @@ export function EventPill({ msg }: { msg: ChatMessage }) {
 export function DayPill({ label }: { label: string }) {
   const { isDark, colors } = useTheme();
   return (
-    <View style={[styles.day, { backgroundColor: isDark ? 'rgba(23,36,43,0.85)' : 'rgba(255,255,255,0.85)' }]}>
+    <View style={[styles.day, { backgroundColor: isDark ? '#17242B' : '#FFFFFF' }]}>
       <Text style={[styles.dayText, { color: colors.textSecondary }]}>{label}</Text>
     </View>
   );
@@ -292,11 +298,7 @@ const styles = StyleSheet.create({
   mine: { alignSelf: 'flex-end' },
   theirs: { alignSelf: 'flex-start' },
   shadow: {
-    shadowColor: '#5B7C8F',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.12,
-    shadowRadius: 2,
-    elevation: 1,
+    boxShadow: '0px 1px 2px rgba(91, 124, 143, 0.12)',
   },
   tail: {
     position: 'absolute',

@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, ScrollView, Pressable, useWindowDimensions } from 'react-native';
+import { Text } from '@/components/ui-text';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -22,7 +23,7 @@ import {
   Segmented,
 } from '@/components/ds';
 import { Jobs, Job } from '@/constants/jobs';
-import { CurrentUser } from '@/constants/media';
+import { useCurrentUser } from '@/contexts/AuthContext';
 import { TalentList, Talent } from '@/constants/talent';
 import { Layout } from '@/constants/theme';
 
@@ -41,6 +42,7 @@ export default function ExploreScreen() {
   const { isClient } = useRole();
   const insets = useSafeAreaInsets();
   const narrow = useWindowDimensions().width < 370;
+  const me = useCurrentUser();
 
   const [query, setQuery] = useState('');
   const [chip, setChip] = useState<string | null>(isClient ? 'All' : 'UI/UX Designer');
@@ -108,7 +110,7 @@ export default function ExploreScreen() {
                 </Pressable>
                 {!narrow && (
                   <Pressable onPress={() => router.push('/profile')} accessibilityRole="button" accessibilityLabel="Open profile">
-                    <Avatar uri={CurrentUser.avatar} size={40} ring={false} />
+                    <Avatar uri={me.avatar} size={40} ring={false} />
                   </Pressable>
                 )}
               </View>
@@ -262,7 +264,7 @@ export default function ExploreScreen() {
 function TalentCard({ talent, onPress, onMessage }: { talent: Talent; onPress: () => void; onMessage: () => void }) {
   const { colors } = useTheme();
   return (
-    <GlassCard onPress={onPress} style={{ paddingBottom: 0 }} accessibilityLabel={`${talent.name}, ${talent.title}`}>
+    <GlassCard onPress={onPress} accessibilityLabel={`${talent.name}, ${talent.title}`}>
       <View style={styles.talentTop}>
         <Avatar uri={talent.avatar} size={48} online={talent.available} />
         <View style={{ flex: 1, gap: 2 }}>
@@ -321,6 +323,6 @@ const styles = StyleSheet.create({
   talentSub: { fontSize: 13 },
   rating: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   ratingText: { fontSize: 13, fontWeight: '600' },
-  talentBottom: { height: 56, marginHorizontal: -16, paddingLeft: 16, justifyContent: 'center', marginTop: 8 },
+  talentBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 },
   rate: { fontSize: 14, fontWeight: '600' },
 });

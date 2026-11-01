@@ -1,13 +1,18 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
+import { Text } from '@/components/ui-text';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useOnline, offlineAlert } from '@/hooks/use-online';
+import { notify } from '@/lib/notify';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRole } from '@/contexts/RoleContext';
 import { Button, Field, GlassCard, IconButton, ScreenBackground, SectionHeader, TopBar } from '@/components/ds';
 import { AmountInput, MethodId, PayMethods, SummaryRow } from '@/components/payments';
 import { SuccessOverlay } from '@/components/success-overlay';
+import { useReceipts } from '@/contexts/ReceiptsContext';
+import { useCurrentUser } from '@/contexts/AuthContext';
 import { Layout, Radius } from '@/constants/theme';
 
 const FEE = 1.5;
@@ -19,6 +24,7 @@ export default function WithdrawScreen() {
   const { colors } = useTheme();
   const { isClient } = useRole();
   const insets = useSafeAreaInsets();
+  const online = useOnline();
   const available = isClient ? 28500 : 2450;
   const locked = isClient ? 14300 : 1800;
 
@@ -28,6 +34,8 @@ export default function WithdrawScreen() {
   const [processing, setProcessing] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [txRef, setTxRef] = useState('');
+  const { addReceipt } = useReceipts();
+  const me = useCurrentUser();
 
   const num = parseFloat(amount) || 0;
   const amountError =
@@ -37,10 +45,22 @@ export default function WithdrawScreen() {
   const withdraw = () => {
     setSubmitted(true);
     if (num < MIN || num > available || pin.length < 4) return;
+    if (!online) return offlineAlert('withdraw');
     setProcessing(true);
     setTimeout(() => {
       setProcessing(false);
-      setTxRef(`MOMO-PAY-${Math.floor(100000 + Math.random() * 900000)}`);
+      const receipt = addReceipt({
+        kind: 'payout',
+        title: isClient ? 'Escrow refund' : `Payout to ${method === 'bank' ? 'bank account' : 'mobile wallet'}`,
+        from: isClient ? 'DevPay escrow' : 'DevPay wallet',
+        to: me.name,
+        method: ({ momo: 'MTN MoMo', telecel: 'Telecel Cash', at: 'AT Money', bank: 'Bank transfer', card: 'Card', wallet: 'DevPay wallet' } as Record<string, string>)[method] ?? method,
+        amount: Math.max(0, num - FEE),
+        fee: FEE,
+        status: 'Sent',
+      });
+      setTxRef(receipt.ref);
+      notify('Payout on its way', `${cedis(Math.max(0, num - FEE))} is heading to your ${method === 'bank' ? 'bank account' : 'mobile wallet'}.`, '/earnings');
     }, 1100);
   };
 
@@ -114,6 +134,12 @@ export default function WithdrawScreen() {
           router.back();
         }}
         dismissLabel="Done"
+        secondaryLabel="View receipt"
+        onSecondary={() => {
+          const ref = txRef;
+          setTxRef('');
+          router.replace(`/receipts/${ref}`);
+        }}
       />
     </View>
   );

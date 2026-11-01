@@ -1,24 +1,28 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
+import { Text } from '@/components/ui-text';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
+import { useOnline, offlineAlert } from '@/hooks/use-online';
+import { notify } from '@/lib/notify';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRole } from '@/contexts/RoleContext';
 import { useVerification } from '@/contexts/VerificationContext';
 import { Button, GlassCard, ScreenBackground, SectionHeader, StatusPill, TopBar } from '@/components/ds';
 import { MethodId, PayMethods, SummaryRow } from '@/components/payments';
 import { SuccessOverlay } from '@/components/success-overlay';
-import { Gradients, Layout, Radius, Shadows } from '@/constants/theme';
+import { useReceipts } from '@/contexts/ReceiptsContext';
+import { useCurrentUser } from '@/contexts/AuthContext';
+import { Layout, Radius, Shadows } from '@/constants/theme';
 
 /** One-time verification fee (placeholder pricing until the backend sets it). */
 const FEE = { freelancer: 50, client: 150 } as const;
 
 const BENEFITS = {
   freelancer: [
-    { icon: 'shield-checkmark' as const, title: 'Trusted badge', text: 'Shown on your profile and every proposal' },
+    { icon: 'shield-checkmark' as const, title: 'Verified badge', text: 'Shown on your profile and every proposal' },
     { icon: 'lock-open' as const, title: 'Verified-only jobs', text: 'Apply to jobs that require a Ghana Card check' },
     { icon: 'trending-up' as const, title: 'Ranked higher', text: 'Appear first when clients search talent' },
     { icon: 'flash' as const, title: 'Faster payouts', text: 'Withdrawals skip the manual review queue' },
@@ -37,20 +41,35 @@ export default function VerificationScreen() {
   const { role, isClient } = useRole();
   const { identity, paid, verified, completePayment } = useVerification();
   const insets = useSafeAreaInsets();
+  const online = useOnline();
   const [method, setMethod] = useState<MethodId>('momo');
   const [paying, setPaying] = useState(false);
   const [celebrate, setCelebrate] = useState(false);
+  const [receiptRef, setReceiptRef] = useState('');
+  const { addReceipt } = useReceipts();
+  const me = useCurrentUser();
 
   const fee = FEE[role];
   const step = !identity ? 1 : !paid ? 2 : 3;
 
   const pay = () => {
+    if (!online) return offlineAlert('pay the verification fee');
     setPaying(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     setTimeout(() => {
       setPaying(false);
       completePayment();
+      const r = addReceipt({
+        kind: 'verification',
+        title: isClient ? 'Business verification fee' : 'Ghana Card verification fee',
+        from: me.name,
+        to: 'DevPay',
+        method: ({ momo: 'MTN MoMo', telecel: 'Telecel Cash', at: 'AT Money', card: 'Visa / Mastercard', bank: 'Bank transfer', wallet: 'DevPay wallet' } as Record<string, string>)[method] ?? method,
+        amount: fee,
+      });
+      setReceiptRef(r.ref);
       setCelebrate(true);
+      notify('You’re verified', 'Your badge is live and verified features are unlocked.', '/verification');
     }, 1300);
   };
 
@@ -61,7 +80,7 @@ export default function VerificationScreen() {
         <TopBar title="Get verified" />
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <View style={[styles.hero, Shadows.lifted]}>
-            <LinearGradient colors={Gradients.card} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.heroInner}>
+            <View style={[styles.heroInner, { backgroundColor: colors.feature }]}>
               <View style={styles.heroBadge}>
                 <MaterialCommunityIcons name={verified ? 'check-decagram' : 'shield-account'} size={30} color={colors.primaryText} />
               </View>
@@ -71,10 +90,10 @@ export default function VerificationScreen() {
               </Text>
               <View style={styles.progress}>
                 {[1, 2, 3].map((n) => (
-                  <View key={n} style={[styles.progressSeg, { backgroundColor: n < step || verified ? '#FFFFFF' : 'rgba(255,255,255,0.3)' }]} />
+                  <View key={n} style={[styles.progressSeg, { backgroundColor: n < step || verified ? '#FFFFFF' : '#4A8FB5' }]} />
                 ))}
               </View>
-            </LinearGradient>
+            </View>
           </View>
 
           <SectionHeader title="Steps" style={styles.gap} />
@@ -148,10 +167,15 @@ export default function VerificationScreen() {
       <SuccessOverlay
         visible={celebrate}
         type="verified"
-        title={isClient ? 'Verified client' : 'You’re Trusted'}
+        title={isClient ? 'Verified client' : 'You’re verified'}
         subtitle="Your badge is live and verified features are unlocked."
         dismissLabel="See what’s unlocked"
         onDismiss={() => setCelebrate(false)}
+        secondaryLabel="View receipt"
+        onSecondary={() => {
+          setCelebrate(false);
+          if (receiptRef) router.push(`/receipts/${receiptRef}`);
+        }}
       />
     </View>
   );

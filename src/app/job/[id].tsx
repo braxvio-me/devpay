@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
+import { Text } from '@/components/ui-text';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRole } from '@/contexts/RoleContext';
@@ -165,12 +165,7 @@ export default function JobDetailsScreen() {
         </ScrollView>
       </SafeAreaView>
 
-      <View style={[styles.bottom, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-        <LinearGradient
-          pointerEvents="none"
-          colors={isDark ? ['rgba(19,28,34,0)', colors.surface] : ['rgba(255,255,255,0)', '#FFFFFF']}
-          style={StyleSheet.absoluteFill}
-        />
+      <View style={[styles.bottom, { paddingBottom: Math.max(insets.bottom, 16), backgroundColor: colors.surface, borderTopColor: colors.border }]}>
         {isClient ? (
           <Button
             label="View proposals"
@@ -249,5 +244,5 @@ const styles = StyleSheet.create({
   escrowText: { fontSize: 13, flex: 1 },
   lockNote: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderRadius: Radius.md },
   lockText: { flex: 1, fontSize: 13 },
-  bottom: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: Layout.margin, paddingTop: 24 },
+  bottom: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: Layout.margin, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth },
 });

@@ -1,9 +1,10 @@
 import React, { ReactNode } from 'react';
-import { View, TextInput, StyleSheet, Pressable, StyleProp, ViewStyle, Platform } from 'react-native';
+import { View, StyleSheet, Pressable, StyleProp, ViewStyle, Platform } from 'react-native';
+import { TextInput } from '@/components/ui-text';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Radius, Shadows } from '@/constants/theme';
+import { Radius } from '@/constants/theme';
 
 interface SearchBarProps {
   value: string;
@@ -29,14 +30,14 @@ export function SearchBar({
   style,
   right,
 }: SearchBarProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
   return (
     <View
       style={[
         styles.bar,
         { backgroundColor: colors.surface },
-        isDark ? { borderWidth: 1, borderColor: colors.border } : Shadows.button,
+        { borderWidth: 1, borderColor: colors.border },
         style,
       ]}>
       <Ionicons name="search-outline" size={21} color={colors.text} />

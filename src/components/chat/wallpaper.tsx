@@ -1,6 +1,5 @@
 import React, { memo, useState } from 'react';
 import { View, StyleSheet, LayoutChangeEvent } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -15,7 +14,7 @@ const GLYPHS: (keyof typeof Ionicons.glyphMap)[] = [
   'phone-portrait-outline',
   'document-text-outline',
   'rocket-outline',
-  'star-outline',
+  'checkmark-circle-outline',
   'wallet-outline',
   'globe-outline',
 ];
@@ -60,12 +59,7 @@ export function ChatWallpaper() {
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none" onLayout={onLayout}>
-      <LinearGradient
-        colors={isDark ? ['#0E2029', '#0B171D', '#0E1C24'] : ['#DCEFF8', '#EAF4EF', '#E1EEF7']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? '#0E1A20' : '#E4EEF3' }]} />
       {size.width > 0 && (
         <Pattern width={size.width} height={size.height} color={isDark ? 'rgba(124, 205, 242, 0.07)' : 'rgba(44, 136, 180, 0.09)'} />
       )}

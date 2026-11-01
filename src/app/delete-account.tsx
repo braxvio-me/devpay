@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { Dialog } from '@/lib/dialog';
+import { Text } from '@/components/ui-text';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button, Chip, Field, GlassCard, ScreenBackground, SectionHeader, TopBar } from '@/components/ds';
 import { Layout, Radius } from '@/constants/theme';
 
@@ -30,19 +33,20 @@ export default function DeleteAccountScreen() {
   const [agreed, setAgreed] = useState(false);
   const [confirm, setConfirm] = useState('');
   const [busy, setBusy] = useState(false);
+  const { deleteAccount } = useAuth();
 
   const ready = agreed && confirm.trim().toUpperCase() === 'DELETE';
 
   const remove = () => {
     if (!ready) return;
-    Alert.alert('Delete your account?', 'This closes your account and unlinks your Ghana Card. It can’t be undone.', [
+    Dialog.alert('Delete your account?', 'This closes your account and frees your number for a new one. It can’t be undone.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
         style: 'destructive',
         onPress: () => {
           setBusy(true);
-          setTimeout(() => router.replace('/welcome'), 1000);
+          setTimeout(deleteAccount, 800);
         },
       },
     ]);

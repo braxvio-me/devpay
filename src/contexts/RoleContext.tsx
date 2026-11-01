@@ -1,73 +1,12 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-  ReactNode,
-} from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Haptics from 'expo-haptics';
+/**
+ * Role comes from the signed-in account. One account = one role; there is no switching.
+ */
+import { useAuth, Role } from '@/contexts/AuthContext';
 
-export type UserRole = 'freelancer' | 'client';
-
-interface RoleContextValue {
-  role: UserRole;
-  setRole: (role: UserRole) => void;
-  toggleRole: () => void;
-  isClient: boolean;
-  isFreelancer: boolean;
-}
-
-const STORAGE_KEY = 'devpay_active_role';
-
-const RoleContext = createContext<RoleContextValue>({
-  role: 'freelancer',
-  setRole: () => {},
-  toggleRole: () => {},
-  isClient: false,
-  isFreelancer: true,
-});
-
-export function RoleProvider({ children }: { children: ReactNode }) {
-  const [role, setRoleState] = useState<UserRole>('freelancer');
-
-  useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY).then((saved) => {
-      if (saved === 'freelancer' || saved === 'client') {
-        setRoleState(saved);
-      }
-    });
-  }, []);
-
-  const setRole = useCallback((newRole: UserRole) => {
-    setRoleState(newRole);
-    AsyncStorage.setItem(STORAGE_KEY, newRole);
-  }, []);
-
-  const toggleRole = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setRoleState((prev) => {
-      const next: UserRole = prev === 'freelancer' ? 'client' : 'freelancer';
-      AsyncStorage.setItem(STORAGE_KEY, next);
-      return next;
-    });
-  }, []);
-
-  return (
-    <RoleContext.Provider
-      value={{
-        role,
-        setRole,
-        toggleRole,
-        isClient: role === 'client',
-        isFreelancer: role === 'freelancer',
-      }}>
-      {children}
-    </RoleContext.Provider>
-  );
-}
+export type UserRole = Role;
 
 export function useRole() {
-  return useContext(RoleContext);
+  const { user, pending } = useAuth();
+  const role: UserRole = user?.role ?? pending?.role ?? 'freelancer';
+  return { role, isClient: role === 'client', isFreelancer: role === 'freelancer' };
 }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { Text } from '@/components/ui-text';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,8 +8,9 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRole } from '@/contexts/RoleContext';
 import { Avatar, Button, Field, ScreenBackground, SectionHeader, TopBar } from '@/components/ds';
-import { CurrentUser } from '@/constants/media';
+import { useAuth, useCurrentUser } from '@/contexts/AuthContext';
 import { pickImage } from '@/hooks/pick-image';
+import { SuccessOverlay } from '@/components/success-overlay';
 import { Layout, Radius } from '@/constants/theme';
 
 export default function EditProfileScreen() {
@@ -17,11 +19,13 @@ export default function EditProfileScreen() {
   const { isClient } = useRole();
   const insets = useSafeAreaInsets();
 
-  const [avatarUri, setAvatarUri] = useState(CurrentUser.avatar);
-  const [name, setName] = useState(isClient ? 'Kente Labs Ltd' : CurrentUser.name);
-  const [headline, setHeadline] = useState(isClient ? 'Education software for Ghanaian schools' : 'Senior React Native Engineer');
+  const { updateProfile } = useAuth();
+  const me = useCurrentUser();
+  const [avatarUri, setAvatarUri] = useState(me.avatar);
+  const [name, setName] = useState(me.name);
+  const [headline, setHeadline] = useState(me.headline);
   const [rate, setRate] = useState('150');
-  const [location, setLocation] = useState(isClient ? 'Airport City, Accra' : CurrentUser.location);
+  const [location, setLocation] = useState(me.location);
   const [bio, setBio] = useState(
     isClient
       ? 'We build learning tools used by 200,000 students across Ghana and hire verified engineers and designers for milestone projects.'
@@ -34,6 +38,7 @@ export default function EditProfileScreen() {
   const [github, setGithub] = useState('https://github.com/kwamemensah');
   const [portfolio, setPortfolio] = useState('https://kwamemensah.dev');
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [nameError, setNameError] = useState<string>();
   const [skillError, setSkillError] = useState<string>();
 
@@ -52,7 +57,8 @@ export default function EditProfileScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     setTimeout(() => {
       setSaving(false);
-      router.back();
+      updateProfile({ name: name.trim(), headline: headline.trim(), location: location.trim(), avatar: avatarUri });
+      setSaved(true);
     }, 600);
   };
 
@@ -89,7 +95,7 @@ export default function EditProfileScreen() {
               }}
               error={nameError}
             />
-            <Field label={isClient ? 'What you do' : 'Headline'} icon="sparkles-outline" value={headline} onChangeText={setHeadline} />
+            <Field label={isClient ? 'What you do' : 'Headline'} icon="briefcase-outline" value={headline} onChangeText={setHeadline} />
             <View style={styles.two}>
               {!isClient && (
                 <Field
@@ -161,6 +167,10 @@ export default function EditProfileScreen() {
           <Button label="Save changes" loading={saving} onPress={save} />
         </View>
       </SafeAreaView>
+      <SuccessOverlay visible={saved} title="Profile saved" autoClose={1100} onDismiss={() => {
+        setSaved(false);
+        router.back();
+      }} />
     </View>
   );
 }

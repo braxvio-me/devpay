@@ -2,24 +2,10 @@
  * DevPay UI kit — atoms rebuilt from the reference set in `ui/`.
  * Every screen composes these so the frosted sky-blue world stays consistent.
  */
-import React, { ReactNode, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Pressable,
-  TextInput,
-  TextInputProps,
-  StyleProp,
-  ViewStyle,
-  TextStyle,
-  AccessibilityInfo,
-  Platform,
-  LayoutChangeEvent,
-  Modal,
-} from 'react-native';
+import React, { ReactNode, useEffect, useRef } from 'react';
+import { View, StyleSheet, Pressable, TextInputProps, StyleProp, ViewStyle, TextStyle, AccessibilityInfo, Platform, LayoutChangeEvent, Modal } from 'react-native';
+import { Text, TextInput } from '@/components/ui-text';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -29,15 +15,17 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
   withTiming,
+  withSequence,
   interpolate,
   Extrapolation,
   runOnJS,
   FadeInDown,
   LinearTransition,
+  interpolateColor,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Gradients, Radius, Shadows, Layout } from '@/constants/theme';
+import { Radius, Shadows, Layout } from '@/constants/theme';
 import type { Company, CompanyMark } from '@/constants/companies';
 
 type IconName = keyof typeof Ionicons.glyphMap;
@@ -112,19 +100,10 @@ export function Appear({
   );
 }
 
-// ─── Screen background: sky wash fading into the canvas ────────────────────
-export function ScreenBackground({ height = 360 }: { height?: number }) {
-  const { isDark, colors } = useTheme();
-  return (
-    <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]}>
-      <LinearGradient
-        colors={isDark ? Gradients.screenDark : Gradients.screen}
-        start={{ x: 0.2, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, height }}
-      />
-    </View>
-  );
+// ─── Screen background: flat canvas (height kept for API compatibility) ────
+export function ScreenBackground(_: { height?: number }) {
+  const { colors } = useTheme();
+  return <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]} />;
 }
 
 // ─── Glass card ────────────────────────────────────────────────────────────
@@ -146,7 +125,8 @@ export function GlassCard({
     styles.card,
     padded && styles.cardPadded,
     { backgroundColor: colors.surface },
-    isDark ? { borderWidth: 1, borderColor: colors.border } : Shadows.soft,
+    { borderWidth: 1, borderColor: colors.border },
+    !isDark && Shadows.soft,
     style,
   ];
   if (onPress) {
@@ -179,7 +159,7 @@ export function IconButton({
   accessibilityLabel: string;
   style?: StyleProp<ViewStyle>;
 }) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   return (
     <PressableScale
       onPress={onPress}
@@ -189,7 +169,7 @@ export function IconButton({
       style={[
         styles.iconBtn,
         { width: size, height: size, borderRadius: size / 2, backgroundColor: colors.surface },
-        isDark ? { borderWidth: 1, borderColor: colors.border } : Shadows.button,
+        { borderWidth: 1, borderColor: colors.border },
         style,
       ]}>
       <Ionicons name={icon} size={iconSize} color={color ?? colors.text} />
@@ -211,11 +191,19 @@ export function BookmarkButton({
   onGradient?: boolean;
 }) {
   const { colors, isDark } = useTheme();
-  const bg = onGradient
-    ? 'rgba(255,255,255,0.35)'
-    : active
-      ? colors.coralSoft
-      : colors.surface;
+  // Saved: just the filled icon, no circle behind it.
+  const bg = active ? 'transparent' : onGradient ? '#FFFFFF' : colors.surface;
+  const pop = useSharedValue(1);
+  const wasActive = useRef(active);
+  useEffect(() => {
+    if (active && !wasActive.current) {
+      pop.set(withSequence(withTiming(1.35, { duration: 120 }), withSpring(1, { duration: 320, dampingRatio: 0.45 })));
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    }
+    wasActive.current = active;
+  }, [active, pop]);
+  const popStyle = useAnimatedStyle(() => ({ transform: [{ scale: pop.get() }] }));
+
   return (
     <PressableScale
       onPress={onPress}
@@ -227,11 +215,13 @@ export function BookmarkButton({
         { width: size, height: size, borderRadius: size / 2, backgroundColor: bg },
         !active && !onGradient && { borderWidth: 1, borderColor: isDark ? colors.border : '#E3E7EA' },
       ]}>
-      <Ionicons
-        name={active ? 'bookmark' : 'bookmark-outline'}
-        size={size * 0.44}
-        color={active ? colors.accentCoral : onGradient ? '#FFFFFF' : colors.textMuted}
-      />
+      <Animated.View style={popStyle}>
+        <Ionicons
+          name={active ? 'bookmark' : 'bookmark-outline'}
+          size={active ? size * 0.6 : size * 0.44}
+          color={active ? (onGradient ? '#FFFFFF' : colors.accentCoral) : onGradient ? colors.action : colors.textMuted}
+        />
+      </Animated.View>
     </PressableScale>
   );
 }
@@ -275,13 +265,13 @@ export function CompanyLogo({
   );
 }
 
-// ─── Trusted badge ─────────────────────────────────────────────────────────
+// ─── Verified badge ─────────────────────────────────────────────────────────
 export function TrustedBadge({ light }: { light?: boolean }) {
   const { colors } = useTheme();
   return (
     <View style={styles.row4}>
-      <Ionicons name="shield-checkmark" size={12} color={light ? '#FFFFFF' : colors.accentGreen} />
-      <Text style={[styles.trusted, { color: light ? 'rgba(255,255,255,0.92)' : colors.textSecondary }]}>Trusted</Text>
+      <MaterialCommunityIcons name="check-decagram" size={14} color={light ? '#FFFFFF' : colors.action} />
+      <Text maxFontSizeMultiplier={1.4} style={[styles.trusted, { color: light ? '#E3F0F7' : colors.textSecondary }]}>Verified</Text>
     </View>
   );
 }
@@ -297,7 +287,7 @@ export function CompanyRow({
   logoSize?: number;
 }) {
   const { colors } = useTheme();
-  const sub = light ? 'rgba(255,255,255,0.95)' : colors.textSecondary;
+  const sub = light ? '#E3F0F7' : colors.textSecondary;
   return (
     <View style={styles.companyRow}>
       <CompanyLogo mark={company.mark} size={logoSize} ring={!light} />
@@ -398,11 +388,11 @@ export function AvatarStack({
               height: size,
               borderRadius: size / 2,
               marginLeft: -size * 0.32,
-              backgroundColor: light ? 'rgba(255,255,255,0.9)' : colors.backgroundElement,
+              backgroundColor: light ? '#FFFFFF' : colors.backgroundElement,
               borderColor: light ? '#FFFFFF' : colors.surface,
             },
           ]}>
-          <Text style={[styles.stackCountText, { color: light ? colors.primaryText : colors.textSecondary }]}>+{extra}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.stackCountText, { color: light ? colors.primaryText : colors.textSecondary }]}>+{extra}</Text>
         </View>
       )}
     </View>
@@ -429,7 +419,7 @@ export function Chip({
   const content = (
     <>
       {icon && <Ionicons name={icon} size={14} color={selected ? colors.onPrimary : colors.textSecondary} />}
-      <Text
+      <Text maxFontSizeMultiplier={1.4}
         numberOfLines={1}
         style={[
           size === 'sm' ? styles.chipTextSm : styles.chipText,
@@ -479,7 +469,7 @@ export function SectionHeader({
       </View>
       {onSeeAll && (
         <Pressable onPress={onSeeAll} hitSlop={10} style={styles.row4} accessibilityRole="link">
-          <Text style={[styles.seeAll, { color: colors.textSecondary }]}>{actionLabel}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.seeAll, { color: colors.textSecondary }]}>{actionLabel}</Text>
           <MaterialCommunityIcons name="chevron-double-right" size={16} color={colors.textSecondary} />
         </Pressable>
       )}
@@ -489,17 +479,16 @@ export function SectionHeader({
 
 // ─── "Apply" corner on white cards ────────────────────────────────────────
 export function ApplyCorner({ onPress, label = 'Apply' }: { onPress?: () => void; label?: string }) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={styles.applyCorner}>
-      <LinearGradient
-        colors={isDark ? Gradients.applyFadeDark : Gradients.applyFade}
-        start={{ x: 0, y: 0.5 }}
-        end={{ x: 1, y: 0.5 }}
-        style={styles.applyCornerFill}>
-        <Text style={[styles.applyText, { color: colors.primaryText }]}>{label}</Text>
-        <Feather name="arrow-up-right" size={15} color={colors.primaryText} />
-      </LinearGradient>
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      hitSlop={6}
+      style={({ pressed }) => [styles.applyPill, { backgroundColor: colors.action, opacity: pressed ? 0.85 : 1 }]}>
+      <Text maxFontSizeMultiplier={1.4} style={[styles.applyText, { color: '#FFFFFF' }]}>{label}</Text>
+      <Feather name="arrow-up-right" size={14} color="#FFFFFF" />
     </Pressable>
   );
 }
@@ -530,7 +519,7 @@ export function TopBar({
       <View style={styles.topBarTitle}>
         {title && (
           <View style={styles.row4}>
-            <Text numberOfLines={1} style={[styles.topBarText, { color: colors.text }]} accessibilityRole="header">
+            <Text maxFontSizeMultiplier={1.4} numberOfLines={1} style={[styles.topBarText, { color: colors.text }]} accessibilityRole="header">
               {title}
             </Text>
             {verified && <MaterialCommunityIcons name="check-decagram" size={17} color={colors.primary} />}
@@ -570,13 +559,13 @@ export function Button({
   /** Label/icon colour override, e.g. a ghost button on a gradient. */
   fg?: string;
 }) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const height = size === 'lg' ? 56 : 46;
   const text: TextStyle = { fontSize: size === 'lg' ? 16 : 14, fontWeight: '600' };
   const palette: Record<ButtonVariant, { bg?: string; fg: string; border?: string }> = {
-    primary: { fg: '#FFFFFF' },
-    dark: { bg: isDark ? '#F2F5F7' : '#0E1012', fg: isDark ? '#0E1012' : '#FFFFFF' },
-    light: { bg: isDark ? colors.backgroundElement : colors.surface, fg: colors.text },
+    primary: { bg: colors.action, fg: '#FFFFFF' },
+    dark: { bg: colors.ink, fg: colors.onInk },
+    light: { bg: colors.surface, fg: colors.text, border: colors.border },
     soft: { bg: colors.primarySoft, fg: colors.primaryText },
     danger: { bg: colors.coralSoft, fg: colors.accentCoral },
     ghost: { bg: 'transparent', fg: colors.textSecondary },
@@ -585,7 +574,7 @@ export function Button({
   const inner = (
     <>
       {icon}
-      <Text numberOfLines={1} style={[text, { color: fg ?? p.fg }]}>
+      <Text maxFontSizeMultiplier={1.4} numberOfLines={1} style={[text, { color: fg ?? p.fg }]}>
         {loading ? 'Please wait…' : label}
       </Text>
       {iconRight}
@@ -598,19 +587,11 @@ export function Button({
       accessibilityLabel={label}
       style={[
         { height, borderRadius: Radius.pill, overflow: 'hidden' },
-        variant === 'light' && !isDark && Shadows.button,
-        variant === 'primary' && !isDark && Shadows.lifted,
         style,
       ]}>
-      {variant === 'primary' ? (
-        <LinearGradient colors={Gradients.cta} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.btnInner}>
-          {inner}
-        </LinearGradient>
-      ) : (
-        <View style={[styles.btnInner, { backgroundColor: p.bg, borderWidth: p.border ? 1 : 0, borderColor: p.border }]}>
-          {inner}
-        </View>
-      )}
+      <View style={[styles.btnInner, { backgroundColor: p.bg, borderWidth: p.border ? 1 : 0, borderColor: p.border }]}>
+        {inner}
+      </View>
     </PressableScale>
   );
 }
@@ -651,14 +632,13 @@ export function Segmented<T extends string>({
           style={[
             styles.segThumb,
             { width: segW, backgroundColor: isCta ? '#FFFFFF' : isDark ? colors.backgroundSelected : colors.surface },
-            !isDark && Shadows.button,
             thumb,
           ]}
         />
       )}
       {options.map((o) => {
         const active = o.value === value;
-        const fg = isCta ? (active ? '#17191C' : '#FFFFFF') : active ? colors.text : colors.textSecondary;
+        const fg = isCta ? (active ? colors.action : '#FFFFFF') : active ? colors.text : colors.textSecondary;
         return (
           <Pressable
             key={o.value}
@@ -670,7 +650,7 @@ export function Segmented<T extends string>({
               onChange(o.value);
             }}>
             {o.icon && <Ionicons name={o.icon} size={15} color={fg} />}
-            <Text style={[styles.segText, { color: fg }]}>{o.label}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.segText, { color: fg }]}>{o.label}</Text>
           </Pressable>
         );
       })}
@@ -681,14 +661,9 @@ export function Segmented<T extends string>({
 
   if (isCta) {
     return (
-      <LinearGradient
-        onLayout={onLayout}
-        colors={Gradients.cta}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[styles.seg, Shadows.lifted, style]}>
+      <View onLayout={onLayout} style={[styles.seg, { backgroundColor: colors.action }, Shadows.lifted, style]}>
         {body}
-      </LinearGradient>
+      </View>
     );
   }
   return (
@@ -708,6 +683,7 @@ export function SlideToConfirm({
   onConfirm: () => void;
   disabled?: boolean;
 }) {
+  const { colors } = useTheme();
   const [trackW, setTrackW] = React.useState(0);
   const [reduceMotion, setReduceMotion] = React.useState(false);
   const x = useSharedValue(0);
@@ -745,15 +721,12 @@ export function SlideToConfirm({
   }));
 
   return (
-    <LinearGradient
-      colors={Gradients.cta}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
+    <View
       onLayout={(e) => setTrackW(e.nativeEvent.layout.width)}
-      style={[styles.slider, Shadows.lifted, disabled && { opacity: 0.6 }]}>
+      style={[styles.slider, { backgroundColor: colors.action }, disabled && { opacity: 0.6 }]}>
       <Animated.View style={[styles.sliderChevrons, chevrons]} pointerEvents="none">
         {[0.35, 0.5, 0.65, 0.82, 1].map((o, i) => (
-          <Ionicons key={i} name="chevron-forward" size={18} color={`rgba(255,255,255,${o})`} style={{ marginLeft: -5 }} />
+          <Ionicons key={i} name="chevron-forward" size={18} color="#FFFFFF" style={{ marginLeft: -5, opacity: o }} />
         ))}
       </Animated.View>
       <GestureDetector gesture={pan}>
@@ -764,11 +737,11 @@ export function SlideToConfirm({
             accessibilityHint={reduceMotion ? undefined : 'Slide right or double tap to confirm'}
             onPress={disabled ? undefined : confirm}
             style={styles.sliderThumbInner}>
-            <Text style={styles.sliderLabel}>{label}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.sliderLabel, { color: colors.action }]}>{label}</Text>
           </Pressable>
         </Animated.View>
       </GestureDetector>
-    </LinearGradient>
+    </View>
   );
 }
 
@@ -789,7 +762,7 @@ export function Field({
   prefix?: ReactNode;
   style?: StyleProp<ViewStyle>;
 }) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const [focused, setFocused] = React.useState(false);
   return (
     <View style={[{ gap: 8 }, style]}>
@@ -797,8 +770,7 @@ export function Field({
       <View
         style={[
           styles.field,
-          { backgroundColor: colors.surface, borderColor: error ? colors.accentCoral : focused ? colors.primary : isDark ? colors.border : 'transparent' },
-          !isDark && Shadows.button,
+          { backgroundColor: colors.surface, borderColor: error ? colors.accentCoral : focused ? colors.primary : colors.border },
           input.multiline && { borderRadius: Radius.lg, alignItems: 'flex-start' },
         ]}>
         {icon && <Ionicons name={icon} size={19} color={colors.textMuted} />}
@@ -881,18 +853,19 @@ export function StatusPill({
   icon?: IconName;
 }) {
   const { colors } = useTheme();
+  // Solid fills with white text: no tinted washes.
   const map = {
-    blue: [colors.primarySoft, colors.primaryText],
-    green: [colors.greenSoft, colors.accentGreen],
-    amber: [colors.amberSoft, colors.accentAmber],
-    coral: [colors.coralSoft, colors.accentCoral],
-    grey: [colors.backgroundElement, colors.textSecondary],
+    blue: [colors.action, '#FFFFFF'],
+    green: ['#178A60', '#FFFFFF'],
+    amber: ['#B26A00', '#FFFFFF'],
+    coral: ['#CF3A40', '#FFFFFF'],
+    grey: [colors.text, colors.background],
   } as const;
   const [bg, fg] = map[tone];
   return (
     <View style={[styles.statusPill, { backgroundColor: bg }]}>
       {icon && <Ionicons name={icon} size={12} color={fg} />}
-      <Text style={[styles.statusText, { color: fg }]}>{label}</Text>
+      <Text maxFontSizeMultiplier={1.4} style={[styles.statusText, { color: fg }]}>{label}</Text>
     </View>
   );
 }
@@ -939,6 +912,49 @@ export function ChoiceCard({
       {description && <Text style={[styles.choiceDesc, { color: colors.textSecondary }]}>{description}</Text>}
       {children}
     </PressableScale>
+  );
+}
+
+// ─── Switch: identical on iOS and Android (replaces the native switch) ────
+export function Switch({
+  value,
+  onValueChange,
+  disabled,
+  accessibilityLabel,
+  trackColor,
+}: {
+  value: boolean;
+  onValueChange: (v: boolean) => void;
+  disabled?: boolean;
+  accessibilityLabel?: string;
+  /** Accepted for API compatibility with the native switch; `true` sets the on colour. */
+  trackColor?: { true?: string; false?: string };
+  thumbColor?: string;
+}) {
+  const { colors } = useTheme();
+  const t = useSharedValue(value ? 1 : 0);
+  useEffect(() => {
+    t.set(withSpring(value ? 1 : 0, { duration: 260, dampingRatio: 0.85 }));
+  }, [t, value]);
+  const on = trackColor?.true ?? colors.primary;
+  const off = colors.backgroundSelected;
+  const thumb = useAnimatedStyle(() => ({ transform: [{ translateX: t.get() * 20 }] }));
+  const track = useAnimatedStyle(() => ({ backgroundColor: interpolateColor(t.get(), [0, 1], [off, on]) }));
+  return (
+    <Pressable
+      onPress={() => {
+        Haptics.selectionAsync().catch(() => {});
+        onValueChange(!value);
+      }}
+      disabled={disabled}
+      hitSlop={8}
+      accessibilityRole="switch"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ checked: value, disabled }}>
+      <Animated.View style={[styles.switchTrack, track, disabled && { opacity: 0.5 }]}>
+        <Animated.View style={[styles.switchThumb, thumb]} />
+      </Animated.View>
+    </Pressable>
   );
 }
 
@@ -1004,7 +1020,7 @@ const styles = StyleSheet.create({
   stackCount: { alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, minWidth: 30, paddingHorizontal: 4 },
   stackCountText: { fontSize: 9, fontWeight: '600' },
   chip: {
-    height: 38,
+    minHeight: 38,
     paddingHorizontal: 16,
     borderRadius: Radius.pill,
     flexDirection: 'row',
@@ -1013,7 +1029,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   chipSm: {
-    height: 30,
+    minHeight: 30,
     paddingHorizontal: 12,
     borderRadius: Radius.pill,
     flexDirection: 'row',
@@ -1026,24 +1042,15 @@ const styles = StyleSheet.create({
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   sectionTitle: { fontSize: 15, fontWeight: '600', letterSpacing: -0.1 },
   seeAll: { fontSize: 13 },
-  applyCorner: {
-    position: 'absolute',
-    right: 0,
-    bottom: 0,
-    width: '52%',
-    height: 44,
-    borderBottomRightRadius: Radius.lg,
-    overflow: 'hidden',
-  },
-  applyCornerFill: {
-    flex: 1,
+  applyPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingRight: 18,
-    gap: 6,
+    gap: 4,
+    height: 34,
+    paddingHorizontal: 14,
+    borderRadius: Radius.pill,
   },
-  applyText: { fontSize: 14, fontWeight: '500' },
+  applyText: { fontSize: 13, fontWeight: '600' },
   topBar: {
     height: Layout.headerHeight,
     flexDirection: 'row',
@@ -1061,7 +1068,7 @@ const styles = StyleSheet.create({
   segText: { fontSize: 14, fontWeight: '500' },
   slider: { height: 58, borderRadius: Radius.pill, padding: 4, justifyContent: 'center' },
   sliderChevrons: { position: 'absolute', right: 22, flexDirection: 'row', alignItems: 'center' },
-  sliderThumb: { height: 50, borderRadius: Radius.pill, backgroundColor: '#F2F9FD' },
+  sliderThumb: { height: 50, borderRadius: Radius.pill, backgroundColor: '#FFFFFF' },
   sliderThumbInner: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   sliderLabel: { fontSize: 15, fontWeight: '500', color: '#17191C' },
   fieldLabel: { fontSize: 13, fontWeight: '500' },
@@ -1085,11 +1092,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     paddingHorizontal: 10,
-    height: 26,
-    borderRadius: Radius.pill,
+    height: 24,
+    borderRadius: 7,
     alignSelf: 'flex-start',
   },
-  statusText: { fontSize: 12, fontWeight: '500' },
+  statusText: { fontSize: 12, fontWeight: '600', letterSpacing: 0.1 },
   choice: { borderRadius: Radius.lg, padding: 16, borderWidth: 1.5, gap: 10 },
   choiceTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   choiceIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
@@ -1097,6 +1104,8 @@ const styles = StyleSheet.create({
   choiceDesc: { fontSize: 13, lineHeight: 19 },
   radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   radioDot: { width: 10, height: 10, borderRadius: 5 },
+  switchTrack: { width: 50, height: 30, borderRadius: 15, padding: 3 },
+  switchThumb: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#FFFFFF', boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.2)' },
   backdrop: { flex: 1, backgroundColor: 'rgba(12, 22, 28, 0.38)' },
   sheetDock: { position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center' },
   sheet: {

@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, useWindowDimensions } from 'react-native';
+import { Text } from '@/components/ui-text';
 import { useTheme } from '@/contexts/ThemeContext';
 import { ApplyCorner, AvatarStack, BookmarkButton, Chip, CompanyRow, GlassCard } from '@/components/ds';
 import type { Job } from '@/constants/jobs';
@@ -19,7 +20,7 @@ export function LatestJobCard({ job, layout = 'feed', onPress, onBookmarkToggle,
   const compact = useWindowDimensions().width < 370;
 
   return (
-    <GlassCard onPress={onPress} accessibilityLabel={`${job.title} at ${job.company.name}`} style={search && { paddingBottom: 0 }}>
+    <GlassCard onPress={onPress} accessibilityLabel={`${job.title} at ${job.company.name}`}>
       <View style={styles.top}>
         <CompanyRow company={job.company} />
         <BookmarkButton active={job.bookmarked} onPress={onBookmarkToggle} />
@@ -68,5 +69,5 @@ const styles = StyleSheet.create({
   midCompact: { flexDirection: 'column', alignItems: 'flex-start', gap: 0 },
   sideChips: { flexDirection: 'row', gap: 8 },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 },
-  searchBottom: { height: 56, marginHorizontal: -16, paddingLeft: 16, justifyContent: 'center', marginTop: 8 },
+  searchBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 },
 });

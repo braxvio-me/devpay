@@ -1,58 +1,99 @@
-import React, { ReactNode } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import React, { ReactNode, useEffect, useState } from 'react';
+import { View, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeIn } from 'react-native-reanimated';
+import { Text } from '@/components/ui-text';
 import { useTheme } from '@/contexts/ThemeContext';
+import { formatDue, type Reminder } from '@/constants/projects';
 import { Radius } from '@/constants/theme';
 
 interface ReminderCardProps {
-  title?: string;
-  subtitle?: string;
-  countdown?: string;
+  reminder: Reminder | null;
   onPress?: () => void;
   /** Rendered inside the panel under the reminder row (the search bar in the reference). */
   children?: ReactNode;
 }
 
-export function ReminderCard({
-  title = 'Reminder',
-  subtitle = 'Milestone 2 due in 2 hours',
-  countdown = '945',
-  onPress,
-  children,
-}: ReminderCardProps) {
-  const { colors, isDark } = useTheme();
-  const digits = countdown.replace(/\D/g, '').split('');
+/** Re-renders every second while mounted. */
+function useNow() {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  return now;
+}
+
+const pad = (n: number) => String(n).padStart(2, '0');
+
+/** Countdown parts: H:M:S under a day, otherwise D:H:M. */
+function parts(ms: number): { value: string; unit: string }[] {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const d = Math.floor(s / 86400);
+  const h = Math.floor((s % 86400) / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  if (d > 0) return [{ value: String(d), unit: 'd' }, { value: pad(h), unit: 'h' }, { value: pad(m), unit: 'm' }];
+  return [{ value: pad(h), unit: 'h' }, { value: pad(m), unit: 'm' }, { value: pad(s % 60), unit: 's' }];
+}
+
+export function ReminderCard({ reminder, onPress, children }: ReminderCardProps) {
+  const { colors } = useTheme();
+  const now = useNow();
+  const left = reminder ? reminder.dueAt - now : 0;
+  const overdue = !!reminder && left <= 0;
+  const urgent = !!reminder && left > 0 && left < 3_600_000;
+  const tileBg = overdue ? colors.coralSoft : urgent ? colors.amberSoft : colors.backgroundElement;
+  const tileFg = overdue ? colors.accentCoral : urgent ? colors.accentAmber : colors.text;
+
+  const label = !reminder
+    ? 'No deadlines coming up'
+    : overdue
+      ? `${reminder.title}. Overdue.`
+      : `${reminder.title}. ${reminder.subtitle}. Due ${formatDue(reminder.dueAt)}.`;
 
   return (
-    <LinearGradient
-      colors={isDark ? ['#15303D', '#13242D'] : ['#DCEEF8', '#EAF6FD']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={[styles.panel, { borderColor: isDark ? colors.border : 'rgba(255,255,255,0.8)' }]}>
-      <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`${title}. ${subtitle}`} style={styles.row}>
-        <View style={[styles.icon, { backgroundColor: isDark ? colors.primarySoft : '#FFFFFF' }]}>
-          <Ionicons name="stopwatch-outline" size={24} color={colors.primary} />
+    <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <Pressable onPress={onPress} disabled={!reminder} accessibilityRole="button" accessibilityLabel={label} style={styles.row}>
+        <View style={[styles.icon, { backgroundColor: colors.primaryWash }]}>
+          <Ionicons name={overdue ? 'alert-circle-outline' : 'stopwatch-outline'} size={24} color={overdue ? colors.accentCoral : colors.primary} />
         </View>
         <View style={{ flex: 1, gap: 2 }}>
-          <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+          <Text style={[styles.title, { color: colors.text }]}>{reminder ? reminder.title : 'All caught up'}</Text>
           <Text style={[styles.sub, { color: colors.textSecondary }]} numberOfLines={1}>
-            {subtitle}
+            {reminder ? reminder.subtitle : 'No deadlines coming up'}
           </Text>
+          {reminder && (
+            <Text style={[styles.due, { color: overdue ? colors.accentCoral : colors.textSecondary }]} numberOfLines={1}>
+              {overdue ? 'Overdue' : `Due ${formatDue(reminder.dueAt)}`}
+            </Text>
+          )}
         </View>
-        <View style={styles.timer} accessibilityLabel={`Countdown ${countdown}`}>
-          {digits.map((d, i) => (
-            <React.Fragment key={i}>
-              {i === 1 && <Text style={[styles.colon, { color: colors.text }]}>:</Text>}
-              <View style={[styles.digit, { backgroundColor: isDark ? colors.backgroundElement : 'rgba(255,255,255,0.75)' }]}>
-                <Text style={[styles.digitText, { color: colors.text }]}>{d}</Text>
-              </View>
-            </React.Fragment>
-          ))}
-        </View>
+        {reminder && !overdue && (
+          <View style={styles.timer} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+            {parts(left).map((p, i) => (
+              <React.Fragment key={p.unit}>
+                {i > 0 && (
+                  <Text style={[styles.colon, { color: tileFg }]} maxFontSizeMultiplier={1.2}>
+                    :
+                  </Text>
+                )}
+                <View style={[styles.digit, { backgroundColor: tileBg }]}>
+                  <Animated.View key={p.value} entering={FadeIn.duration(180)}>
+                    <Text style={[styles.digitText, { color: tileFg }]} maxFontSizeMultiplier={1.2}>
+                      {p.value}
+                    </Text>
+                  </Animated.View>
+                  <Text style={[styles.unit, { color: tileFg }]} maxFontSizeMultiplier={1.2}>
+                    {p.unit}
+                  </Text>
+                </View>
+              </React.Fragment>
+            ))}
+          </View>
+        )}
       </Pressable>
       {children}
-    </LinearGradient>
+    </View>
   );
 }
 
@@ -62,8 +103,10 @@ const styles = StyleSheet.create({
   icon: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 14, fontWeight: '600' },
   sub: { fontSize: 12 },
-  timer: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  digit: { width: 24, height: 30, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
-  digitText: { fontSize: 16, fontWeight: '500', fontVariant: ['tabular-nums'] },
-  colon: { fontSize: 15, fontWeight: '600', marginHorizontal: 1 },
+  due: { fontSize: 11, fontWeight: '500' },
+  timer: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  digit: { minWidth: 30, height: 36, borderRadius: 8, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3 },
+  digitText: { fontSize: 15, fontWeight: '600', fontVariant: ['tabular-nums'] },
+  unit: { fontSize: 9, fontWeight: '500', marginTop: -2, opacity: 0.7 },
+  colon: { fontSize: 14, fontWeight: '600' },
 });

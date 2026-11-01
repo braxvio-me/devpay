@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { Text } from '@/components/ui-text';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { useOnline, offlineAlert } from '@/hooks/use-online';
+import { notify } from '@/lib/notify';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Button, CompanyRow, Field, GlassCard, ScreenBackground, SectionHeader, TopBar } from '@/components/ds';
 import { SuccessOverlay } from '@/components/success-overlay';
@@ -23,6 +26,7 @@ export default function JobApplyScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const online = useOnline();
   const { jobId } = useLocalSearchParams<{ jobId: string }>();
   const job = getJob(jobId);
 
@@ -55,11 +59,13 @@ export default function JobApplyScreen() {
 
   const submit = () => {
     if (!cover.trim()) return setCoverError('Write a short pitch so the client knows why you.');
+    if (!online) return offlineAlert('send your proposal');
     setSubmitting(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     setTimeout(() => {
       setSubmitting(false);
       setDone(true);
+      notify('Proposal sent', `${job.company.name} will review your proposal for ${job.title}.`, '/contracts');
     }, 800);
   };
 

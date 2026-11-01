@@ -1,11 +1,24 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Switch } from 'react-native';
+import { View, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { Text } from '@/components/ui-text';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { useOnline, offlineAlert } from '@/hooks/use-online';
+import { notify } from '@/lib/notify';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Button, Chip, Field, GlassCard, ScreenBackground, SectionHeader, Segmented, TopBar } from '@/components/ds';
+import {
+  Button,
+  Chip,
+  Field,
+  GlassCard,
+  ScreenBackground,
+  SectionHeader,
+  Segmented,
+  TopBar,
+  Switch,
+} from '@/components/ds';
 import { SuccessOverlay } from '@/components/success-overlay';
 import { Layout, Radius } from '@/constants/theme';
 
@@ -22,6 +35,7 @@ export default function CreateJobScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const online = useOnline();
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Tech & Dev');
   const [description, setDescription] = useState('');
@@ -46,8 +60,10 @@ export default function CreateJobScreen() {
     };
     setErrors(next);
     if (next.title || next.description || next.budget) return;
+    if (!online) return offlineAlert('publish this job');
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     setPublished(true);
+    notify('Job published', `“${title.trim()}” is live. We’ll tell you when proposals arrive.`, '/job/applicants');
   };
 
   return (

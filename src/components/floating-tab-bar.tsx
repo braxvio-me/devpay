@@ -1,13 +1,13 @@
-import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import React, { useEffect, useState } from 'react';
+import { View, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
+import { Text } from '@/components/ui-text';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRole } from '@/contexts/RoleContext';
-import { Gradients, Layout } from '@/constants/theme';
+import { Shadows } from '@/constants/theme';
 
 export type TabType = 'home' | 'jobs' | 'action' | 'chats' | 'profile';
 
@@ -18,165 +18,133 @@ interface FloatingTabBarProps {
   unreadChats?: number;
 }
 
+type IconName = keyof typeof Ionicons.glyphMap;
+
 function Tab({
   active,
   label,
   icon,
   onPress,
   badge,
+  size,
 }: {
   active: boolean;
   label: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IconName;
   onPress: () => void;
   badge?: boolean;
+  size: number;
 }) {
   const { colors } = useTheme();
-  const scale = useSharedValue(1);
-  const animated = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
-  const color = active ? colors.navActive : colors.textMuted;
+  const [labelW, setLabelW] = useState(0);
+  // 0 = icon only, 1 = icon + name. Starts collapsed so the active tab springs open on arrival.
+  const open = useSharedValue(0);
+  const hop = useSharedValue(0);
+  const press = useSharedValue(1);
+
+  useEffect(() => {
+    open.set(withSpring(active ? 1 : 0, { duration: 650, dampingRatio: active ? 0.5 : 0.9 }));
+    if (active) hop.set(withSequence(withTiming(-4, { duration: 140 }), withSpring(0, { duration: 420, dampingRatio: 0.45 })));
+  }, [active, hop, open]);
+
+  const pill = useAnimatedStyle(() => ({
+    width: size + Math.max(0, open.get()) * (labelW + 6),
+    transform: [{ scale: press.get() }],
+  }));
+  const bg = useAnimatedStyle(() => ({ opacity: Math.min(1, Math.max(0, open.get())) }));
+  const iconStyle = useAnimatedStyle(() => ({ transform: [{ translateY: hop.get() }] }));
+  const text = useAnimatedStyle(() => ({
+    opacity: Math.min(1, Math.max(0, open.get() * 1.4 - 0.4)),
+    transform: [{ translateX: (1 - Math.min(1, open.get())) * -8 }],
+  }));
 
   return (
     <Pressable
-      style={styles.tab}
       accessibilityRole="tab"
       accessibilityLabel={label}
       accessibilityState={{ selected: active }}
-      onPressIn={() => scale.set(withTiming(0.88, { duration: 100 }))}
-      onPressOut={() => scale.set(withSpring(1, { duration: 280, dampingRatio: 0.7 }))}
+      hitSlop={4}
+      onPressIn={() => press.set(withTiming(0.92, { duration: 100 }))}
+      onPressOut={() => press.set(withSpring(1, { duration: 300, dampingRatio: 0.5 }))}
       onPress={() => {
         Haptics.selectionAsync().catch(() => {});
         onPress();
       }}>
-      <Animated.View style={[styles.tabInner, animated]}>
-        <View>
-          <Ionicons name={icon} size={23} color={color} />
-          {badge && <View style={[styles.badge, { backgroundColor: colors.accentCoral, borderColor: colors.surface }]} />}
+      <Animated.View style={[styles.item, { height: size, borderRadius: size / 2 }, pill]}>
+        <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: '#FFFFFF', borderRadius: size / 2 }, bg]} />
+        <View style={[styles.iconBox, { width: size, height: size }]}>
+          <Animated.View style={iconStyle}>
+            <Ionicons name={icon} size={21} color={active ? colors.action : '#FFFFFF'} style={!active && { opacity: 0.85 }} />
+          </Animated.View>
+          {badge && <View style={[styles.badge, { backgroundColor: colors.accentCoral, borderColor: active ? '#FFFFFF' : colors.action }]} />}
         </View>
-        <Text style={[styles.label, { color, fontWeight: active ? '600' : '400' }]}>{label}</Text>
+        {active && (
+          <Animated.View style={[styles.labelBox, text]}>
+            <Text numberOfLines={1} maxFontSizeMultiplier={1.2} style={[styles.label, { color: colors.action }]}>
+              {label}
+            </Text>
+          </Animated.View>
+        )}
       </Animated.View>
+      {/* Invisible copy measures the label so the pill knows how wide to grow. */}
+      <Text
+        style={[styles.label, styles.measure]}
+        maxFontSizeMultiplier={1.2}
+        onLayout={(e) => setLabelW(Math.ceil(e.nativeEvent.layout.width))}
+        accessibilityElementsHidden
+        importantForAccessibility="no">
+        {label}
+      </Text>
     </Pressable>
   );
 }
 
-function CenterAction({ onPress, isClient }: { onPress: () => void; isClient: boolean }) {
-  const { colors, isDark } = useTheme();
-  const scale = useSharedValue(1);
-  const animated = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={isClient ? 'Post a job' : 'Find work'}
-      onPressIn={() => scale.set(withTiming(0.9, { duration: 100 }))}
-      onPressOut={() => scale.set(withSpring(1, { duration: 320, dampingRatio: 0.6 }))}
-      onPress={() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-        onPress();
-      }}
-      style={styles.centerWrap}>
-      <View
-        style={[
-          styles.halo,
-          { backgroundColor: isDark ? 'rgba(77,180,228,0.14)' : 'rgba(150, 210, 240, 0.35)', borderColor: isDark ? 'rgba(124,205,242,0.2)' : 'rgba(255,255,255,0.9)' },
-        ]}
-      />
-      <Animated.View style={animated}>
-        <View style={styles.squircleShadow}>
-          <LinearGradient colors={Gradients.card} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.squircle}>
-            <View style={styles.unrotate}>
-              {isClient ? (
-                <Ionicons name="add" size={28} color={colors.onPrimary} />
-              ) : (
-                <MaterialCommunityIcons name="line-scan" size={24} color={colors.onPrimary} />
-              )}
-            </View>
-          </LinearGradient>
-        </View>
-      </Animated.View>
-    </Pressable>
-  );
-}
-
+/** Floating ink pill navigation; the active tab springs open into a white pill with its name. */
 export function FloatingTabBar({ activeTab, onSelectTab, onCenterActionPress, unreadChats = 2 }: FloatingTabBarProps) {
-  const { isDark, colors } = useTheme();
+  const { colors } = useTheme();
   const { isClient } = useRole();
   const insets = useSafeAreaInsets();
-  const bottomPad = Math.max(insets.bottom, 12);
+  const size = useWindowDimensions().width < 370 ? 42 : 46;
 
   return (
-    <View style={[styles.container, { paddingBottom: bottomPad }]} pointerEvents="box-none">
-      <LinearGradient
-        colors={isDark ? ['#131C22', '#0F171C'] : ['#ECF6FC', '#FAFCFE']}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={[StyleSheet.absoluteFill, styles.surface, { borderColor: isDark ? colors.border : 'rgba(255,255,255,0.95)' }]}
-      />
-      <View style={styles.row}>
-        <Tab active={activeTab === 'home'} label="Home" icon="home" onPress={() => onSelectTab('home')} />
+    <View style={[styles.container, { bottom: Math.max(insets.bottom, 12) + 4 }]} pointerEvents="box-none">
+      <View style={[styles.pill, { backgroundColor: colors.action }, Shadows.lifted]} accessibilityRole="tablist">
+        <Tab size={size} active={activeTab === 'home'} label="Home" icon={activeTab === 'home' ? 'home' : 'home-outline'} onPress={() => onSelectTab('home')} />
         <Tab
+          size={size}
           active={activeTab === 'jobs'}
-          label={isClient ? 'Talent' : 'Jobs'}
-          icon={isClient ? 'people' : 'briefcase'}
+          label={isClient ? 'Projects' : 'My work'}
+          icon={activeTab === 'jobs' ? 'briefcase' : 'briefcase-outline'}
           onPress={() => onSelectTab('jobs')}
         />
-        <CenterAction isClient={isClient} onPress={onCenterActionPress ?? (() => onSelectTab('action'))} />
         <Tab
+          size={size}
+          active={activeTab === 'action'}
+          label="Search"
+          icon="search"
+          onPress={onCenterActionPress ?? (() => onSelectTab('action'))}
+        />
+        <Tab
+          size={size}
           active={activeTab === 'chats'}
           label="Chats"
-          icon="chatbox-ellipses"
+          icon="chatbubble-ellipses-outline"
           onPress={() => onSelectTab('chats')}
           badge={unreadChats > 0}
         />
-        <Tab active={activeTab === 'profile'} label="Profile" icon="person" onPress={() => onSelectTab('profile')} />
+        <Tab size={size} active={activeTab === 'profile'} label="Profile" icon="person-outline" onPress={() => onSelectTab('profile')} />
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    paddingTop: 10,
-    zIndex: 100,
-  },
-  surface: {
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    borderTopWidth: 1,
-    shadowColor: '#7FA6BD',
-    shadowOffset: { width: 0, height: -6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 20,
-    elevation: 12,
-  },
-  row: {
-    height: Layout.navHeight - 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    paddingHorizontal: 12,
-  },
-  tab: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 48 },
-  tabInner: { alignItems: 'center', gap: 4 },
-  label: { fontSize: 11 },
-  badge: { position: 'absolute', top: -1, right: -3, width: 9, height: 9, borderRadius: 4.5, borderWidth: 1.5 },
-  centerWrap: { width: 84, height: 84, marginTop: -26, alignItems: 'center', justifyContent: 'center' },
-  halo: { position: 'absolute', width: 84, height: 84, borderRadius: 42, borderWidth: 1 },
-  squircleShadow: {
-    width: 54,
-    height: 54,
-    borderRadius: 18,
-    transform: [{ rotate: '45deg' }],
-    shadowColor: '#3FA7DA',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.38,
-    shadowRadius: 14,
-    elevation: 8,
-  },
-  squircle: { flex: 1, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  unrotate: { transform: [{ rotate: '-45deg' }] },
+  container: { position: 'absolute', left: 0, right: 0, alignItems: 'center', zIndex: 100 },
+  pill: { flexDirection: 'row', alignItems: 'center', gap: 6, padding: 6, borderRadius: 999 },
+  item: { flexDirection: 'row', alignItems: 'center', overflow: 'hidden' },
+  iconBox: { alignItems: 'center', justifyContent: 'center' },
+  labelBox: { paddingRight: 14, marginLeft: -6 },
+  label: { fontSize: 13, fontWeight: '600' },
+  measure: { position: 'absolute', opacity: 0, left: -9999 },
+  badge: { position: 'absolute', top: 10, right: 10, width: 9, height: 9, borderRadius: 4.5, borderWidth: 1.5 },
 });
