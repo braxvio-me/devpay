@@ -9,6 +9,8 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAppLock, type LockTimeout } from '@/contexts/AppLockContext';
+import { useWalletLock } from '@/contexts/WalletLockContext';
+import { PinSheet } from '@/components/pin-sheet';
 import { notificationsEnabled, requestPermission, setNotificationsEnabled } from '@/lib/notify';
 import { useVerification } from '@/contexts/VerificationContext';
 import {
@@ -33,6 +35,8 @@ export default function SettingsScreen() {
   const { biometricEnabled: biometrics, setBiometricEnabled: setBiometrics } = useAuth();
   const me = useCurrentUser();
   const lock = useAppLock();
+  const wallet = useWalletLock();
+  const [pinSheet, setPinSheet] = useState(false);
   const [timeoutSheet, setTimeoutSheet] = useState(false);
   const [passwordSheet, setPasswordSheet] = useState(false);
   const [lockPassword, setLockPassword] = useState('');
@@ -134,7 +138,7 @@ export default function SettingsScreen() {
           <Group title="Account">
             <ListRow icon="person-outline" label="Edit profile" onPress={() => router.push('/edit-profile')} />
             <ListRow
-              icon="shield-checkmark-outline"
+              icon="id-card-outline"
               label="Verification"
               value={verified ? 'Verified' : identity ? 'Fee due' : 'Not verified'}
               onPress={() => router.push('/verification')}
@@ -178,8 +182,9 @@ export default function SettingsScreen() {
           <Group title="Security">
             <ListRow
               icon="keypad-outline"
-              label="Transaction PIN"
-              onPress={() => Dialog.alert('Transaction PIN', 'Your 4-digit PIN authorises escrow releases and MoMo withdrawals.')}
+              label={wallet.hasPin ? 'Change wallet PIN' : 'Set wallet PIN'}
+              value={wallet.hasPin ? 'On' : 'Not set'}
+              onPress={() => setPinSheet(true)}
             />
             <ListRow icon="log-in-outline" label={`${lock.biometricLabel ?? 'Biometric'} sign-in`} right={toggle(biometrics, toggleBiometrics, 'Biometric sign-in')} />
             <ListRow icon="shield-checkmark-outline" label="Two-step verification" right={toggle(twoFactor, setTwoFactor, 'Two-step verification')} last />
@@ -240,6 +245,7 @@ export default function SettingsScreen() {
         />
         <Button label="Turn on" onPress={confirmPasswordLock} style={{ marginTop: 14 }} />
       </Sheet>
+      <PinSheet visible={pinSheet} mode={wallet.hasPin ? 'change' : 'create'} onClose={() => setPinSheet(false)} />
     </View>
   );
 }

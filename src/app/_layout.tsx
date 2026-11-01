@@ -12,6 +12,7 @@ import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { VerificationProvider } from '@/contexts/VerificationContext';
 import { AppLockProvider } from '@/contexts/AppLockContext';
 import { ReceiptsProvider } from '@/contexts/ReceiptsContext';
+import { WalletLockProvider } from '@/contexts/WalletLockContext';
 import { markIntroDone } from '@/lib/intro';
 import { BiometricOffer, LockScreen } from '@/components/lock-screen';
 import { PolicyGate } from '@/components/policy-gate';
@@ -147,7 +148,9 @@ export default function RootLayout() {
           <AppLockProvider>
             <VerificationProvider>
               <ReceiptsProvider>
-                <AppStack />
+                <WalletLockProvider>
+                  <AppStack />
+                </WalletLockProvider>
               </ReceiptsProvider>
             </VerificationProvider>
           </AppLockProvider>

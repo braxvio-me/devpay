@@ -12,6 +12,8 @@ import { Button, Field, GlassCard, IconButton, ScreenBackground, SectionHeader, 
 import { AmountInput, MethodId, PayMethods, SummaryRow } from '@/components/payments';
 import { SuccessOverlay } from '@/components/success-overlay';
 import { useReceipts } from '@/contexts/ReceiptsContext';
+import { useWalletLock } from '@/contexts/WalletLockContext';
+import { PinSheet } from '@/components/pin-sheet';
 import { useCurrentUser } from '@/contexts/AuthContext';
 import { Layout, Radius } from '@/constants/theme';
 
@@ -40,11 +42,23 @@ export default function WithdrawScreen() {
   const num = parseFloat(amount) || 0;
   const amountError =
     !submitted ? undefined : num < MIN ? `Minimum withdrawal is ${cedis(MIN)}.` : num > available ? 'That’s more than your available balance.' : undefined;
-  const pinError = submitted && pin.length < 4 ? 'Enter your 4-digit PIN.' : undefined;
+  const [pinCheck, setPinCheck] = useState<string>();
+  const [pinSetup, setPinSetup] = useState(false);
+  const { hasPin, checkPin } = useWalletLock();
+  const pinError = pinCheck ?? (submitted && pin.length < 4 ? 'Enter your 4-digit wallet PIN.' : undefined);
 
-  const withdraw = () => {
+  const withdraw = async () => {
     setSubmitted(true);
-    if (num < MIN || num > available || pin.length < 4) return;
+    setPinCheck(undefined);
+    if (num < MIN || num > available) return;
+    // Payouts need the same PIN that opens the wallet.
+    if (hasPin === false) return setPinSetup(true);
+    if (pin.length < 4) return;
+    const err = await checkPin(pin);
+    if (err) {
+      setPin('');
+      return setPinCheck(err);
+    }
     if (!online) return offlineAlert('withdraw');
     setProcessing(true);
     setTimeout(() => {
@@ -107,14 +121,17 @@ export default function WithdrawScreen() {
           </GlassCard>
 
           <Field
-            label="Transaction PIN"
+            label="Wallet PIN"
             icon="keypad-outline"
             placeholder="••••"
             keyboardType="number-pad"
             secureTextEntry
             maxLength={4}
             value={pin}
-            onChangeText={(t) => setPin(t.replace(/\D/g, ''))}
+            onChangeText={(t) => {
+              setPin(t.replace(/\D/g, ''));
+              setPinCheck(undefined);
+            }}
             error={pinError}
             style={{ marginTop: 16 }}
           />
@@ -125,6 +142,7 @@ export default function WithdrawScreen() {
         </View>
       </SafeAreaView>
 
+      <PinSheet visible={pinSetup} mode="create" onClose={() => setPinSetup(false)} />
       <SuccessOverlay
         visible={!!txRef}
         title="Payout on its way"

@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, Pressable } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import Animated, { cancelAnimation, Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import { View, StyleSheet, ScrollView, Pressable, Share } from 'react-native';
+import { Image } from 'expo-image';
 import { Dialog } from '@/lib/dialog';
 import { Text } from '@/components/ui-text';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,6 +24,28 @@ import {
 } from '@/components/ds';
 import { useCurrentUser } from '@/contexts/AuthContext';
 import { Layout, Radius, Shadows } from '@/constants/theme';
+
+/** Green "live" dot with a soft pulse while available. */
+function LiveDot({ on }: { on: boolean }) {
+  const { colors } = useTheme();
+  const pulse = useSharedValue(0);
+  useEffect(() => {
+    if (!on) {
+      cancelAnimation(pulse);
+      pulse.set(0);
+      return;
+    }
+    pulse.set(withRepeat(withTiming(1, { duration: 1600, easing: Easing.out(Easing.quad) }), -1));
+  }, [on, pulse]);
+  const ring = useAnimatedStyle(() => ({ opacity: 0.5 * (1 - pulse.get()), transform: [{ scale: 1 + pulse.get() * 1.6 }] }));
+  const tone = on ? colors.accentGreen : colors.textMuted;
+  return (
+    <View style={styles.live} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+      {on && <Animated.View style={[styles.liveDot, { backgroundColor: tone, position: 'absolute' }, ring]} />}
+      <View style={[styles.liveDot, { backgroundColor: tone }]} />
+    </View>
+  );
+}
 
 const SKILLS = ['React Native', 'TypeScript', 'Expo', 'MoMo APIs', 'Figma'];
 
@@ -75,32 +99,69 @@ export default function ProfileScreen() {
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: Layout.margin, paddingBottom: navClearance }}>
-          <GlassCard style={styles.identity}>
-            <Avatar uri={me.avatar} size={84} online={available} />
-            <View style={styles.nameRow}>
-              <Text style={[styles.name, { color: colors.text }]}>{me.name}</Text>
-              {verified && <MaterialCommunityIcons name="check-decagram" size={18} color={colors.primary} />}
+          {/* Identity: full-width cover, overlapping avatar, open stats. No card. */}
+          <View style={[styles.cover, { backgroundColor: colors.action }]}>
+            <View style={[styles.coverShape, { width: 260, height: 260, right: -70, top: -120, backgroundColor: '#2279A8' }]} />
+            <View style={[styles.coverShape, { width: 150, height: 150, right: -20, top: -50, backgroundColor: '#2A86B6' }]} />
+            <Image source={require('../../assets/images/logo-mark.png')} tintColor="#2E8DBE" contentFit="contain" style={styles.coverMark} />
+            <View style={styles.coverRole}>
+              <Ionicons name={isClient ? 'briefcase' : 'code-slash'} size={12} color="#FFFFFF" />
+              <Text style={styles.coverRoleText}>{isClient ? 'CLIENT' : 'FREELANCER'}</Text>
             </View>
-            <Text style={[styles.headline, { color: colors.textSecondary }]}>
-              {me.headline}
-            </Text>
-            <View style={styles.loc}>
-              <Ionicons name="location-sharp" size={13} color={colors.textSecondary} />
-              <Text style={[styles.locText, { color: colors.textSecondary }]}>{me.location}</Text>
-            </View>
+          </View>
 
-            <View style={[styles.stats, { borderTopColor: colors.border }]}>
-              {stats.map((s, i) => (
-                <React.Fragment key={s.label}>
-                  {i > 0 && <View style={[styles.statDiv, { backgroundColor: colors.border }]} />}
-                  <View style={styles.stat}>
-                    <Text style={[styles.statValue, { color: colors.text }]}>{s.value}</Text>
-                    <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{s.label}</Text>
-                  </View>
-                </React.Fragment>
-              ))}
+          <View style={styles.idRow}>
+            <View style={[styles.avatarRing, { backgroundColor: colors.background }]}>
+              <Avatar uri={me.avatar} size={92} online={available} />
             </View>
-          </GlassCard>
+            <View style={styles.idActions}>
+              <Pressable
+                onPress={() => router.push('/edit-profile')}
+                accessibilityRole="button"
+                style={({ pressed }) => [styles.editBtn, { borderColor: colors.border, backgroundColor: pressed ? colors.backgroundElement : colors.surface }]}>
+                <Ionicons name="create-outline" size={16} color={colors.text} />
+                <Text style={[styles.editText, { color: colors.text }]}>Edit profile</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => Share.share({ message: `${me.name} on DevPay · ${me.headline}` }).catch(() => {})}
+                accessibilityRole="button"
+                accessibilityLabel="Share profile"
+                style={({ pressed }) => [styles.shareBtn, { borderColor: colors.border, backgroundColor: pressed ? colors.backgroundElement : colors.surface }]}>
+                <Ionicons name="share-outline" size={17} color={colors.text} />
+              </Pressable>
+            </View>
+          </View>
+
+          <View style={styles.nameRow}>
+            <Text style={[styles.name, { color: colors.text }]}>{me.name}</Text>
+            {verified && <MaterialCommunityIcons name="check-decagram" size={20} color={colors.action} accessibilityLabel="Verified" />}
+          </View>
+          <Text style={[styles.headline, { color: colors.text }]}>{me.headline}</Text>
+          <View style={styles.metaRow}>
+            <View style={styles.meta}>
+              <Ionicons name="location-outline" size={14} color={colors.textSecondary} />
+              <Text style={[styles.metaText, { color: colors.textSecondary }]}>{me.location}</Text>
+            </View>
+            <View style={styles.meta}>
+              <Ionicons name="calendar-outline" size={14} color={colors.textSecondary} />
+              <Text style={[styles.metaText, { color: colors.textSecondary }]}>Joined 2025</Text>
+            </View>
+          </View>
+
+          <View style={[styles.stats, { borderColor: colors.border }]}>
+            {stats.map((s, i) => (
+              <React.Fragment key={s.label}>
+                {i > 0 && <View style={[styles.statDiv, { backgroundColor: colors.border }]} />}
+                <View style={styles.stat}>
+                  <View style={styles.statTop}>
+                    <Text style={[styles.statValue, { color: colors.text }]}>{s.value}</Text>
+                    {s.label === 'Rating' && <Ionicons name="star" size={14} color="#E8A317" />}
+                  </View>
+                  <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{s.label}</Text>
+                </View>
+              </React.Fragment>
+            ))}
+          </View>
 
           <Pressable onPress={() => router.push('/verification')} accessibilityRole="button" style={[styles.verify, Shadows.lifted]}>
             <View style={[styles.verifyInner, { backgroundColor: colors.feature }]}>
@@ -119,41 +180,36 @@ export default function ProfileScreen() {
             </View>
           </Pressable>
 
-          <View style={styles.duo}>
-            <GlassCard
-              style={styles.duoCard}
+          {/* Flat status strip: no cards, just two lines with hairline dividers. */}
+          <View style={[styles.strip, { borderColor: colors.border }]}>
+            <Pressable
               onPress={() =>
                 Dialog.alert(
                   `${isClient ? 'Client' : 'Freelancer'} account`,
                   `Each DevPay account has one role. To ${isClient ? 'find work' : 'hire'}, sign up again with a different phone number.`
                 )
               }
-              accessibilityLabel={`Account type: ${isClient ? 'client' : 'freelancer'}`}>
-              <View style={styles.duoTop}>
-                <View style={[styles.duoIcon, { backgroundColor: colors.primaryWash }]}>
-                  <Ionicons name={isClient ? 'briefcase' : 'laptop-outline'} size={20} color={colors.navActive} />
-                </View>
-                <Ionicons name="lock-closed" size={14} color={colors.textMuted} />
+              accessibilityRole="button"
+              accessibilityLabel={`Account type: ${isClient ? 'client' : 'freelancer'}. One role per account.`}
+              style={({ pressed }) => [styles.stripRow, pressed && { opacity: 0.6 }]}>
+              <Ionicons name={isClient ? 'briefcase-outline' : 'laptop-outline'} size={22} color={colors.action} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.stripTitle, { color: colors.text }]}>{isClient ? 'Client account' : 'Freelancer account'}</Text>
+                <Text style={[styles.stripSub, { color: colors.textSecondary }]}>One role per account</Text>
               </View>
-              <Text style={[styles.duoTitle, { color: colors.text }]}>{isClient ? 'Client' : 'Freelancer'}</Text>
-              <Text style={[styles.duoSub, { color: colors.textSecondary }]}>One role per account</Text>
-            </GlassCard>
-            <GlassCard style={styles.duoCard}>
-              <View style={styles.duoTop}>
-                <View style={[styles.duoIcon, { backgroundColor: available ? colors.greenSoft : colors.backgroundElement }]}>
-                  <Ionicons name="radio-button-on" size={20} color={available ? colors.accentGreen : colors.textMuted} />
-                </View>
-                <Switch
-                  value={available}
-                  onValueChange={setAvailable}
-                  trackColor={{ true: colors.accentGreen, false: colors.backgroundSelected }}
-                  thumbColor="#FFFFFF"
-                  accessibilityLabel="Available for work"
-                />
+              <Ionicons name="lock-closed" size={14} color={colors.textMuted} />
+            </Pressable>
+            <View style={[styles.stripLine, { backgroundColor: colors.border }]} />
+            <View style={styles.stripRow}>
+              <LiveDot on={available} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.stripTitle, { color: colors.text }]}>{available ? 'Available for work' : 'Away'}</Text>
+                <Text style={[styles.stripSub, { color: colors.textSecondary }]}>
+                  {available ? (isClient ? 'Freelancers can message you' : 'Clients can invite you') : 'Hidden from search'}
+                </Text>
               </View>
-              <Text style={[styles.duoTitle, { color: colors.text }]}>{available ? 'Available' : 'Away'}</Text>
-              <Text style={[styles.duoSub, { color: colors.textSecondary }]}>{available ? 'Clients can invite you' : 'Hidden from search'}</Text>
-            </GlassCard>
+              <Switch value={available} onValueChange={setAvailable} accessibilityLabel="Available for work" />
+            </View>
           </View>
 
           {!isClient && (
@@ -171,7 +227,7 @@ export default function ProfileScreen() {
           <GlassCard padded={false} style={{ paddingHorizontal: 16 }}>
             <ListRow icon="person-outline" label="Personal information" onPress={() => router.push('/edit-profile')} />
             <ListRow
-              icon="shield-checkmark-outline"
+              icon="id-card-outline"
               label="Verification"
               value={verified ? 'Verified' : identity ? 'Fee due' : 'Not verified'}
               onPress={() => router.push('/verification')}
@@ -206,16 +262,28 @@ const styles = StyleSheet.create({
   },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   title: { fontSize: 26, fontWeight: '600', letterSpacing: -0.6 },
-  identity: { alignItems: 'center', paddingTop: 22 },
+  cover: { height: 132, marginHorizontal: -Layout.margin, marginTop: 4, overflow: 'hidden' },
+  coverShape: { position: 'absolute', borderRadius: 999 },
+  coverMark: { position: 'absolute', left: Layout.margin + 4, bottom: -18, width: 150, height: 102, opacity: 0.9 },
+  coverRole: { position: 'absolute', right: Layout.margin, bottom: 14, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  coverRoleText: { color: '#FFFFFF', fontSize: 11, fontWeight: '700', letterSpacing: 1.4 },
+  idRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: -48 },
+  avatarRing: { padding: 4, borderRadius: 60 },
+  idActions: { flexDirection: 'row', gap: 8, marginBottom: 4 },
+  editBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 38, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1 },
+  editText: { fontSize: 14, fontWeight: '600' },
+  shareBtn: { width: 38, height: 38, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12 },
-  name: { fontSize: 21, fontWeight: '600', letterSpacing: -0.4 },
-  headline: { fontSize: 14, marginTop: 2 },
-  loc: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 6 },
-  locText: { fontSize: 12 },
-  stats: { flexDirection: 'row', alignSelf: 'stretch', marginTop: 18, paddingTop: 14, borderTopWidth: 1 },
-  stat: { flex: 1, alignItems: 'center', gap: 2 },
-  statDiv: { width: 1 },
-  statValue: { fontSize: 17, fontWeight: '600', fontVariant: ['tabular-nums'] },
+  name: { fontSize: 26, fontWeight: '700', letterSpacing: -0.7 },
+  headline: { fontSize: 15, marginTop: 4 },
+  metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginTop: 8 },
+  meta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  metaText: { fontSize: 13 },
+  stats: { flexDirection: 'row', marginTop: 18, paddingVertical: 14, borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth },
+  stat: { flex: 1, gap: 2 },
+  statTop: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  statDiv: { width: StyleSheet.hairlineWidth, marginRight: 16 },
+  statValue: { fontSize: 22, fontWeight: '700', letterSpacing: -0.5, fontVariant: ['tabular-nums'] },
   statLabel: { fontSize: 12 },
   verify: { marginTop: 16, borderRadius: Radius.xl },
   verifyInner: { borderRadius: Radius.xl, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 14 },
@@ -224,12 +292,13 @@ const styles = StyleSheet.create({
   fill: { height: 6, borderRadius: 3, backgroundColor: '#FFFFFF' },
   verifySub: { color: '#FFFFFF', fontSize: 12, fontWeight: '500' },
   verifyBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
-  duo: { flexDirection: 'row', gap: 12, marginTop: 16 },
-  duoCard: { flex: 1, gap: 4 },
-  duoTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  duoIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  duoTitle: { fontSize: 15, fontWeight: '600' },
-  duoSub: { fontSize: 12 },
   gap: { marginTop: Layout.sectionGap },
+  strip: { marginTop: 18, borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth },
+  stripRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14 },
+  stripLine: { height: StyleSheet.hairlineWidth, marginLeft: 36 },
+  stripTitle: { fontSize: 15, fontWeight: '600' },
+  stripSub: { fontSize: 12, marginTop: 2 },
+  live: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center' },
+  liveDot: { width: 10, height: 10, borderRadius: 5 },
   skills: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
 });

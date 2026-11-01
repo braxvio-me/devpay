@@ -20,6 +20,7 @@ import Animated, {
 import { Text } from '@/components/ui-text';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Button } from '@/components/ds';
+import { DevPayMark } from '@/components/devpay-mark';
 import { Radius } from '@/constants/theme';
 
 type OverlayType = 'success' | 'error' | 'pending' | 'verified';
@@ -39,7 +40,7 @@ interface SuccessOverlayProps {
 
 const ICON: Record<OverlayType, keyof typeof Ionicons.glyphMap> = {
   success: 'checkmark',
-  verified: 'shield-checkmark',
+  verified: 'checkmark-done',
   pending: 'time',
   error: 'close',
 };
@@ -166,9 +167,11 @@ export function SuccessOverlay({
                 ))}
               </>
             )}
-            <Animated.View style={[styles.icon, { backgroundColor: tone }, iconStyle]}>
-              <Animated.View style={checkStyle}>
-                <Ionicons name={ICON[type]} size={44} color="#FFFFFF" />
+            {/* Branded mark: the DevPay logo on a tile, with a status badge that pops onto its corner. */}
+            <Animated.View style={[styles.icon, { backgroundColor: colors.background, borderColor: colors.border }, iconStyle]}>
+              <DevPayMark size={40} />
+              <Animated.View style={[styles.badge, { backgroundColor: tone, borderColor: colors.surface }, checkStyle]}>
+                <Ionicons name={ICON[type]} size={20} color="#FFFFFF" />
               </Animated.View>
             </Animated.View>
           </View>
@@ -207,8 +210,9 @@ const styles = StyleSheet.create({
     boxShadow: '0px 20px 40px rgba(15, 30, 39, 0.22)',
   },
   iconArea: { width: ICON_SIZE, height: ICON_SIZE, alignItems: 'center', justifyContent: 'center', marginBottom: 22 },
-  icon: { width: ICON_SIZE, height: ICON_SIZE, borderRadius: ICON_SIZE / 2, alignItems: 'center', justifyContent: 'center' },
-  ripple: { position: 'absolute', width: ICON_SIZE, height: ICON_SIZE, borderRadius: ICON_SIZE / 2, borderWidth: 3 },
+  icon: { width: ICON_SIZE, height: ICON_SIZE, borderRadius: 28, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  badge: { position: 'absolute', right: -10, bottom: -10, width: 38, height: 38, borderRadius: 19, borderWidth: 3, alignItems: 'center', justifyContent: 'center' },
+  ripple: { position: 'absolute', width: ICON_SIZE, height: ICON_SIZE, borderRadius: 28, borderWidth: 2 },
   particle: { position: 'absolute' },
   secondary: { alignSelf: 'stretch', marginTop: 10 },
   title: { fontSize: 22, fontWeight: '700', letterSpacing: -0.5, textAlign: 'center' },

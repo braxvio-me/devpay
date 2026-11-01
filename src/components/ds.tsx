@@ -852,19 +852,18 @@ export function StatusPill({
   tone?: 'blue' | 'green' | 'amber' | 'coral' | 'grey';
   icon?: IconName;
 }) {
-  const { colors } = useTheme();
-  // Solid fills with white text: no tinted washes.
-  const map = {
-    blue: [colors.action, '#FFFFFF'],
-    green: ['#178A60', '#FFFFFF'],
-    amber: ['#B26A00', '#FFFFFF'],
-    coral: ['#CF3A40', '#FFFFFF'],
-    grey: [colors.text, colors.background],
-  } as const;
-  const [bg, fg] = map[tone];
+  const { colors, isDark } = useTheme();
+  // Status as coloured text with a dot (or icon), no pill or button shape.
+  const fg = {
+    blue: colors.action,
+    green: isDark ? '#3CC796' : '#178A60',
+    amber: isDark ? '#F0A63A' : '#A85F00',
+    coral: isDark ? '#F06A6E' : '#C8323A',
+    grey: colors.textSecondary,
+  }[tone];
   return (
-    <View style={[styles.statusPill, { backgroundColor: bg }]}>
-      {icon && <Ionicons name={icon} size={12} color={fg} />}
+    <View style={styles.statusPill}>
+      {icon ? <Ionicons name={icon} size={14} color={fg} /> : <View style={[styles.statusDot, { backgroundColor: fg }]} />}
       <Text maxFontSizeMultiplier={1.4} style={[styles.statusText, { color: fg }]}>{label}</Text>
     </View>
   );
@@ -1087,16 +1086,9 @@ const styles = StyleSheet.create({
   listIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   listLabel: { flex: 1, fontSize: 15, fontWeight: '400' },
   listValue: { fontSize: 14 },
-  statusPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    height: 24,
-    borderRadius: 7,
-    alignSelf: 'flex-start',
-  },
-  statusText: { fontSize: 12, fontWeight: '600', letterSpacing: 0.1 },
+  statusPill: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', minHeight: 20 },
+  statusDot: { width: 8, height: 8, borderRadius: 4 },
+  statusText: { fontSize: 13, fontWeight: '600' },
   choice: { borderRadius: Radius.lg, padding: 16, borderWidth: 1.5, gap: 10 },
   choiceTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   choiceIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },

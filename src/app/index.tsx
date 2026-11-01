@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { Text } from '@/components/ui-text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRole } from '@/contexts/RoleContext';
 import { useVerification } from '@/contexts/VerificationContext';
@@ -276,7 +276,6 @@ function ClientDashboard({ query, onQuery }: { query: string; onQuery: (q: strin
     { icon: 'document-text' as const, label: 'Post job', to: '/job/create' },
     { icon: 'briefcase' as const, label: 'Contracts', to: '/contracts' },
     { icon: 'wallet' as const, label: 'Fund escrow', to: '/payment' },
-    { icon: 'shield-checkmark' as const, label: 'Disputes', to: '/settings' },
   ];
 
   return (
@@ -306,8 +305,8 @@ function ClientDashboard({ query, onQuery }: { query: string; onQuery: (q: strin
 
       {!verified && (
         <GlassCard onPress={() => router.push('/verification')} style={styles.verifyCard} accessibilityLabel="Get verified to hire">
-          <View style={[styles.verifyIcon, { backgroundColor: colors.primaryWash }]}>
-            <Ionicons name="shield-checkmark" size={20} color={colors.primaryText} />
+          <View style={[styles.verifyIcon, { backgroundColor: colors.action }]}>
+            <Ionicons name="id-card" size={20} color="#FFFFFF" />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.cardTitle, { color: colors.text, marginTop: 0 }]}>Get verified to hire</Text>
@@ -326,6 +325,12 @@ function ClientDashboard({ query, onQuery }: { query: string; onQuery: (q: strin
             <Text style={[styles.quickLabel, { color: colors.textSecondary }]}>{a.label}</Text>
           </PressableScale>
         ))}
+        <PressableScale onPress={() => router.push('/help')} style={styles.quickItem} accessibilityLabel="Disputes">
+          <View style={[styles.quickIcon, { backgroundColor: colors.surface }, Shadows.button]}>
+            <MaterialCommunityIcons name="scale-balance" size={22} color={colors.navActive} />
+          </View>
+          <Text style={[styles.quickLabel, { color: colors.textSecondary }]}>Disputes</Text>
+        </PressableScale>
       </View>
 
       <SectionHeader title="Needs your review" style={styles.sectionGap} />
@@ -384,7 +389,7 @@ const styles = StyleSheet.create({
   row4: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   escrowCard: { marginTop: 18, borderRadius: Radius.xl },
   verifyCard: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 16 },
-  verifyIcon: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
+  verifyIcon: { width: 42, height: 42, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
   quickRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 },
   quickItem: { alignItems: 'center', gap: 8, width: 74 },
   quickIcon: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },

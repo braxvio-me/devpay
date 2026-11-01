@@ -1,0 +1,146 @@
+@import "tailwindcss";
+
+/* DevPay site tokens: the app's own colours. Solid surfaces only, no glass. */
+:root {
+  --cloth: #f3f6f9;
+  --paper: #ffffff;
+  --ink: #15181b;
+  --ink-2: #3b464d;
+  --muted: #5f6b73;
+  --line: #dde5ea;
+  --blue: #1c6e99;
+  --blue-deep: #165a7e;
+  --blue-2: #2279a8;
+  --blue-3: #2a86b6;
+  --on-blue-muted: #e6f1f7;
+  /* Teal lifted for text and marks on the blue fields (4.5:1). */
+  --teal-light: #8febd9;
+  --teal: #13c3a3;
+  --teal-ink: #0b8f78;
+  --orange: #f5a524;
+  --graphite: #0c1317;
+  --graphite-2: #1c2a32;
+  --graphite-line: #2e3e47;
+  --on-graphite-muted: #9fb0ba;
+}
+
+@theme inline {
+  --color-cloth: var(--cloth);
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-blue: var(--blue);
+  --color-blue-deep: var(--blue-deep);
+  --color-blue-2: var(--blue-2);
+  --color-blue-3: var(--blue-3);
+  --color-on-blue-muted: var(--on-blue-muted);
+  --color-teal: var(--teal);
+  --color-teal-light: var(--teal-light);
+  --color-teal-ink: var(--teal-ink);
+  --color-orange: var(--orange);
+  --color-graphite: var(--graphite);
+  --color-graphite-2: var(--graphite-2);
+  --color-graphite-line: var(--graphite-line);
+  --color-on-graphite-muted: var(--on-graphite-muted);
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-display: var(--font-inter), system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 88px;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+body {
+  background: var(--cloth);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "cv11", "ss01";
+}
+
+/* Browser surfaces carry the design too. */
+::selection {
+  background: var(--blue);
+  color: #fff;
+}
+:focus-visible {
+  outline: 3px solid var(--orange);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+a {
+  text-underline-offset: 4px;
+  text-decoration-thickness: 1.5px;
+}
+html {
+  scrollbar-color: #b9c6ce var(--cloth);
+}
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Raised product surface: one soft offset shadow, never a border plus a halo. */
+.raised {
+  box-shadow: 0 1px 2px rgba(12, 19, 23, 0.06), 0 18px 40px -16px rgba(12, 19, 23, 0.28);
+}
+
+/* Milestone tracker: a line that fills between step dots. */
+.track-fill {
+  transition: width 700ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.dot-pop {
+  animation: pop 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes pop {
+  0% {
+    transform: scale(0.4);
+  }
+  60% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .track-fill {
+    transition: none;
+  }
+  .dot-pop {
+    animation: none;
+  }
+}
+
+/* Phone frame for real app screenshots. */
+.phone {
+  border-radius: 38px;
+  padding: 9px;
+  background: var(--ink);
+  box-shadow: 0 24px 48px -18px rgba(12, 19, 23, 0.45);
+}
+.phone > img,
+.phone > .screen {
+  border-radius: 30px;
+  display: block;
+}
+
+/* Section entrance: visible by default, a gentle settle only when motion is allowed. */
+@media (prefers-reduced-motion: no-preference) {
+  .rise {
+    animation: rise 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+@keyframes rise {
+  from {
+    transform: translateY(18px);
+    opacity: 0;
+  }
+}
