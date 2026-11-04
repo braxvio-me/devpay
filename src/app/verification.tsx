@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text } from '@/components/ui-text';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useOnline, offlineAlert } from '@/hooks/use-online';
 import { notify } from '@/lib/notify';
@@ -82,7 +82,7 @@ export default function VerificationScreen() {
           <View style={[styles.hero, Shadows.lifted]}>
             <View style={[styles.heroInner, { backgroundColor: colors.feature }]}>
               <View style={styles.heroBadge}>
-                <MaterialCommunityIcons name={verified ? 'check-decagram' : 'shield-account'} size={30} color={colors.primaryText} />
+                <Ionicons name={verified ? 'checkmark-circle' : 'shield-checkmark'} size={30} color={colors.primaryText} />
               </View>
               <Text style={styles.heroTitle}>{verified ? 'You’re verified' : isClient ? 'Become a verified client' : 'Become a Trusted freelancer'}</Text>
               <Text style={styles.heroSub}>

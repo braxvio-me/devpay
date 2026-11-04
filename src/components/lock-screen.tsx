@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Pressable, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn, FadeOut, useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 import { Text } from '@/components/ui-text';
@@ -80,7 +80,7 @@ export function LockScreen() {
                 accessibilityLabel={`Unlock with ${biometricLabel}`}
                 style={({ pressed }) => [styles.bioBtn, { backgroundColor: colors.action, opacity: pressed ? 0.85 : 1 }]}>
                 {faceish ? (
-                  <MaterialCommunityIcons name="face-recognition" size={40} color="#FFFFFF" />
+                  <Ionicons name="scan-circle" size={40} color="#FFFFFF" />
                 ) : (
                   <Ionicons name="finger-print" size={42} color="#FFFFFF" />
                 )}
@@ -184,7 +184,7 @@ export function BiometricOffer() {
       <View style={offerStyles.offer}>
         <View style={[offerStyles.offerIcon, { backgroundColor: colors.action }]}>
           {faceish ? (
-            <MaterialCommunityIcons name="face-recognition" size={38} color="#FFFFFF" />
+            <Ionicons name="scan-circle" size={38} color="#FFFFFF" />
           ) : (
             <Ionicons name="finger-print" size={42} color="#FFFFFF" />
           )}

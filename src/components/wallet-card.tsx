@@ -6,7 +6,7 @@
  */
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Pressable, AccessibilityInfo, Platform, useWindowDimensions } from 'react-native';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import Animated, { Easing, interpolate, useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
 import { Text } from '@/components/ui-text';
@@ -175,7 +175,7 @@ export function WalletCard({ tone = 'escrow', label, amount, holder, last4, badg
               <View style={[styles.rowBetween, { marginTop: 10 }]}>
                 <View style={styles.chipRow}>
                   <Chip />
-                  <MaterialCommunityIcons name="contactless-payment" size={22} color="#E3F0F7" />
+                  <Ionicons name="card-outline" size={22} color="#E3F0F7" />
                 </View>
                 <Text style={styles.number} maxFontSizeMultiplier={1.2}>
                   ••••  {last4}

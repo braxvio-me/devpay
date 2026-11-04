@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { Text } from '@/components/ui-text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRole } from '@/contexts/RoleContext';
 import { useVerification } from '@/contexts/VerificationContext';
@@ -327,7 +327,7 @@ function ClientDashboard({ query, onQuery }: { query: string; onQuery: (q: strin
         ))}
         <PressableScale onPress={() => router.push('/help')} style={styles.quickItem} accessibilityLabel="Disputes">
           <View style={[styles.quickIcon, { backgroundColor: colors.surface }, Shadows.button]}>
-            <MaterialCommunityIcons name="scale-balance" size={22} color={colors.navActive} />
+            <Ionicons name="scale-outline" size={22} color={colors.navActive} />
           </View>
           <Text style={[styles.quickLabel, { color: colors.textSecondary }]}>Disputes</Text>
         </PressableScale>

@@ -5,7 +5,7 @@ import { Text, TextInput } from '@/components/ui-text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
@@ -99,7 +99,7 @@ export default function AssistantScreen() {
         accessibilityRole="button"
         accessibilityLabel={hasText ? 'Send question' : 'Ask by voice'}
         style={[styles.sendBtn, { backgroundColor: colors.action }]}>
-        {hasText ? <Ionicons name="arrow-up" size={20} color="#FFFFFF" /> : <MaterialCommunityIcons name="waveform" size={20} color="#FFFFFF" />}
+        {hasText ? <Ionicons name="arrow-up" size={20} color="#FFFFFF" /> : <Ionicons name="pulse" size={20} color="#FFFFFF" />}
       </Pressable>
     </View>
   );

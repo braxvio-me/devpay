@@ -4,7 +4,7 @@ import { Dialog } from '@/lib/dialog';
 import { Text } from '@/components/ui-text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useVerification } from '@/contexts/VerificationContext';
@@ -135,7 +135,7 @@ export default function JobApplicantsScreen() {
                   <View style={{ flex: 1 }}>
                     <View style={styles.nameRow}>
                       <Text style={[styles.name, { color: colors.text }]}>{a.name}</Text>
-                      <MaterialCommunityIcons name="check-decagram" size={15} color={colors.primary} />
+                      <Ionicons name="checkmark-circle" size={15} color={colors.primary} />
                     </View>
                     <Text style={[styles.title, { color: colors.textSecondary }]} numberOfLines={1}>
                       {a.title}

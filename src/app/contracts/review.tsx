@@ -4,7 +4,7 @@ import { Dialog } from '@/lib/dialog';
 import { Text } from '@/components/ui-text';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useOnline, offlineAlert } from '@/hooks/use-online';
 import { notify } from '@/lib/notify';
@@ -96,7 +96,7 @@ export default function MilestoneReviewScreen() {
             <View style={{ flex: 1 }}>
               <View style={styles.nameRow}>
                 <Text style={[styles.devName, { color: colors.text }]}>{D.dev.name}</Text>
-                <MaterialCommunityIcons name="check-decagram" size={15} color={colors.primary} />
+                <Ionicons name="checkmark-circle" size={15} color={colors.primary} />
               </View>
               <Text style={[styles.devRole, { color: colors.textSecondary }]}>{D.dev.role}</Text>
               <View style={styles.nameRow}>

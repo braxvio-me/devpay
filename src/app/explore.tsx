@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView, Pressable, useWindowDimensions } from 're
 import { Text } from '@/components/ui-text';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRole } from '@/contexts/RoleContext';
@@ -270,7 +270,7 @@ function TalentCard({ talent, onPress, onMessage }: { talent: Talent; onPress: (
         <View style={{ flex: 1, gap: 2 }}>
           <View style={styles.row6}>
             <Text style={[styles.talentName, { color: colors.text }]}>{talent.name}</Text>
-            {talent.verified && <MaterialCommunityIcons name="check-decagram" size={15} color={colors.primary} />}
+            {talent.verified && <Ionicons name="checkmark-circle" size={15} color={colors.primary} />}
           </View>
           <Text style={[styles.talentSub, { color: colors.textSecondary }]} numberOfLines={1}>
             {talent.title}

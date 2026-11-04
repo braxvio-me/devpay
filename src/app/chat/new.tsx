@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text } from '@/components/ui-text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { SearchBar } from '@/components/search-bar';
 import { Avatar, Chip, CompanyLogo, GlassCard, PressableScale, ScreenBackground, TopBar } from '@/components/ds';
@@ -55,7 +55,7 @@ export default function NewChatScreen() {
                 <View style={{ flex: 1 }}>
                   <View style={styles.nameRow}>
                     <Text style={[styles.name, { color: colors.text }]}>{c.name}</Text>
-                    <MaterialCommunityIcons name="check-decagram" size={14} color={colors.primary} />
+                    <Ionicons name="checkmark-circle" size={14} color={colors.primary} />
                   </View>
                   <Text style={[styles.sub, { color: colors.textSecondary }]}>
                     {c.company ? 'Client' : 'Freelancer'} · {c.project}

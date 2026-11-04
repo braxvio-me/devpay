@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text } from '@/components/ui-text';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -78,7 +78,7 @@ export default function TalentProfileScreen() {
             <Avatar uri={t.avatar} size={88} online={t.available} />
             <View style={styles.nameRow}>
               <Text style={[styles.name, { color: colors.text }]}>{t.name}</Text>
-              {t.verified && <MaterialCommunityIcons name="check-decagram" size={18} color={colors.primary} />}
+              {t.verified && <Ionicons name="checkmark-circle" size={18} color={colors.primary} />}
             </View>
             <Text style={[styles.title, { color: colors.textSecondary }]}>{t.title}</Text>
             <View style={styles.metaRow}>

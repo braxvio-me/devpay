@@ -80,8 +80,10 @@ export function Skeleton({ width = '100%', height, radius = 10, style }: Skeleto
 // ─── Pre-built skeleton layouts ────────────────────────────────────────────
 
 export function JobCardSkeleton() {
+  const { colors } = useTheme();
+
   return (
-    <View style={skStyles.card}>
+    <View style={[skStyles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
       <View style={skStyles.topRow}>
         <Skeleton width={40} height={40} radius={20} />
         <View style={{ flex: 1, gap: 6 }}>
@@ -102,8 +104,10 @@ export function JobCardSkeleton() {
 }
 
 export function NotificationSkeleton() {
+  const { colors } = useTheme();
+
   return (
-    <View style={skStyles.notifCard}>
+    <View style={[skStyles.notifCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
       <Skeleton width={44} height={44} radius={22} />
       <View style={{ flex: 1, gap: 6 }}>
         <Skeleton width="75%" height={13} radius={6} />
@@ -120,12 +124,10 @@ const styles = StyleSheet.create({
 
 const skStyles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 18,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#EAEEF1',
   },
   topRow: {
     flexDirection: 'row',
@@ -141,9 +143,9 @@ const skStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 12,
-    backgroundColor: '#FFFFFF',
     borderRadius: 18,
     padding: 16,
     marginBottom: 10,
+    borderWidth: 1,
   },
 });

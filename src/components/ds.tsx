@@ -6,7 +6,7 @@ import React, { ReactNode, useEffect, useRef } from 'react';
 import { View, StyleSheet, Pressable, TextInputProps, StyleProp, ViewStyle, TextStyle, AccessibilityInfo, Platform, LayoutChangeEvent, Modal } from 'react-native';
 import { Text, TextInput } from '@/components/ui-text';
 import { Image } from 'expo-image';
-import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
+import { Ionicons, Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -79,6 +79,7 @@ export function PressableScale({
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+const AnimatedIonicons = Animated.createAnimatedComponent(Ionicons);
 
 // ─── Entrance: short staggered fade-up for list items (honours Reduce Motion) ─
 export function Appear({
@@ -270,7 +271,7 @@ export function TrustedBadge({ light }: { light?: boolean }) {
   const { colors } = useTheme();
   return (
     <View style={styles.row4}>
-      <MaterialCommunityIcons name="check-decagram" size={14} color={light ? '#FFFFFF' : colors.action} />
+      <Ionicons name="checkmark-circle" size={14} color={light ? '#FFFFFF' : colors.action} />
       <Text maxFontSizeMultiplier={1.4} style={[styles.trusted, { color: light ? '#E3F0F7' : colors.textSecondary }]}>Verified</Text>
     </View>
   );
@@ -470,7 +471,7 @@ export function SectionHeader({
       {onSeeAll && (
         <Pressable onPress={onSeeAll} hitSlop={10} style={styles.row4} accessibilityRole="link">
           <Text maxFontSizeMultiplier={1.4} style={[styles.seeAll, { color: colors.textSecondary }]}>{actionLabel}</Text>
-          <MaterialCommunityIcons name="chevron-double-right" size={16} color={colors.textSecondary} />
+          <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
         </Pressable>
       )}
     </View>
@@ -522,7 +523,7 @@ export function TopBar({
             <Text maxFontSizeMultiplier={1.4} numberOfLines={1} style={[styles.topBarText, { color: colors.text }]} accessibilityRole="header">
               {title}
             </Text>
-            {verified && <MaterialCommunityIcons name="check-decagram" size={17} color={colors.primary} />}
+            {verified && <Ionicons name="checkmark-circle" size={17} color={colors.primary} />}
           </View>
         )}
         {subtitle && <Text style={[styles.topBarSub, { color: colors.textSecondary }]}>{subtitle}</Text>}
@@ -886,6 +887,26 @@ export function ChoiceCard({
   children?: ReactNode;
 }) {
   const { colors, isDark } = useTheme();
+  const selection = useSharedValue(selected ? 1 : 0);
+
+  useEffect(() => {
+    selection.set(withSpring(selected ? 1 : 0, { duration: 220, dampingRatio: 0.9 }));
+  }, [selected, selection]);
+
+  const iconStyle = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(selection.get(), [0, 1], [colors.primaryWash, colors.primary]),
+  }));
+  const iconColorStyle = useAnimatedStyle(() => ({
+    color: interpolateColor(selection.get(), [0, 1], [colors.navActive, colors.onPrimary]),
+  }));
+  const radioStyle = useAnimatedStyle(() => ({
+    borderColor: interpolateColor(selection.get(), [0, 1], [colors.backgroundSelected, colors.primary]),
+  }));
+  const dotStyle = useAnimatedStyle(() => ({
+    opacity: selection.get(),
+    transform: [{ scale: 0.7 + selection.get() * 0.3 }],
+  }));
+
   return (
     <PressableScale
       onPress={onPress}
@@ -899,14 +920,14 @@ export function ChoiceCard({
       ]}>
       <View style={styles.choiceTop}>
         {icon && (
-          <View style={[styles.choiceIcon, { backgroundColor: selected ? colors.primary : colors.primaryWash }]}>
-            <Ionicons name={icon} size={22} color={selected ? colors.onPrimary : colors.navActive} />
-          </View>
+          <Animated.View style={[styles.choiceIcon, iconStyle]}>
+            <AnimatedIonicons name={icon} size={22} style={iconColorStyle} />
+          </Animated.View>
         )}
         <Text style={[styles.choiceTitle, { color: colors.text }]}>{title}</Text>
-        <View style={[styles.radio, { borderColor: selected ? colors.primary : colors.backgroundSelected }]}>
-          {selected && <View style={[styles.radioDot, { backgroundColor: colors.primary }]} />}
-        </View>
+        <Animated.View style={[styles.radio, radioStyle]}>
+          <Animated.View style={[styles.radioDot, { backgroundColor: colors.primary }, dotStyle]} />
+        </Animated.View>
       </View>
       {description && <Text style={[styles.choiceDesc, { color: colors.textSecondary }]}>{description}</Text>}
       {children}

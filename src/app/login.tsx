@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { Text } from '@/components/ui-text';
 import { useRouter } from 'expo-router';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -89,7 +89,7 @@ export default function LoginScreen() {
           </View>
           <View style={[styles.bioIcon, { backgroundColor: colors.action }]}>
             {faceish ? (
-              <MaterialCommunityIcons name="face-recognition" size={22} color="#FFFFFF" />
+              <Ionicons name="scan-circle" size={22} color="#FFFFFF" />
             ) : (
               <Ionicons name="finger-print" size={24} color="#FFFFFF" />
             )}
@@ -167,7 +167,7 @@ export default function LoginScreen() {
         <Button
           label="Sign in with Face ID"
           variant="light"
-          icon={<MaterialCommunityIcons name="face-recognition" size={19} color={colors.primaryText} />}
+          icon={<Ionicons name="scan-circle" size={19} color={colors.primaryText} />}
           onPress={bioSignIn}
         />
       )}

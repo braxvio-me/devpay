@@ -6,7 +6,7 @@ import { Dialog } from '@/lib/dialog';
 import { Text } from '@/components/ui-text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRole } from '@/contexts/RoleContext';
 import { useVerification } from '@/contexts/VerificationContext';
@@ -134,7 +134,7 @@ export default function ProfileScreen() {
 
           <View style={styles.nameRow}>
             <Text style={[styles.name, { color: colors.text }]}>{me.name}</Text>
-            {verified && <MaterialCommunityIcons name="check-decagram" size={20} color={colors.action} accessibilityLabel="Verified" />}
+            {verified && <Ionicons name="checkmark-circle" size={20} color={colors.action} accessibilityLabel="Verified" />}
           </View>
           <Text style={[styles.headline, { color: colors.text }]}>{me.headline}</Text>
           <View style={styles.metaRow}>

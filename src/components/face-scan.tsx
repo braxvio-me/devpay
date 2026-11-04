@@ -7,7 +7,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, Modal, Pressable, AccessibilityInfo, Platform, Linking, useWindowDimensions } from 'react-native';
 import { Text } from '@/components/ui-text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import Animated, {
@@ -214,7 +214,7 @@ export function FaceScanModal({
             ))}
             <Animated.View style={[StyleSheet.absoluteFill, { borderRadius: size / 2, borderWidth: 2 }, ringStyle]} />
             {!(cameraOn && cameraReady) && phase !== 'success' && (
-              <MaterialCommunityIcons name="face-recognition" size={size * 0.34} color="rgba(255,255,255,0.5)" />
+              <Ionicons name="scan-circle" size={size * 0.34} color="rgba(255,255,255,0.5)" />
             )}
             <Animated.View style={[styles.check, checkStyle]}>
               <View style={styles.checkDisc}>

@@ -5,7 +5,7 @@ import { Text } from '@/components/ui-text';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn, FadeInDown, FadeOut, LinearTransition } from 'react-native-reanimated';
@@ -177,7 +177,7 @@ export default function ChatDetailScreen() {
                 <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>
                   {thread.name}
                 </Text>
-                <MaterialCommunityIcons name="check-decagram" size={14} color={colors.primary} />
+                <Ionicons name="checkmark-circle" size={14} color={colors.primary} />
               </View>
               {typing ? (
                 <Animated.View key="typing" entering={FadeIn.duration(150)}>
